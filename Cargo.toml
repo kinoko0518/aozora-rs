@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "aozora-rs",
+    "aozora-rs-tester", "aozora-rs-gaiji",
+]
+resolver = "3"

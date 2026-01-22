@@ -1,0 +1,62 @@
+aozora-rs
+
+# トークン化層
+入力を以下のトークンに分解する。詳細は型定義参照。
+
+- テキスト
+- ルビデリミタ
+- 注記
+- 外字
+- 踊り字（濁点踊り字）
+- 改行
+
+## 注記層
+トークン化の際に注記をEnum化する。複雑になるのでトークン化層とは呼び分ける。
+
+### 注記（Note）
+BackRefとBeginEndの直和型。
+
+### 前方参照型
+#### BackRef
+トレイト。以下の関数を持つことを強制する。
+- target: &str -> Range::<usize> … 前方のテキストのうち、どの範囲を対象にするか。
+
+#### BackRefNote
+このEnumは前方参照型の注記の直和型であり、要素はTraitであるBackRefを実装していなければならないことをenum_dispatchを使って強制する。
+
+### 開始/終了型
+#### SandwichedBeginトレイト
+fn range(rhs: &SandwichedEnds) -> Option<Range<usize>>;
+fn do_match(rhs: &SandwichedEnds) -> bool {
+    rhs.is_some()
+}
+
+#### 直和型SandwichedBegins
+すべての要素がSandwichedBeginトレイトを満たしていることを強制する。
+
+#### 直和型SandwichedEnds
+
+#### 直和型Sandwiched
+SandwichedBeginsとSandwichedEndsの直和型。
+
+### 行頭型
+#### WholeLine
+行頭に存在していることを保証し、Brまでを影響範囲とする。
+
+# レンジ化層
+それ自体が見た目を持つ注記（画像など）、踊り字、外字、本文から成るAozoraElementの可変長配列と、圏点、字下げ、ルビなどの他の要素に対して影響を与えるDecorationの可変長配列の直積を返す。Decorationは再トークン化時に矛盾なく閉じタグを生成するために、閉じられたときのスタックの長さであるdepth: usizeを持つ。
+本文をPopしたら次をPeek、前方参照型装飾ならレンジを確定して前方参照型装飾を消費しきる。ルビデリミタをPopしたらルビが出るまで本文を期待してPop、ルビが出たらルビの影響範囲を確定してルビデリミタを捨てる。開始/終了型の開始が出たらスタックに積み、終了が出たらスタックの一番上と比較、一致しなければNotesCrossingエラーを出力、一致すれば消費して範囲を確定する。スタックが空ではない状態で改行に到達したらUnclosedNotesエラーを出力。
+本文によって消費されているべきルビ、前方参照型装飾をpopした時点で何かが壊れているため、BackRefExpectTextエラーを出力。
+
+# 再トークン化層
+レンジ情報に変換された装飾をもとにDecoration、AozoraElementをXHTMLなどへの変換で便利な便利なタグ、要素、閉じタグの形のEnumのフラットなイテレータに変換する。
+
+# 最終出力イテレータ型の持つ関数
+.to_owned(Self::<&'s str>) -> Self::<String>
+トークンの持っている&strをStringに変換、所有権付きにする。
+.text_map(Self::<&'str>, Fn|&str| -> String) -> Self::<String>
+トークンが持っている入力由来の&strに対して関手を実行、String型の写像を得る。サニタイズなどに使用することを想定。
+.plain(Self) -> String
+注記、ルビなどを完全に無視したプレーンテキストを得る
+.dom(&self) -> Dom
+見出しを参照して目次を作成する。

@@ -1,0 +1,13 @@
+[package]
+name = "aozora-rs-tester"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+aozora-rs-gaiji = { path="../aozora-rs-gaiji" }
+encoding_rs = "0.8.35"
+futures = "0.3.31"
+rkyv = "0.8.14"
+tokio = {version="1.49.0", features = ["full"]}
+walkdir = "2.5.0"
+winnow = "0.7.14"

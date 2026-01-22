@@ -1,0 +1,24 @@
+[package]
+name = "aozora-rs-gaiji"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bimap = "0.6.3"
+ratatui = "0.29"
+crossterm = "0.28"
+rkyv = { version = "0.7", features = ["validation"] }
+pdfium-render = "0.8"
+reqwest = { version = "0.11", features = ["blocking"] }
+flate2 = "1.0"
+tar = "0.4"
+winnow = "0.7"
+encoding_rs = "0.8.35"
+
+[[bin]]
+name = "extract"
+path = "src/bin/extract/main.rs"
+
+[[bin]]
+name = "preview"
+path = "src/bin/preview/main.rs"
