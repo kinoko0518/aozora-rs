@@ -3,11 +3,16 @@ use winnow::{Parser, combinator::alt, error::ContextError};
 use crate::{
     Input,
     tokenizer::command::{
-        backref::{BackRefNote, backref},
-        multiline::{MultiLine, multiline},
-        sandwiched::{Sandwiched, sandwiched},
-        single::{Single, single},
+        backref::{BackRef, backref},
+        multiline::multiline,
+        sandwiched::sandwiched,
+        single::single,
     },
+};
+
+pub use crate::tokenizer::command::{
+    backref::BackRefKind, definitions::*, multiline::MultiLine, sandwiched::Sandwiched,
+    single::Single,
 };
 
 macro_rules! impl_sandwiched {
@@ -40,7 +45,7 @@ mod single;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Note<'s> {
-    BackRef(BackRefNote<'s>),
+    BackRef(BackRef<'s>),
     Sandwiched(Sandwiched),
     Multiline(MultiLine),
     Single(Single),

@@ -15,29 +15,39 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Copy)]
-struct BackRefSpec<'s>(&'s str);
+pub struct BackRefSpec<'s>(pub &'s str);
 
 #[derive(Debug, Clone, Copy)]
-pub enum BackRefNote<'s> {
-    Bold(BackRefSpec<'s>),
-    Italic(BackRefSpec<'s>),
-    Boten((BackRefSpec<'s>, BotenKind)),
-    Bosen((BackRefSpec<'s>, BosenKind)),
+pub enum BackRefKind {
+    Bold,
+    Italic,
+    Boten(BotenKind),
+    Bosen(BosenKind),
 }
 
-pub fn backref<'s>(input: &mut Input<'s>) -> Result<BackRefNote<'s>, ContextError> {
+#[derive(Debug, Clone, Copy)]
+pub struct BackRef<'s> {
+    pub kind: BackRefKind,
+    pub range: BackRefSpec<'s>,
+}
+
+pub fn backref<'s>(input: &mut Input<'s>) -> Result<BackRef<'s>, ContextError> {
     let target = BackRefSpec(delimited("「", take_until(1.., "」"), "」").parse_next(input)?);
     alt((
-        "は太字".value(BackRefNote::Bold(target)),
-        "は斜体".value(BackRefNote::Italic(target)),
+        "は太字".value(BackRefKind::Bold),
+        "は斜体".value(BackRefKind::Italic),
         (
             "に",
             alt((
-                bosen.map(|b| BackRefNote::Bosen((target, b))),
-                boten.map(|b| BackRefNote::Boten((target, b))),
+                bosen.map(|b| BackRefKind::Bosen(b)),
+                boten.map(|b| BackRefKind::Boten(b)),
             )),
         )
             .map(|(_, b)| b),
     ))
+    .map(|b| BackRef {
+        kind: b,
+        range: target,
+    })
     .parse_next(input)
 }

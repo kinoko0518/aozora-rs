@@ -1,12 +1,14 @@
 mod nihongo;
+mod scopenizer;
 mod tokenizer;
 
 use encoding_rs::SHIFT_JIS;
 use winnow::LocatingSlice;
 
-use crate::tokenizer::tokenize;
+use crate::{scopenizer::scopenize, tokenizer::tokenize};
 
 type Input<'s> = LocatingSlice<&'s str>;
+type Span = std::ops::Range<usize>;
 
 fn main() {
     let oto: String = SHIFT_JIS
@@ -15,5 +17,11 @@ fn main() {
         .to_string()
         .replace("\r\n", "\n");
 
-    println!("{:?}", tokenize(&mut LocatingSlice::new(oto.as_str())));
+    println!(
+        "{:?}",
+        scopenize(
+            tokenize(&mut LocatingSlice::new(oto.as_str())).unwrap(),
+            oto.as_str()
+        )
+    );
 }
