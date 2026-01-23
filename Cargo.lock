@@ -38,6 +38,7 @@ dependencies = [
 name = "aozora-rs"
 version = "0.1.0"
 dependencies = [
+ "aozora-rs-gaiji",
  "encoding_rs",
  "enum_dispatch",
  "miette",

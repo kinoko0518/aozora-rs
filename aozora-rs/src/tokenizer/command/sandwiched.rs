@@ -2,53 +2,30 @@
 //!　ドキュメントは[こちら](https://github.com/aozorahack/specs/blob/master/aozora-text.md#%E5%89%8D%E6%96%B9%E5%8F%82%E7%85%A7%E5%9E%8B%E3%81%A8%E9%96%8B%E5%A7%8B%E7%B5%82%E4%BA%86%E5%9E%8B)
 //! から確認できます。
 
-use crate::tokenizer::Span;
-use crate::tokenizer::command::{SandwichedBegin, definitions::*};
+use winnow::{Parser, combinator::alt, error::ContextError};
 
-struct Bold {
-    pub span: Span,
-}
-struct Italic {
-    pub span: Span,
-}
-#[derive(PartialEq, Eq)]
-struct Bosen {
-    pub span: Span,
-    pub kind: BosenKind,
-}
-#[derive(PartialEq, Eq)]
-struct Boten {
-    pub span: Span,
-    pub kind: BotenKind,
-}
+use crate::{
+    Input,
+    tokenizer::command::{SandwichedBegin, definitions::*},
+};
+
+#[derive(Debug, Clone, Copy)]
+struct Bold;
+#[derive(Debug, Clone, Copy)]
+struct Italic;
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
+struct Bosen(BosenKind);
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
+struct Boten(BotenKind);
 
 impl_sandwiched!(SandwichedEnds, Bold, BoldEnd);
 impl_sandwiched!(SandwichedEnds, Italic, ItalicEnd);
 
-impl SandwichedBegin<SandwichedEnds> for Boten {
-    fn effect_range(&self, rhs: &SandwichedEnds) -> Option<Span> {
-        if let SandwichedEnds::BotenEnd(k) = rhs
-            && self == k
-        {
-            Some((self.span.end + 1)..(k.span.start - 1))
-        } else {
-            None
-        }
-    }
-}
-impl SandwichedBegin<SandwichedEnds> for Bosen {
-    fn effect_range(&self, rhs: &SandwichedEnds) -> Option<Span> {
-        if let SandwichedEnds::BosenEnd(k) = rhs
-            && self == k
-        {
-            Some((self.span.end + 1)..(k.span.start - 1))
-        } else {
-            None
-        }
-    }
-}
+impl_sandwiched_ignore!(SandwichedEnds, Boten, BotenEnd);
+impl_sandwiched_ignore!(SandwichedEnds, Bosen, BosenEnd);
 
 #[enum_dispatch::enum_dispatch]
+#[derive(Debug, Clone, Copy)]
 enum SandwichedBegins {
     BoldBegin(Bold),
     ItalicBegin(Italic),
@@ -56,14 +33,44 @@ enum SandwichedBegins {
     BosenBegin(Bosen),
 }
 
+#[derive(Debug, Clone, Copy)]
 enum SandwichedEnds {
-    BoldEnd(Span),
-    ItalicEnd(Span),
-    BotenEnd(Boten),
-    BosenEnd(Bosen),
+    BoldEnd,
+    ItalicEnd,
+    BotenEnd(BotenKind),
+    BosenEnd(BosenKind),
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum Sandwiched {
     Begin(SandwichedBegins),
     End(SandwichedEnds),
+}
+
+fn sandwiched_begin(input: &mut Input<'_>) -> Result<SandwichedBegins, ContextError> {
+    alt((
+        "太字".value(SandwichedBegins::BoldBegin(Bold)),
+        "斜体".value(SandwichedBegins::ItalicBegin(Italic)),
+        boten.map(|b| SandwichedBegins::BotenBegin(Boten(b))),
+        bosen.map(|b| SandwichedBegins::BosenBegin(Bosen(b))),
+    ))
+    .parse_next(input)
+}
+
+fn sandwiched_end(input: &mut Input<'_>) -> Result<SandwichedEnds, ContextError> {
+    alt((
+        "太字終わり".value(SandwichedEnds::BoldEnd),
+        "斜体終わり".value(SandwichedEnds::ItalicEnd),
+        (boten, "終わり").map(|(bt, _)| SandwichedEnds::BotenEnd(bt)),
+        (bosen, "終わり").map(|(bs, _)| SandwichedEnds::BosenEnd(bs)),
+    ))
+    .parse_next(input)
+}
+
+pub fn sandwiched(input: &mut Input<'_>) -> Result<Sandwiched, ContextError> {
+    alt((
+        sandwiched_begin.map(|b| Sandwiched::Begin(b)),
+        sandwiched_end.map(|e| Sandwiched::End(e)),
+    ))
+    .parse_next(input)
 }

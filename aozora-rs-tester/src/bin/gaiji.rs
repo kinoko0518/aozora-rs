@@ -49,7 +49,7 @@ async fn analyse_file(path: &Path) -> Option<AnalysedData> {
         .fold(
             || AnalysedData::new(),
             |mut acc, mut e: &str| {
-                if let Ok(_) = gaiji_to_char(&mut e) {
+                if let Some(_) = gaiji_to_char(&mut e) {
                     acc.success();
                 } else {
                     acc.fail(e.to_string());

@@ -15,5 +15,5 @@ fn main() {
         .to_string()
         .replace("\r\n", "\n");
 
-    println!("{:?}", tokenize(&oto));
+    println!("{:?}", tokenize(&mut LocatingSlice::new(oto.as_str())));
 }

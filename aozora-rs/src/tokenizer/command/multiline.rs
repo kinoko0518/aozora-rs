@@ -19,37 +19,34 @@ use winnow::{
 
 use crate::{
     nihongo::japanese_num,
-    tokenizer::{
-        Span,
-        command::{Input, SandwichedBegin},
-    },
+    tokenizer::command::{Input, SandwichedBegin},
 };
 
+#[derive(Debug, Clone, Copy)]
 struct BlockIndent {
-    span: Span,
     level: usize,
 }
 impl_sandwiched!(MultiLineEnds, BlockIndent, BlockIndentEnd);
 
+#[derive(Debug, Clone, Copy)]
 struct HangingIndent {
-    span: Span,
     fst_lvl: usize,
     snd_lvl: usize,
 }
 impl_sandwiched!(MultiLineEnds, HangingIndent, BlockIndentEnd);
 
-struct Grounded {
-    span: Span,
-}
+#[derive(Debug, Clone, Copy)]
+struct Grounded;
 impl_sandwiched!(MultiLineEnds, Grounded, GroundedEnd);
 
+#[derive(Debug, Clone, Copy)]
 struct LowFlying {
-    span: Span,
     level: usize,
 }
 impl_sandwiched!(MultiLineEnds, LowFlying, LowFlyingEnd);
 
 #[enum_dispatch]
+#[derive(Debug, Clone, Copy)]
 pub enum MultiLineBegins {
     /// 参照：https://www.aozora.gr.jp/annotation/layout_2.html#jisage
     BlockIndent(BlockIndent),
@@ -61,12 +58,14 @@ pub enum MultiLineBegins {
     LowFlying(LowFlying),
 }
 
+#[derive(Debug, Clone, Copy)]
 enum MultiLineEnds {
-    BlockIndentEnd(Span),
-    GroundedEnd(Span),
-    LowFlyingEnd(Span),
+    BlockIndentEnd,
+    GroundedEnd,
+    LowFlyingEnd,
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum MultiLine {
     Begin(MultiLineBegins),
     End(MultiLineEnds),
@@ -82,22 +81,19 @@ fn block_indent_begins(input: &mut Input) -> Result<MultiLineBegins, ContextErro
         alt((jisage, "改行天付き".value(0))),
         opt(("、折り返して", jisage).map(|(_, o)| o)),
     )
-        .with_span()
-        .map(|((_, u, o), s)| match o {
+        .map(|(_, u, o)| match o {
             Some(o) => MultiLineBegins::HangingIndent(HangingIndent {
-                span: s,
                 fst_lvl: u,
                 snd_lvl: o,
             }),
-            None => MultiLineBegins::BlockIndent(BlockIndent { span: s, level: u }),
+            None => MultiLineBegins::BlockIndent(BlockIndent { level: u }),
         })
         .parse_next(input)
 }
 
 fn chitsuki_begins(input: &mut Input) -> Result<MultiLineBegins, ContextError> {
     "ここから地付き"
-        .with_span()
-        .map(|(_, s)| MultiLineBegins::Grounded(Grounded { span: s }))
+        .value(MultiLineBegins::Grounded(Grounded))
         .parse_next(input)
 }
 
@@ -109,8 +105,7 @@ fn chiyose<'s>(input: &mut Input<'s>) -> Result<usize, ContextError> {
 
 fn chiyose_block_begins<'s>(input: &mut Input<'s>) -> Result<MultiLineBegins, ContextError> {
     ("ここから", chiyose)
-        .with_span()
-        .map(|((_, u), s)| MultiLineBegins::LowFlying(LowFlying { span: s, level: u }))
+        .map(|(_, u)| MultiLineBegins::LowFlying(LowFlying { level: u }))
         .parse_next(input)
 }
 
@@ -124,11 +119,10 @@ fn multiline_ends<'s>(input: &mut Input<'s>) -> Result<MultiLineEnds, ContextErr
         alt(("字下げ", "字寄せ", "地付け")),
         alt(("終わり", "おわり")),
     )
-    .with_span()
-    .map(|(l, s)| match l {
-        "字下げ" => MultiLineEnds::BlockIndentEnd(s),
-        "字寄せ" => MultiLineEnds::LowFlyingEnd(s),
-        "地付け" => MultiLineEnds::GroundedEnd(s),
+    .map(|l| match l {
+        "字下げ" => MultiLineEnds::BlockIndentEnd,
+        "字寄せ" => MultiLineEnds::LowFlyingEnd,
+        "地付け" => MultiLineEnds::GroundedEnd,
         _ => unreachable!(),
     })
     .parse_next(input)

@@ -2,25 +2,29 @@ use winnow::{Parser, combinator::alt, error::ContextError};
 
 use crate::{
     Input,
-    tokenizer::{
-        Span,
-        command::{
-            backref::BackRefNote,
-            multiline::{MultiLine, multiline},
-            sandwiched::Sandwiched,
-        },
+    tokenizer::command::{
+        backref::{BackRefNote, backref},
+        multiline::{MultiLine, multiline},
+        sandwiched::{Sandwiched, sandwiched},
+        single::{Single, single},
     },
 };
 
 macro_rules! impl_sandwiched {
     ($generics:ident, $target_struct:ident, $target_variant:ident) => {
         impl SandwichedBegin<$generics> for $target_struct {
-            fn effect_range(&self, rhs: &$generics) -> Option<Span> {
-                if let $generics::$target_variant(s) = rhs {
-                    Some((self.span.end + 1)..(s.start - 1))
-                } else {
-                    None
-                }
+            fn do_match(rhs: &$generics) -> bool {
+                matches!(rhs, $generics::$target_variant)
+            }
+        }
+    };
+}
+
+macro_rules! impl_sandwiched_ignore {
+    ($generics:ident, $target_struct:ident, $target_variant:ident) => {
+        impl SandwichedBegin<$generics> for $target_struct {
+            fn do_match(rhs: &$generics) -> bool {
+                matches!(rhs, $generics::$target_variant(_))
             }
         }
     };
@@ -34,21 +38,26 @@ mod multiline;
 mod sandwiched;
 mod single;
 
+#[derive(Debug, Clone, Copy)]
 pub enum Note<'s> {
     BackRef(BackRefNote<'s>),
     Sandwiched(Sandwiched),
     Multiline(MultiLine),
+    Single(Single),
 }
 
 trait SandwichedBegin<E> {
-    fn effect_range(&self, rhs: &E) -> Option<Span>;
-    fn do_match(&self, rhs: &E) -> bool {
-        self.effect_range(rhs).is_some()
-    }
+    fn do_match(rhs: &E) -> bool;
 }
 
 type RNote<'s> = Result<Note<'s>, ContextError>;
 
-pub fn command<'s>(input: &mut Input) -> RNote<'s> {
-    alt((multiline.map(|s| Note::Multiline(s)),)).parse_next(input)
+pub fn command<'s>(input: &mut Input<'s>) -> RNote<'s> {
+    alt((
+        multiline.map(|m| Note::Multiline(m)),
+        single.map(|m| Note::Single(m)),
+        backref.map(|m| Note::BackRef(m)),
+        sandwiched.map(|m| Note::Sandwiched(m)),
+    ))
+    .parse_next(input)
 }
