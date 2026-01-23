@@ -1,3 +1,4 @@
+mod deco;
 mod nihongo;
 mod scopenizer;
 mod tokenizer;
@@ -5,10 +6,18 @@ mod tokenizer;
 use encoding_rs::SHIFT_JIS;
 use winnow::LocatingSlice;
 
-use crate::{scopenizer::scopenize, tokenizer::tokenize};
+use crate::scopenizer::prelude::*;
+use crate::tokenizer::prelude::*;
 
-type Input<'s> = LocatingSlice<&'s str>;
-type Span = std::ops::Range<usize>;
+pub mod prelude {
+    use winnow::LocatingSlice;
+
+    pub type Input<'s> = LocatingSlice<&'s str>;
+    pub type Span = std::ops::Range<usize>;
+
+    pub use crate::deco::*;
+}
+use crate::prelude::*;
 
 fn main() {
     let oto: String = SHIFT_JIS

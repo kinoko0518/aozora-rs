@@ -10,8 +10,8 @@ use winnow::{
 };
 
 use crate::{
-    Input,
-    tokenizer::command::definitions::{BosenKind, BotenKind, bosen, boten},
+    prelude::*,
+    tokenizer::command::definitions::{bosen, boten},
 };
 
 #[derive(Debug, Clone, Copy)]

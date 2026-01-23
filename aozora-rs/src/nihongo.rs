@@ -7,7 +7,7 @@ use winnow::{
     token::take_while,
 };
 
-use crate::Input;
+use crate::prelude::*;
 
 pub fn is_hiragana(c: char) -> bool {
     matches!(c, 'ぁ'..='ゖ')

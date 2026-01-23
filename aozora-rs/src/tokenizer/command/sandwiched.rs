@@ -4,10 +4,8 @@
 
 use winnow::{Parser, combinator::alt, error::ContextError};
 
-use crate::{
-    Input,
-    tokenizer::command::{SandwichedBegin, definitions::*},
-};
+use crate::prelude::*;
+use crate::tokenizer::command::{SandwichedBegin, definitions::*};
 
 #[derive(Debug, Clone, Copy)]
 struct Bold;
