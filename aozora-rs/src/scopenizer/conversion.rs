@@ -1,5 +1,4 @@
 use crate::{
-    Span,
     nihongo::is_kanji,
     prelude::*,
     scopenizer::definition::{Break, FlatToken, Scope},

@@ -1,4 +1,4 @@
-use crate::Span;
+use crate::prelude::*;
 use miette::Diagnostic;
 use thiserror::Error;
 

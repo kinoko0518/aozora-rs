@@ -1,5 +1,5 @@
 mod conversion;
-mod definition;
+pub mod definition;
 mod error;
 mod parser;
 

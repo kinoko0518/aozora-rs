@@ -1,5 +1,5 @@
 mod command;
-mod definition;
+pub mod definition;
 mod parser;
 
 pub mod prelude {

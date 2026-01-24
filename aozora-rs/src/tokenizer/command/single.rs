@@ -1,6 +1,6 @@
 use winnow::{Parser, combinator::alt, error::ContextError};
 
-use crate::Input;
+use crate::prelude::*;
 
 #[derive(Debug, Clone, Copy)]
 pub enum Single {
