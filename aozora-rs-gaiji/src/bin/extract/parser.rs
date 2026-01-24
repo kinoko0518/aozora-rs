@@ -15,7 +15,15 @@ fn parse_gaiji(input: &mut &str) -> Result<Gaiji, ContextError> {
         delimited("※［＃", parse_tag("、ページ数-行数".void()), "］"),
     )
         .map(|(kanji, _, tag): (char, _, TagSet)| Gaiji {
-            kanji: kanji,
+            // Unicode -> Shift_JIS -> 書いてある漢字の順番で信頼する
+            kanji: tag
+                .unicode
+                .and_then(|u| u.to_char().map(|c| c.to_string()))
+                .or(tag
+                    .shift_jis
+                    .and_then(|s| s.to_char())
+                    .map(|s| s.to_string()))
+                .unwrap_or(kanji.to_string()),
             tag: tag
                 .tag
                 .chars()

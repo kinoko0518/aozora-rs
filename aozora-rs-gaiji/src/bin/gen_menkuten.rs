@@ -1,16 +1,15 @@
-mod parser;
-mod read_pdf;
-mod satisfy;
+// JIS X 0213 マッピングテーブル生成ツール
+//
+// このツールはJIS X 0213の公式マッピングテーブルを解析し、
+// 面区点→Unicode変換テーブルをrkyv形式で出力します。
+//
+// 使用方法:
+//   cargo run -p aozora-rs-gaiji --bin gen_menkuten [input_path] [output_path]
 
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::{env, fs};
 
-use crate::parser::extract_gaiji_entries;
-use crate::read_pdf::extract_from_pdf;
-use crate::satisfy::gaiji_chuki;
-
-type GaijiMap = HashMap<String, String>;
 type MenkutenToUnicodeMap = HashMap<(u8, u8, u8), String>;
 
 /// JIS X 0213 マッピングテーブルをパースして面区点→Unicode変換テーブルを生成
@@ -93,60 +92,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().collect();
     let current: PathBuf = env::current_dir()?;
 
-    let pdf_path = PathBuf::from(
-        args.get(1)
-            .map(|s| PathBuf::from(s))
-            .unwrap_or(current.clone().join("assets")),
-    );
+    let input_path = args
+        .get(1)
+        .map(PathBuf::from)
+        .unwrap_or_else(|| current.join("assets").join("jisx0213-2004-std.txt"));
+
     let output_path = args
         .get(2)
-        .map(|s| PathBuf::from(s))
-        .unwrap_or(current.clone());
+        .map(PathBuf::from)
+        .unwrap_or_else(|| current.join("menkuten_to_unicode.map"));
 
-    // 1. 外字マップ抽出 (既存処理)
-    println!("gaiji_to_chuki.pdfからプレーンテキストを抽出中……");
-    let plain = extract_from_pdf(&gaiji_chuki(&pdf_path)?)?;
-    println!("gaiji_to_chuki.pdfから外字エントリを抽出中……");
-    let map = extract_gaiji_entries(&mut plain.as_str()).unwrap();
+    println!("JIS X 0213マッピングテーブルを解析中: {:?}", input_path);
+    let menkuten_map = generate_menkuten_map(&input_path)?;
 
-    println!("外字エントリを保存中……");
-    fs::write(
-        &output_path.join("gaiji_to_char.map"),
-        &rkyv::to_bytes::<_, 256>(&map)?,
-    )?;
+    println!("面区点→Unicode変換テーブルを保存中……");
+    fs::write(&output_path, &rkyv::to_bytes::<_, 256>(&menkuten_map)?)?;
 
-    println!("逆外字マップを作成中……");
-    let mut reverse_map = HashMap::new();
-    for (tag, kanji) in &map {
-        reverse_map.insert(kanji.clone(), tag.clone());
-    }
-
-    println!("逆外字マップを保存中……");
-    fs::write(
-        output_path.join("char_to_gaiji.map"),
-        &rkyv::to_bytes::<_, 256>(&reverse_map)?,
-    )?;
-
-    // 2. 面区点→Unicode変換テーブル生成 (新規追加)
-    let jis_table_path = pdf_path.join("jisx0213-2004-std.txt");
-    if jis_table_path.exists() {
-        println!("JIS X 0213マッピングテーブルを解析中……");
-        let menkuten_map = generate_menkuten_map(&jis_table_path)?;
-        println!(
-            "面区点→Unicode変換テーブルを保存中（{}エントリ）……",
-            menkuten_map.len()
-        );
-        fs::write(
-            output_path.join("menkuten_to_unicode.map"),
-            &rkyv::to_bytes::<_, 256>(&menkuten_map)?,
-        )?;
-    } else {
-        println!(
-            "警告: {:?} が見つかりません。面区点変換テーブルは生成されません。",
-            jis_table_path
-        );
-    }
-
-    println!("外字マップ抽出プロセスはすべて正常に終了しました。");
+    println!("完了しました。");
     Ok(())
 }

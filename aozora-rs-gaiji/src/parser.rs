@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::{GAIJI_TO_CHAR, shift_jis::JISCharactor};
 use winnow::{
     Parser,
@@ -122,24 +124,28 @@ pub fn parse_tag<'s>(
 
 #[derive(Debug, Clone)]
 pub struct Gaiji {
-    pub kanji: char,
+    pub kanji: String,
     pub tag: String,
 }
 
 #[derive(Debug)]
 pub struct TagSet {
-    unicode: Option<Unicode>,
-    shift_jis: Option<JISCharactor>,
+    pub unicode: Option<Unicode>,
+    pub shift_jis: Option<JISCharactor>,
     pub tag: String,
 }
 
 impl TagSet {
-    pub fn char(&self) -> Option<char> {
+    pub fn char(&self) -> Option<Cow<'static, str>> {
         GAIJI_TO_CHAR
             .get(&self.tag)
-            .map(|c| *c)
-            .or_else(|| self.unicode.and_then(|u| u.to_char()))
-            .or_else(|| self.shift_jis.and_then(|s| s.to_char()))
+            .map(|c| Cow::Borrowed(c.as_str()))
+            .or_else(|| {
+                self.unicode
+                    .and_then(|u| u.to_char())
+                    .map(|s| Cow::Owned(s.to_string()))
+            })
+            .or_else(|| self.shift_jis.and_then(|s| s.to_char().map(Cow::Borrowed)))
     }
 }
 

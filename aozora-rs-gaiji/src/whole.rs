@@ -16,7 +16,9 @@ enum GaijiOrStr<'s> {
 impl<'s> GaijiOrStr<'s> {
     fn to_cow(&self) -> Cow<'s, str> {
         match self {
-            GaijiOrStr::Gaiji(g) => Cow::Owned(gaiji_to_char(g).unwrap_or('〓').to_string()),
+            GaijiOrStr::Gaiji(g) => {
+                Cow::Owned(gaiji_to_char(g).unwrap_or(Cow::Borrowed("〓")).to_string())
+            }
             GaijiOrStr::Str(s) => Cow::Borrowed(s),
         }
     }

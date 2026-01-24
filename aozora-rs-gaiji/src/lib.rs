@@ -1,13 +1,15 @@
+mod menkuten;
 mod parser;
 mod shift_jis;
 mod whole;
 
+use std::borrow::Cow;
 use std::{collections::HashMap, sync::LazyLock};
 
 use rkyv::{AlignedVec, Deserialize, Infallible, check_archived_root};
 
-pub type GaijiMap = HashMap<String, char>;
-pub type RevGaijiMap = HashMap<char, String>;
+pub type GaijiMap = HashMap<String, String>;
+pub type RevGaijiMap = HashMap<String, String>;
 
 pub use parser::{hex, parse_tag, shift_jis, unicode, white0};
 use winnow::Parser;
@@ -34,7 +36,7 @@ pub static CHAR_TO_GAIJI: LazyLock<RevGaijiMap> = LazyLock::new(|| {
     archived.deserialize(&mut Infallible).unwrap()
 });
 
-pub fn gaiji_to_char(input: &str) -> Option<char> {
+pub fn gaiji_to_char(input: &str) -> Option<Cow<'static, str>> {
     let mut input = input;
     parse_tag(location)
         .verify_map(|t| t.char())

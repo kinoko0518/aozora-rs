@@ -17,3 +17,10 @@ encoding_rs = "0.8.35"
 name = "extract"
 path = "src/bin/extract/main.rs"
 
+[[bin]]
+name = "gen_menkuten"
+path = "src/bin/gen_menkuten.rs"
+
+[[bin]]
+name = "verify_jis"
+path = "src/bin/verify_jis.rs"
