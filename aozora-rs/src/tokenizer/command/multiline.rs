@@ -18,14 +18,11 @@ use winnow::{
 };
 
 use crate::{
+    deco::{BlockIndent, Deco},
     nihongo::japanese_num,
     tokenizer::command::{Input, SandwichedBegin},
 };
 
-#[derive(Debug, Clone, Copy)]
-struct BlockIndent {
-    level: usize,
-}
 impl_sandwiched!(MultiLineEnds, BlockIndent, BlockIndentEnd);
 
 #[derive(Debug, Clone, Copy)]
@@ -45,7 +42,6 @@ struct LowFlying {
 }
 impl_sandwiched!(MultiLineEnds, LowFlying, LowFlyingEnd);
 
-#[enum_dispatch]
 #[derive(Debug, Clone, Copy)]
 pub enum MultiLineBegins {
     /// 参照：https://www.aozora.gr.jp/annotation/layout_2.html#jisage
@@ -58,8 +54,30 @@ pub enum MultiLineBegins {
     LowFlying(LowFlying),
 }
 
+impl SandwichedBegin<MultiLineEnds> for MultiLineBegins {
+    fn do_match(&self, rhs: &MultiLineEnds) -> bool {
+        match self {
+            Self::BlockIndent(b) => b.do_match(rhs),
+            Self::Grounded(g) => g.do_match(rhs),
+            Self::HangingIndent(h) => h.do_match(rhs),
+            Self::LowFlying(l) => l.do_match(rhs),
+        }
+    }
+}
+
+impl MultiLineBegins {
+    pub fn into_deco<'s>(self) -> Deco<'s> {
+        match self {
+            Self::BlockIndent(b) => Deco::Indent(b.level),
+            Self::HangingIndent(h) => Deco::Hanging((h.fst_lvl, h.snd_lvl)),
+            Self::Grounded(_) => Deco::Grounded,
+            Self::LowFlying(l) => Deco::LowFlying(l.level),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
-enum MultiLineEnds {
+pub enum MultiLineEnds {
     BlockIndentEnd,
     GroundedEnd,
     LowFlyingEnd,

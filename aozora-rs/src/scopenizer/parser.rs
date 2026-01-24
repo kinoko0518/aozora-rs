@@ -1,6 +1,7 @@
 use super::definition::*;
 use super::error::*;
 
+use crate::prelude::*;
 use crate::scopenizer::conversion::backref_to_scope;
 use crate::tokenizer::prelude::*;
 
@@ -46,12 +47,63 @@ pub fn scopenize<'s>(
                 }
             }
             AozoraTokenKind::Command(c) => match c {
-                Note::Sandwiched(s) => {
-                    inline_stack.push((s, token.span));
-                }
-                Note::Multiline(m) => {
-                    stack.push((m, token.span));
-                }
+                Note::Sandwiched(s) => match s {
+                    Sandwiched::Begin(b) => {
+                        inline_stack.push((b, token.span));
+                    }
+                    Sandwiched::End(e) => {
+                        if stack.is_empty() {
+                            return Err(IsolatedEndNote {
+                                source_code: original.to_string(),
+                                range: token.span,
+                            }
+                            .into());
+                        }
+                        while let Some(s) = inline_stack.pop() {
+                            let range = s.1.start..token.span.end;
+                            if s.0.do_match(&e) {
+                                scopes.push(Scope {
+                                    deco: s.0.into_deco(),
+                                    span: range,
+                                })
+                            } else {
+                                return Err(CrossingNote {
+                                    source_code: original.to_string(),
+                                    range: range,
+                                }
+                                .into());
+                            }
+                        }
+                    }
+                },
+                Note::Multiline(m) => match m {
+                    MultiLine::Begin(b) => {
+                        stack.push((b, token.span));
+                    }
+                    MultiLine::End(e) => {
+                        if stack.is_empty() {
+                            return Err(IsolatedEndNote {
+                                source_code: original.to_string(),
+                                range: token.span,
+                            }
+                            .into());
+                        }
+                        while let Some((kind, span)) = stack.pop() {
+                            if kind.do_match(&e) {
+                                scopes.push(Scope {
+                                    deco: kind.into_deco(),
+                                    span,
+                                });
+                            } else {
+                                return Err(CrossingNote {
+                                    source_code: original.to_string(),
+                                    range: span.start..token.span.end,
+                                }
+                                .into());
+                            }
+                        }
+                    }
+                },
                 Note::Single(s) => {
                     flatten.push(s.into_flat_token());
                 }
@@ -76,6 +128,13 @@ pub fn scopenize<'s>(
             }
             AozoraTokenKind::Br => {
                 flatten.push(FlatToken::Break(Break::BreakLine));
+                if inline_stack.len() != 0 {
+                    return Err(UnclosedInlineNote {
+                        source_code: original.to_string(),
+                        unclosed_area: inline_stack.last().unwrap().1.start..token.span.end,
+                    }
+                    .into());
+                }
             }
             AozoraTokenKind::Odoriji(o) => {
                 flatten.push(FlatToken::Odoriji(o));

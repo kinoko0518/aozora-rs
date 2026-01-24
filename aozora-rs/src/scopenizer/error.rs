@@ -9,7 +9,12 @@ use thiserror::Error;
     url(docsrs),
     help("この注記は行末で閉じられる必要があります。行を超えて注記を適用しようとしていませんか？")
 )]
-pub struct UnclosedInlineNote {}
+pub struct UnclosedInlineNote {
+    #[source_code]
+    pub source_code: String,
+    #[label("この領域を閉じてください")]
+    pub unclosed_area: Span,
+}
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("前方参照に失敗しました")]
@@ -37,6 +42,34 @@ pub struct BackRefFailed {
 pub struct InvalidRubyDelimiterUsage {
     #[source_code]
     pub source_code: String,
-    #[label("この注記でエラーが発生しています。")]
+    #[label("この領域でエラーが発生しています。")]
     pub failed_note: Span,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("タグの交差は許可されていません")]
+#[diagnostic(
+    code(aozora_rs::clossing_tag),
+    url(docsrs),
+    help("たとえば［＃A開始］［＃B開始］［＃A終了］［＃B終了］のような構造です")
+)]
+pub struct CrossingNote {
+    #[source_code]
+    pub source_code: String,
+    #[label("この範囲でエラーが発生しています。")]
+    pub range: Span,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("この終了注記はどこにも対応していません")]
+#[diagnostic(
+    code(aozora_rs::isolated_end_note),
+    url(docsrs),
+    help("この注記は［＃開始］［＃終了］の形で使用してください")
+)]
+pub struct IsolatedEndNote {
+    #[source_code]
+    pub source_code: String,
+    #[label("この注記でエラーが発生しています")]
+    pub range: Span,
 }

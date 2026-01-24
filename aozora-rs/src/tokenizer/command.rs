@@ -12,7 +12,7 @@ pub use crate::tokenizer::command::backref::BackRef;
 macro_rules! impl_sandwiched {
     ($generics:ident, $target_struct:ident, $target_variant:ident) => {
         impl SandwichedBegin<$generics> for $target_struct {
-            fn do_match(rhs: &$generics) -> bool {
+            fn do_match(&self, rhs: &$generics) -> bool {
                 matches!(rhs, $generics::$target_variant)
             }
         }
@@ -22,7 +22,7 @@ macro_rules! impl_sandwiched {
 macro_rules! impl_sandwiched_ignore {
     ($generics:ident, $target_struct:ident, $target_variant:ident) => {
         impl SandwichedBegin<$generics> for $target_struct {
-            fn do_match(rhs: &$generics) -> bool {
+            fn do_match(&self, rhs: &$generics) -> bool {
                 matches!(rhs, $generics::$target_variant(_))
             }
         }
@@ -45,8 +45,8 @@ pub enum Note<'s> {
     Single(Single),
 }
 
-trait SandwichedBegin<E> {
-    fn do_match(rhs: &E) -> bool;
+pub trait SandwichedBegin<E> {
+    fn do_match(&self, rhs: &E) -> bool;
 }
 
 type RNote<'s> = Result<Note<'s>, ContextError>;

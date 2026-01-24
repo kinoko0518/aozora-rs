@@ -4,7 +4,7 @@ mod parser;
 
 pub mod prelude {
     pub use super::command::{
-        BackRef, Note, backref::BackRefKind, multiline::MultiLine, sandwiched::Sandwiched,
+        Note, SandwichedBegin, backref::BackRefKind, multiline::MultiLine, sandwiched::Sandwiched,
         single::Single,
     };
     pub use super::definition::*;

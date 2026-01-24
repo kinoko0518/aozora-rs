@@ -22,17 +22,38 @@ impl_sandwiched!(SandwichedEnds, Italic, ItalicEnd);
 impl_sandwiched_ignore!(SandwichedEnds, Boten, BotenEnd);
 impl_sandwiched_ignore!(SandwichedEnds, Bosen, BosenEnd);
 
-#[enum_dispatch::enum_dispatch]
 #[derive(Debug, Clone, Copy)]
-enum SandwichedBegins {
+pub enum SandwichedBegins {
     BoldBegin(Bold),
     ItalicBegin(Italic),
     BotenBegin(Boten),
     BosenBegin(Bosen),
 }
 
+impl SandwichedBegins {
+    pub fn into_deco(self) -> Deco<'static> {
+        match self {
+            Self::BoldBegin(_) => Deco::Bold,
+            Self::ItalicBegin(_) => Deco::Italic,
+            Self::BosenBegin(b) => Deco::Bosen(b.0.clone()),
+            Self::BotenBegin(b) => Deco::Boten(b.0.clone()),
+        }
+    }
+}
+
+impl SandwichedBegin<SandwichedEnds> for SandwichedBegins {
+    fn do_match(&self, rhs: &SandwichedEnds) -> bool {
+        match self {
+            SandwichedBegins::BoldBegin(inner) => inner.do_match(rhs),
+            SandwichedBegins::ItalicBegin(inner) => inner.do_match(rhs),
+            SandwichedBegins::BotenBegin(inner) => inner.do_match(rhs),
+            SandwichedBegins::BosenBegin(inner) => inner.do_match(rhs),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
-enum SandwichedEnds {
+pub enum SandwichedEnds {
     BoldEnd,
     ItalicEnd,
     BotenEnd(BotenKind),

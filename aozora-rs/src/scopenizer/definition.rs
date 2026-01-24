@@ -2,18 +2,15 @@ use crate::prelude::*;
 use std::borrow::Cow;
 
 #[derive(Debug)]
-pub enum Deco<'s> {
-    Bold,
-    Italic,
-    Ruby(&'s str),
-    Bosen(BosenKind),
-    Boten(BotenKind),
-}
-
-#[derive(Debug)]
 pub struct Scope<'s> {
     pub deco: Deco<'s>,
     pub span: Span,
+}
+
+impl std::fmt::Display for Scope<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}[{}..{}]", self.deco, self.span.start, self.span.end)
+    }
 }
 
 #[derive(Debug, Clone)]

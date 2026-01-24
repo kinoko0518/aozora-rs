@@ -1,7 +1,8 @@
 use crate::{
     Span,
     nihongo::is_kanji,
-    scopenizer::definition::{Break, Deco, FlatToken, Scope},
+    prelude::*,
+    scopenizer::definition::{Break, FlatToken, Scope},
     tokenizer::prelude::*,
 };
 

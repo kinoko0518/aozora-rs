@@ -21,16 +21,22 @@ use crate::prelude::*;
 
 fn main() {
     let oto: String = SHIFT_JIS
-        .decode(include_bytes!("../assets/test_data/oto.txt"))
+        .decode(include_bytes!("../assets/test_data/shayo.txt"))
         .0
         .to_string()
         .replace("\r\n", "\n");
 
     println!(
-        "{:?}",
+        "{}",
         scopenize(
             tokenize(&mut LocatingSlice::new(oto.as_str())).unwrap(),
             oto.as_str()
         )
+        .unwrap()
+        .1
+        .iter()
+        .map(|s| s.to_string())
+        .collect::<Vec<String>>()
+        .join("")
     );
 }

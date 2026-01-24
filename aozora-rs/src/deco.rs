@@ -11,7 +11,7 @@ impl std::fmt::Display for Odoriji {
 
 #[derive(Debug, Clone, Copy)]
 pub struct BlockIndent {
-    level: usize,
+    pub level: usize,
 }
 
 /// 圏点の見た目のEnumです。青空文庫書式における圏点の扱いについては以下のURLを参照してください。
@@ -38,6 +38,25 @@ pub enum BotenKind {
     Crossing,
 }
 
+impl std::fmt::Display for BotenKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}傍点",
+            match self {
+                Self::Circle => "白丸",
+                Self::CircleFilled => "丸",
+                Self::Crossing => "ばつ",
+                Self::DoubleCircle => "二重丸",
+                Self::Hebinome => "蛇の目",
+                Self::Sesame => "白ゴマ",
+                Self::Triangle => "白三角",
+                Self::TriangleFilled => "黒三角",
+            }
+        )
+    }
+}
+
 /// 傍線の種類のEnumです。青空文庫書式における傍線の扱いについては以下のURLを参照してください。
 ///
 /// https://www.aozora.gr.jp/annotation/emphasis.html#bosen_chuki
@@ -53,4 +72,53 @@ pub enum BosenKind {
     Dashed,
     /// 「波線」に対応
     Wavy,
+}
+
+impl std::fmt::Display for BosenKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Chain => "鎖線",
+                Self::Dashed => "破線",
+                Self::Double => "二重傍線",
+                Self::Plain => "傍線",
+                Self::Wavy => "波線",
+            }
+        )
+    }
+}
+
+#[derive(Debug)]
+pub enum Deco<'s> {
+    Bold,
+    Italic,
+    Ruby(&'s str),
+    Bosen(BosenKind),
+    Boten(BotenKind),
+    Indent(usize),
+    Hanging((usize, usize)),
+    Grounded,
+    LowFlying(usize),
+}
+
+impl std::fmt::Display for Deco<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "[{}]",
+            match self {
+                Self::Bold => "太字".to_string(),
+                Self::Italic => "斜体".to_string(),
+                Self::Ruby(r) => format!("ルビ「{}」", r),
+                Self::Bosen(b) => b.to_string(),
+                Self::Boten(b) => b.to_string(),
+                Self::Indent(i) => format!("{}字下げ", i),
+                Self::Hanging(h) => format!("{}字下げ、折り返して{}字下げ", h.0, h.1),
+                Self::Grounded => "地付き".to_string(),
+                Self::LowFlying(l) => format!("{}字寄せ", l),
+            }
+        )
+    }
 }
