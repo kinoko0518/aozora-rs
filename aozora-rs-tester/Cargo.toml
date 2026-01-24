@@ -4,10 +4,19 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+aozora-rs = { path = "../aozora-rs" }
 aozora-rs-gaiji = { path="../aozora-rs-gaiji" }
 encoding_rs = "0.8.35"
 futures = "0.3.31"
-rkyv = "0.8.14"
+rkyv = { version = "0.7", features = ["validation"] }
 tokio = {version="1.49.0", features = ["full"]}
 walkdir = "2.5.0"
 winnow = "0.7.14"
+ratatui = "0.29"
+crossterm = "0.28"
+unicode-width = "0.1"
+
+[[bin]]
+name = "preview"
+path = "src/bin/preview/main.rs"
+

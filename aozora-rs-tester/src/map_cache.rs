@@ -1,4 +1,4 @@
-use rkyv::{Archive, Deserialize, Serialize, access_unchecked, rancor::Error};
+use rkyv::{Archive, Deserialize, Serialize, archived_root};
 use std::{
     fs::File,
     io::Write,
@@ -9,9 +9,29 @@ use walkdir::WalkDir;
 
 use crate::REPOSITORY;
 
+/// Progress states for map cache operations
+#[derive(Debug, Clone)]
+pub enum MapCacheProgress {
+    /// Checking if cache exists
+    CheckingCache,
+    /// Cache file found
+    CacheFound,
+    /// Cache is outdated, will regenerate
+    CacheOutdated,
+    /// Cache is up to date
+    CacheUpToDate,
+    /// Cache file not found, will create
+    CacheNotFound,
+    /// Generating new map from files
+    GeneratingMap,
+    /// Saving cache to disk
+    SavingCache,
+    /// Operation completed
+    Done,
+}
+
 #[derive(Archive, Deserialize, Serialize, Debug, PartialEq)]
-#[rkyv(compare(PartialEq), derive(Debug))]
-#[repr(C)]
+#[archive_attr(derive(Debug))]
 pub struct MapCache {
     id: String,
     pub paths: Vec<String>,
@@ -37,10 +57,7 @@ impl MapCache {
             })
             .map(|entry| entry.into_path().to_str().unwrap().to_string())
             .collect();
-        Ok(MapCache {
-            id: id,
-            paths: result,
-        })
+        Ok(MapCache { id, paths: result })
     }
 
     pub fn is_latest(&self) -> Result<bool, Box<dyn std::error::Error>> {
@@ -48,34 +65,53 @@ impl MapCache {
     }
 }
 
-pub fn update_map(base_path: &Path) -> Result<MapCache, Box<dyn std::error::Error>> {
-    let cache_path: PathBuf = (&base_path).join("cache.bin");
+/// Update map cache with progress callback.
+///
+/// This is a pure function - all progress reporting is done via callback.
+pub fn update_map_with_progress<F>(
+    base_path: &Path,
+    mut on_progress: F,
+) -> Result<MapCache, Box<dyn std::error::Error>>
+where
+    F: FnMut(MapCacheProgress),
+{
+    let cache_path: PathBuf = base_path.join("cache.bin");
 
-    println!("既存マップを確認中……");
+    on_progress(MapCacheProgress::CheckingCache);
+
     let cache_raw: Option<Vec<u8>> = if std::fs::exists(&cache_path)? {
         Some(std::fs::read(&cache_path)?)
     } else {
         None
     };
+
     let map = if let Some(data) = cache_raw {
-        println!("既存マップが存在します。最新かを確認します……");
-        let archive_undeserialized = unsafe { access_unchecked::<ArchivedMapCache>(&data) };
-        let archive = rkyv::deserialize::<MapCache, rkyv::rancor::Error>(archive_undeserialized)?;
+        on_progress(MapCacheProgress::CacheFound);
+        let archive_undeserialized = unsafe { archived_root::<MapCache>(&data) };
+        let archive: MapCache = archive_undeserialized.deserialize(&mut rkyv::Infallible)?;
         if !archive.is_latest()? {
-            println!("マップが古くなっています。更新します……");
+            on_progress(MapCacheProgress::CacheOutdated);
+            on_progress(MapCacheProgress::GeneratingMap);
             MapCache::generate_map()?
         } else {
-            println!("マップは最新です。更新プロセスをスキップします……");
+            on_progress(MapCacheProgress::CacheUpToDate);
             archive
         }
     } else {
-        println!("マップが存在しません。作成します……");
+        on_progress(MapCacheProgress::CacheNotFound);
+        on_progress(MapCacheProgress::GeneratingMap);
         MapCache::generate_map()?
     };
 
+    on_progress(MapCacheProgress::SavingCache);
     let mut file = File::create(&cache_path)?;
-    file.write_all(rkyv::to_bytes::<Error>(&map)?.as_slice())?;
+    file.write_all(rkyv::to_bytes::<_, 256>(&map)?.as_slice())?;
 
-    println!("マップの更新が完了しました。");
+    on_progress(MapCacheProgress::Done);
     Ok(map)
+}
+
+/// Update map cache without progress callback (backward compatible).
+pub fn update_map(base_path: &Path) -> Result<MapCache, Box<dyn std::error::Error>> {
+    update_map_with_progress(base_path, |_| {})
 }

@@ -1,36 +1,31 @@
-use std::{
-    path::{Path, PathBuf},
-    process::Command,
+use aozora_rs_tester::{
+    GitSyncProgress, MapCacheProgress, sync_repository, update_map_with_progress,
 };
-
-use aozora_rs_tester::{REPOSITORY, update_map};
-
-fn aozora_sync(target: &Path) -> Result<(), Box<dyn std::error::Error>> {
-    let mut git = Command::new("git");
-    let update_aozora = if !std::fs::exists(target)? {
-        git.arg("clone")
-            .arg("--depth")
-            .arg("1")
-            .arg(format!("https://github.com/aozorahack/{}.git", REPOSITORY))
-    } else {
-        git.current_dir(target)
-            .arg("pull")
-            .arg("origin")
-            .arg("master")
-    };
-    update_aozora.status()?;
-    Ok(())
-}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let current = std::env::current_dir()?;
-    let target: PathBuf = (&current).join(REPOSITORY);
 
     println!("青空文庫の最新版と同期中……");
-    aozora_sync(&target).unwrap();
+    sync_repository(&current, |progress| match progress {
+        GitSyncProgress::Checking => println!("  リポジトリを確認中..."),
+        GitSyncProgress::Cloning => println!("  クローン中..."),
+        GitSyncProgress::Pulling => println!("  最新版を取得中..."),
+        GitSyncProgress::Done => println!("  同期完了"),
+        GitSyncProgress::Error(e) => eprintln!("  エラー: {}", e),
+    })?;
 
-    println!("マップを更新します……");
-    update_map(&current)?;
+    println!("\nマップを更新します……");
+    update_map_with_progress(&current, |progress| match progress {
+        MapCacheProgress::CheckingCache => println!("  キャッシュを確認中..."),
+        MapCacheProgress::CacheFound => println!("  キャッシュが見つかりました"),
+        MapCacheProgress::CacheOutdated => println!("  キャッシュが古いです"),
+        MapCacheProgress::CacheUpToDate => println!("  キャッシュは最新です"),
+        MapCacheProgress::CacheNotFound => println!("  キャッシュが見つかりません"),
+        MapCacheProgress::GeneratingMap => println!("  マップを生成中..."),
+        MapCacheProgress::SavingCache => println!("  キャッシュを保存中..."),
+        MapCacheProgress::Done => println!("  完了"),
+    })?;
 
+    println!("\n同期が完了しました！");
     Ok(())
 }
