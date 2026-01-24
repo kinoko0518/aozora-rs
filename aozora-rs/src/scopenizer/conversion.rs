@@ -25,8 +25,14 @@ pub fn backref_to_scope<'s>(
         AozoraTokenKind::Ruby(ruby) => Some(Ok(Scope {
             deco: Deco::Ruby(ruby),
             span: {
-                // 漢字であり続ける文字数を取得
-                let length = target.0.chars().rev().take_while(|c| is_kanji(*c)).count();
+                // 漢字であり続けるバイト数を取得
+                let length: usize = target
+                    .0
+                    .chars()
+                    .rev()
+                    .take_while(|c| is_kanji(*c))
+                    .map(|c| c.len_utf8())
+                    .sum();
                 (target.1.end - length)..(target.1.end)
             },
         })),

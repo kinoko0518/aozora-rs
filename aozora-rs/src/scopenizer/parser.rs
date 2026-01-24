@@ -52,7 +52,7 @@ pub fn scopenize<'s>(
                         inline_stack.push((b, token.span));
                     }
                     Sandwiched::End(e) => {
-                        if stack.is_empty() {
+                        if inline_stack.is_empty() {
                             return Err(IsolatedEndNote {
                                 source_code: original.to_string(),
                                 range: token.span,

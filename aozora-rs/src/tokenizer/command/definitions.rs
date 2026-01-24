@@ -15,6 +15,7 @@ pub fn boten(input: &mut Input) -> Result<BotenKind, ContextError> {
             "二重丸".value(BotenKind::DoubleCircle),
             "蛇の目".value(BotenKind::Hebinome),
             "ばつ".value(BotenKind::Crossing),
+            "".value(BotenKind::Sesame),
         )),
         alt(("傍点", "圏点")).void(),
     )
