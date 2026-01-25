@@ -26,7 +26,14 @@ fn special<'s>(input: &mut Input<'s>) -> Result<AozoraTokenKind<'s>, ContextErro
     alt((
         '｜'.value(AozoraTokenKind::RubyDelimiter),
         '\n'.value(AozoraTokenKind::Br),
-        delimited("［＃", command.map(|c| AozoraTokenKind::Command(c)), "］"),
+        delimited(
+            "［＃",
+            alt((
+                command.map(|c| AozoraTokenKind::Command(c)),
+                take_until(1.., "］").map(|s| AozoraTokenKind::Command(Note::Unknown(s))),
+            )),
+            "］",
+        ),
         ruby.map(|r| AozoraTokenKind::Ruby(r)),
         odoriji.map(|o| AozoraTokenKind::Odoriji(o)),
     ))
@@ -42,7 +49,7 @@ fn take_until_special<'s>(input: &mut Input<'s>) -> Result<&'s str, ContextError
 }
 
 pub fn tokenize<'s>(input: &mut Input<'s>) -> Result<Vec<AozoraToken<'s>>, ContextError> {
-    let result: Vec<AozoraToken> = repeat(
+    let mut result: Vec<AozoraToken> = repeat(
         0..,
         alt((
             special,
@@ -54,5 +61,11 @@ pub fn tokenize<'s>(input: &mut Input<'s>) -> Result<Vec<AozoraToken<'s>>, Conte
         .map(|(k, s)| AozoraToken { kind: k, span: s }),
     )
     .parse_next(input)?;
+
+    result.retain(|token| match &token.kind {
+        AozoraTokenKind::Text(t) => !t.is_empty(),
+        _ => true,
+    });
+
     Ok(result)
 }

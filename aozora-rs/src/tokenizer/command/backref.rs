@@ -19,10 +19,24 @@ pub struct BackRefSpec<'s>(pub &'s str);
 
 #[derive(Debug, Clone, Copy)]
 pub enum BackRefKind {
+    /// 太字
     Bold,
+    /// 斜体
     Italic,
+    /// 傍点
     Boten(BotenKind),
+    /// 傍線
     Bosen(BosenKind),
+    /// 大見出し
+    AHead,
+    /// 中見出し
+    BHead,
+    /// 小見出し
+    CHead,
+    /// ママ
+    Mama,
+    /// 縦中横
+    HinV,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -36,6 +50,11 @@ pub fn backref<'s>(input: &mut Input<'s>) -> Result<BackRef<'s>, ContextError> {
     alt((
         "は太字".value(BackRefKind::Bold),
         "は斜体".value(BackRefKind::Italic),
+        "は大見出し".value(BackRefKind::AHead),
+        "は中見出し".value(BackRefKind::BHead),
+        "は小見出し".value(BackRefKind::CHead),
+        "はママ".value(BackRefKind::Mama),
+        "は縦中横".value(BackRefKind::HinV),
         (
             "に",
             alt((

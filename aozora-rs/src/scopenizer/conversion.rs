@@ -5,13 +5,14 @@ use crate::{
     tokenizer::prelude::*,
 };
 
-impl Single {
-    pub fn into_flat_token<'s>(self) -> FlatToken<'s> {
+impl<'s> Single<'s> {
+    pub fn into_flat_token(self) -> FlatToken<'s> {
         match self {
             Self::ColumnBreak => FlatToken::Break(Break::ColumnBreak),
             Self::PageBreak => FlatToken::Break(Break::PageBreak),
             Self::RectoBreak => FlatToken::Break(Break::RectoBreak),
             Self::SpreadBreak => FlatToken::Break(Break::SpreadBreak),
+            Self::Figure(i) => FlatToken::Figure(i),
         }
     }
 }
@@ -43,6 +44,11 @@ pub fn backref_to_scope<'s>(
                         BackRefKind::Italic => Deco::Italic,
                         BackRefKind::Bosen(b) => Deco::Bosen(b),
                         BackRefKind::Boten(b) => Deco::Boten(b),
+                        BackRefKind::AHead => Deco::AHead,
+                        BackRefKind::BHead => Deco::BHead,
+                        BackRefKind::CHead => Deco::CHead,
+                        BackRefKind::HinV => Deco::HinV,
+                        BackRefKind::Mama => Deco::Mama,
                     },
                     span: if target.0.ends_with(b.range.0) {
                         (target.1.end - b.range.0.len())..target.1.end

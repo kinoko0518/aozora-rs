@@ -37,12 +37,13 @@ pub mod multiline;
 pub mod sandwiched;
 pub mod single;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum Note<'s> {
     BackRef(BackRef<'s>),
     Sandwiched(Sandwiched),
     Multiline(MultiLine),
-    Single(Single),
+    Single(Single<'s>),
+    Unknown(&'s str),
 }
 
 pub trait SandwichedBegin<E> {

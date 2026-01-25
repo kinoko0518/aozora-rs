@@ -48,6 +48,7 @@ pub enum FlatToken<'s> {
     Text(Cow<'s, str>),
     Break(Break),
     Odoriji(Odoriji),
+    Figure(Figure<'s>),
 }
 
 impl std::fmt::Display for FlatToken<'_> {
@@ -59,6 +60,7 @@ impl std::fmt::Display for FlatToken<'_> {
                 Self::Text(t) => t.to_string(),
                 Self::Break(b) => b.to_string(),
                 Self::Odoriji(o) => o.to_string(),
+                Self::Figure(f) => f.to_string(),
             },
         )
     }

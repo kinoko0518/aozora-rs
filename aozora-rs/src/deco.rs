@@ -101,6 +101,11 @@ pub enum Deco<'s> {
     Hanging((usize, usize)),
     Grounded,
     LowFlying(usize),
+    AHead,
+    BHead,
+    CHead,
+    HinV,
+    Mama,
 }
 
 impl std::fmt::Display for Deco<'_> {
@@ -118,6 +123,34 @@ impl std::fmt::Display for Deco<'_> {
                 Self::Hanging(h) => format!("{}字下げ、折り返して{}字下げ", h.0, h.1),
                 Self::Grounded => "地付き".to_string(),
                 Self::LowFlying(l) => format!("{}字寄せ", l),
+                Self::AHead => "大見出し".to_string(),
+                Self::BHead => "中見出し".to_string(),
+                Self::CHead => "小見出し".to_string(),
+                Self::HinV => "縦中横".to_string(),
+                Self::Mama => "ママ".to_string(),
+            }
+        )
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Figure<'s> {
+    pub path: &'s str,
+    pub caption: &'s str,
+    pub size: Option<(usize, usize)>,
+}
+
+impl std::fmt::Display for Figure<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}（{}{}）入る",
+            self.caption,
+            self.path,
+            if let Some((h, v)) = self.size {
+                format!("縦{}×横{}", h, v)
+            } else {
+                "".to_string()
             }
         )
     }
