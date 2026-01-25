@@ -49,6 +49,8 @@ pub fn backref_to_scope<'s>(
                         BackRefKind::CHead => Deco::CHead,
                         BackRefKind::HinV => Deco::HinV,
                         BackRefKind::Mama => Deco::Mama,
+                        BackRefKind::Big(size) => Deco::Big(size),
+                        BackRefKind::Small(size) => Deco::Small(size),
                     },
                     span: if target.0.ends_with(b.range.0) {
                         (target.1.end - b.range.0.len())..target.1.end

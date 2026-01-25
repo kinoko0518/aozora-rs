@@ -106,6 +106,9 @@ pub enum Deco<'s> {
     CHead,
     HinV,
     Mama,
+    Small(usize),
+    Big(usize),
+    VHCentre,
 }
 
 impl std::fmt::Display for Deco<'_> {
@@ -128,6 +131,9 @@ impl std::fmt::Display for Deco<'_> {
                 Self::CHead => "小見出し".to_string(),
                 Self::HinV => "縦中横".to_string(),
                 Self::Mama => "ママ".to_string(),
+                Self::Small(s) => format!("{}段階小さな文字", s),
+                Self::Big(s) => format!("{}段階大きな文字", s),
+                Self::VHCentre => "ページの左右中央".to_string(),
             }
         )
     }

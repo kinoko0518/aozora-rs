@@ -10,7 +10,6 @@
 //! ［＃注記閉じ］
 //! ```
 
-use enum_dispatch::enum_dispatch;
 use winnow::{
     Parser,
     combinator::{alt, delimited, opt},

@@ -8,13 +8,13 @@ use crate::prelude::*;
 use crate::tokenizer::command::{SandwichedBegin, definitions::*};
 
 #[derive(Debug, Clone, Copy)]
-struct Bold;
+pub struct Bold;
 #[derive(Debug, Clone, Copy)]
-struct Italic;
+pub struct Italic;
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
-struct Bosen(BosenKind);
+pub struct Bosen(BosenKind);
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
-struct Boten(BotenKind);
+pub struct Boten(BotenKind);
 
 impl_sandwiched!(SandwichedEnds, Bold, BoldEnd);
 impl_sandwiched!(SandwichedEnds, Italic, ItalicEnd);

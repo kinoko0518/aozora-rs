@@ -13,6 +13,8 @@ pub fn scopenize<'s>(
     let mut inline_stack = Vec::new();
     // Breakをまたぐ注記用のスタック
     let mut stack = Vec::new();
+    // 行全体に影響する注記用
+    let mut wholeline: Vec<(WholeLine, Span)> = Vec::new();
     // 最終出力用のベクタ
     let mut scopes = Vec::new();
     let mut flatten = Vec::new();
@@ -35,6 +37,7 @@ pub fn scopenize<'s>(
                 flatten.push(FlatToken::Text(t.clone()));
             }
             AozoraTokenKind::RubyDelimiter => {
+                /// ルビ区切りが出たら次のトークンがテキスト、次の次のトークンが《ルビ》であることを期待します。
                 if let (Some(t), Some(r)) = (peekable.next(), peekable.next())
                     && let (AozoraTokenKind::Text(text), AozoraTokenKind::Ruby(ruby)) =
                         (t.kind, r.kind)
@@ -89,15 +92,16 @@ pub fn scopenize<'s>(
                             .into());
                         }
                         while let Some((kind, span)) = stack.pop() {
+                            let range = span.end..token.span.start;
                             if kind.do_match(&e) {
                                 scopes.push(Scope {
                                     deco: kind.into_deco(),
-                                    span,
+                                    span: range,
                                 });
                             } else {
                                 return Err(CrossingNote {
                                     source_code: original.to_string(),
-                                    range: span.start..token.span.end,
+                                    range: range,
                                 }
                                 .into());
                             }
@@ -116,7 +120,10 @@ pub fn scopenize<'s>(
                     }
                     .into());
                 }
-                Note::Unknown(_) => (), // 不明な注記は一旦無視
+                Note::WholeLine(w) => {
+                    wholeline.push((w, token.span.clone()));
+                }
+                Note::Unknown(_) => (), // 不明な注記は一旦無視します。
             },
             // ルビも前方参照型なのでTextのアームで処理されていることを期待します。
             // このアームに到達した時点で不正です。
@@ -129,12 +136,20 @@ pub fn scopenize<'s>(
             }
             AozoraTokenKind::Br => {
                 flatten.push(FlatToken::Break(Break::BreakLine));
+                // インライン注記が閉じられていなければエラー
                 if inline_stack.len() != 0 {
                     return Err(UnclosedInlineNote {
                         source_code: original.to_string(),
                         unclosed_area: inline_stack.last().unwrap().1.start..token.span.end,
                     }
                     .into());
+                }
+                // 行全体注記の範囲を確定
+                while let Some(note) = wholeline.pop() {
+                    scopes.push(Scope {
+                        deco: note.0.into_deco(),
+                        span: note.1.end..token.span.start,
+                    });
                 }
             }
             AozoraTokenKind::Odoriji(o) => {

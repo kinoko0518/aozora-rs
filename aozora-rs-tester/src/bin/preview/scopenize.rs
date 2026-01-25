@@ -1,8 +1,10 @@
 use std::io;
 use std::path::PathBuf;
 
+use ansi_to_tui::IntoText;
 use aozora_rs::prelude::{Input, scopenize, tokenize};
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
+use miette::GraphicalReportHandler;
 use ratatui::{
     Frame, Terminal,
     backend::CrosstermBackend,
@@ -79,7 +81,11 @@ impl ScopenizeApp {
                         self.scopes.sort_by_key(|s| s.span.start);
                     }
                     Err(e) => {
-                        self.error_message = Some(format!("スコープ化エラー: {}", e));
+                        let mut buf = String::new();
+                        GraphicalReportHandler::new()
+                            .render_report(&mut buf, e.as_ref())
+                            .unwrap();
+                        self.error_message = Some(buf);
                     }
                 }
             }
@@ -203,9 +209,9 @@ fn ui(f: &mut Frame, app: &ScopenizeApp, context: &AppContext) {
 
     // Text with scope visualization
     if let Some(ref err) = app.error_message {
-        let error = Paragraph::new(err.as_str())
-            .style(Style::default().fg(Theme::ERROR_FG))
-            .block(Block::default().borders(Borders::ALL).title("エラー"));
+        let text = err.into_text().unwrap();
+        let error =
+            Paragraph::new(text).block(Block::default().borders(Borders::ALL).title("エラー"));
         f.render_widget(error, chunks[1]);
     } else {
         render_text_with_scopes(f, app, chunks[1]);

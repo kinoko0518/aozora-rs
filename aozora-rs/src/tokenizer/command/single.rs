@@ -38,15 +38,18 @@ pub fn single<'s>(input: &mut Input<'s>) -> Result<Single<'s>, ContextError> {
         take_until(1.., "、"),
         opt(("、", figure_size).map(|(_, size)| size)),
     );
-    let figure = (take_until(0.., "（"), delimited("（", path_and_size, "）")).map(
-        |(caption, (path, size))| Figure {
+    let figure = (
+        take_until(0.., "（"),
+        delimited("（", path_and_size, "）"),
+        "入る",
+    )
+        .map(|(caption, (path, size), _)| Figure {
             path: path,
             caption: caption,
             size: size,
-        },
-    );
+        });
     alt((
-        "改ページ".value(Single::PageBreak),
+        alt(("改ページ", "改頁")).value(Single::PageBreak),
         "改丁".value(Single::RectoBreak),
         "改段".value(Single::ColumnBreak),
         "改見開き".value(Single::SpreadBreak),

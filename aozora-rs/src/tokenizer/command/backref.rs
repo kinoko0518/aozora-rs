@@ -10,6 +10,7 @@ use winnow::{
 };
 
 use crate::{
+    nihongo::japanese_num,
     prelude::*,
     tokenizer::command::definitions::{bosen, boten},
 };
@@ -37,6 +38,10 @@ pub enum BackRefKind {
     Mama,
     /// 縦中横
     HinV,
+    /// N段階小さな文字
+    Small(usize),
+    /// N段階大きな文字
+    Big(usize),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -53,7 +58,7 @@ pub fn backref<'s>(input: &mut Input<'s>) -> Result<BackRef<'s>, ContextError> {
         "は大見出し".value(BackRefKind::AHead),
         "は中見出し".value(BackRefKind::BHead),
         "は小見出し".value(BackRefKind::CHead),
-        "はママ".value(BackRefKind::Mama),
+        alt(("はママ", "に「ママ」の注記")).value(BackRefKind::Mama),
         "は縦中横".value(BackRefKind::HinV),
         (
             "に",
@@ -63,6 +68,8 @@ pub fn backref<'s>(input: &mut Input<'s>) -> Result<BackRef<'s>, ContextError> {
             )),
         )
             .map(|(_, b)| b),
+        ("は", japanese_num, "段階小さな文字").map(|(_, size, _)| BackRefKind::Small(size)),
+        ("は", japanese_num, "段階大きな文字").map(|(_, size, _)| BackRefKind::Big(size)),
     ))
     .map(|b| BackRef {
         kind: b,

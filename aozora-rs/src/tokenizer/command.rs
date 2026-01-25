@@ -1,13 +1,13 @@
 use winnow::{Parser, combinator::alt, error::ContextError};
 
 use crate::prelude::*;
+use crate::tokenizer::command::backref::BackRef;
 use crate::tokenizer::command::backref::backref;
 use crate::tokenizer::command::multiline::multiline;
 use crate::tokenizer::command::sandwiched::sandwiched;
 use crate::tokenizer::command::single::single;
+use crate::tokenizer::command::wholeline::{WholeLine, wholeline};
 use crate::tokenizer::prelude::*;
-
-pub use crate::tokenizer::command::backref::BackRef;
 
 macro_rules! impl_sandwiched {
     ($generics:ident, $target_struct:ident, $target_variant:ident) => {
@@ -36,6 +36,7 @@ pub mod multiline;
 #[macro_use]
 pub mod sandwiched;
 pub mod single;
+pub mod wholeline;
 
 #[derive(Debug, Clone)]
 pub enum Note<'s> {
@@ -43,6 +44,7 @@ pub enum Note<'s> {
     Sandwiched(Sandwiched),
     Multiline(MultiLine),
     Single(Single<'s>),
+    WholeLine(WholeLine),
     Unknown(&'s str),
 }
 
@@ -58,6 +60,7 @@ pub fn command<'s>(input: &mut Input<'s>) -> RNote<'s> {
         single.map(|m| Note::Single(m)),
         backref.map(|m| Note::BackRef(m)),
         sandwiched.map(|m| Note::Sandwiched(m)),
+        wholeline.map(|w| Note::WholeLine(w)),
     ))
     .parse_next(input)
 }
