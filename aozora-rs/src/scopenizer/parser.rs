@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use super::definition::*;
 use super::error::*;
 
@@ -8,7 +10,7 @@ use crate::tokenizer::prelude::*;
 pub fn scopenize<'s>(
     tokens: Vec<AozoraToken<'s>>,
     original: &str,
-) -> Result<(Vec<FlatToken<'s>>, Vec<Scope<'s>>), miette::Error> {
+) -> Result<(Vec<(FlatToken<'s>, Span)>, HashMap<usize, Scope<'s>>), miette::Error> {
     // 改行などのBreakをまたがない注記用のスタック
     let mut inline_stack = Vec::new();
     // Breakをまたぐ注記用のスタック
@@ -16,8 +18,8 @@ pub fn scopenize<'s>(
     // 行全体に影響する注記用
     let mut wholeline: Vec<(WholeLine, Span)> = Vec::new();
     // 最終出力用のベクタ
-    let mut scopes = Vec::new();
-    let mut flatten = Vec::new();
+    let mut scopes = HashMap::new();
+    let mut flatten: Vec<(FlatToken, Span)> = Vec::new();
 
     let mut peekable = tokens.into_iter().peekable();
     while let Some(token) = peekable.next() {
@@ -25,16 +27,20 @@ pub fn scopenize<'s>(
             AozoraTokenKind::Text(t) => {
                 while let Some(n) = peekable.peek() {
                     if let Some(s) = backref_to_scope(&n.kind, (&t, token.span.clone())) {
-                        scopes.push(s.map_err(|_| BackRefFailed {
-                            source_code: original.to_string(),
-                            failed_note: token.span.clone(),
-                        })?);
+                        let scope = token.span.clone();
+                        scopes.insert(
+                            scope.start,
+                            s.map_err(|_| BackRefFailed {
+                                source_code: original.to_string(),
+                                failed_note: scope,
+                            })?,
+                        );
                         peekable.next();
                     } else {
                         break;
                     }
                 }
-                flatten.push(FlatToken::Text(t.clone()));
+                flatten.push((FlatToken::Text(t.clone()), token.span));
             }
             AozoraTokenKind::RubyDelimiter => {
                 // ルビ区切りが出たら次のトークンがテキスト、次の次のトークンが《ルビ》であることを期待します。
@@ -42,11 +48,15 @@ pub fn scopenize<'s>(
                     && let (AozoraTokenKind::Text(text), AozoraTokenKind::Ruby(ruby)) =
                         (t.kind, r.kind)
                 {
-                    flatten.push(FlatToken::Text(text));
-                    scopes.push(Scope {
-                        deco: Deco::Ruby(ruby),
-                        span: t.span,
-                    });
+                    flatten.push((FlatToken::Text(text), token.span));
+                    let scope = t.span;
+                    scopes.insert(
+                        scope.start,
+                        Scope {
+                            deco: Deco::Ruby(ruby),
+                            span: scope,
+                        },
+                    );
                 } else {
                     return Err(InvalidRubyDelimiterUsage {
                         source_code: original.to_string(),
@@ -71,10 +81,13 @@ pub fn scopenize<'s>(
                         while let Some(s) = inline_stack.pop() {
                             let range = s.1.start..token.span.end;
                             if s.0.do_match(&e) {
-                                scopes.push(Scope {
-                                    deco: s.0.into_deco(),
-                                    span: range,
-                                })
+                                scopes.insert(
+                                    range.start,
+                                    Scope {
+                                        deco: s.0.into_deco(),
+                                        span: range,
+                                    },
+                                );
                             } else {
                                 return Err(CrossingNote {
                                     source_code: original.to_string(),
@@ -100,10 +113,13 @@ pub fn scopenize<'s>(
                         while let Some((kind, span)) = stack.pop() {
                             let range = span.end..token.span.start;
                             if kind.do_match(&e) {
-                                scopes.push(Scope {
-                                    deco: kind.into_deco(),
-                                    span: range,
-                                });
+                                scopes.insert(
+                                    range.start,
+                                    Scope {
+                                        deco: kind.into_deco(),
+                                        span: range,
+                                    },
+                                );
                             } else {
                                 return Err(CrossingNote {
                                     source_code: original.to_string(),
@@ -115,7 +131,7 @@ pub fn scopenize<'s>(
                     }
                 },
                 Note::Single(s) => {
-                    flatten.push(s.into_flat_token());
+                    flatten.push((s.into_flat_token(), token.span));
                 }
                 Note::BackRef(_) => {
                     // 前方参照型の注記はTextのアームで処理されるため、
@@ -141,7 +157,7 @@ pub fn scopenize<'s>(
                 .into());
             }
             AozoraTokenKind::Br => {
-                flatten.push(FlatToken::Break(Break::BreakLine));
+                flatten.push((FlatToken::Break(Break::BreakLine), token.span.clone()));
                 // インライン注記が閉じられていなければエラー
                 if inline_stack.len() != 0 {
                     return Err(UnclosedInlineNote {
@@ -152,14 +168,18 @@ pub fn scopenize<'s>(
                 }
                 // 行全体注記の範囲を確定
                 while let Some(note) = wholeline.pop() {
-                    scopes.push(Scope {
-                        deco: note.0.into_deco(),
-                        span: note.1.end..token.span.start,
-                    });
+                    let scope = note.1.end..token.span.start;
+                    scopes.insert(
+                        scope.start,
+                        Scope {
+                            deco: note.0.into_deco(),
+                            span: scope,
+                        },
+                    );
                 }
             }
             AozoraTokenKind::Odoriji(o) => {
-                flatten.push(FlatToken::Odoriji(o));
+                flatten.push((FlatToken::Odoriji(o), token.span));
             }
         }
     }

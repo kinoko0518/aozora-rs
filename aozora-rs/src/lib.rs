@@ -1,7 +1,8 @@
 mod deco;
 mod nihongo;
-pub mod scopenizer;
-pub mod tokenizer;
+mod retokenizer;
+mod scopenizer;
+mod tokenizer;
 
 pub mod prelude {
     use winnow::LocatingSlice;
@@ -11,9 +12,9 @@ pub mod prelude {
 
     pub use crate::deco::*;
 
-    pub use crate::scopenizer::definition::{FlatToken, Scope};
+    pub use crate::scopenizer::definition::{Break, FlatToken, Scope};
     pub use crate::scopenizer::prelude::scopenize;
 
     pub use crate::tokenizer::definition::{AozoraToken, AozoraTokenKind};
-    pub use crate::tokenizer::prelude::tokenize;
+    pub use crate::tokenizer::prelude::{Note, tokenize};
 }

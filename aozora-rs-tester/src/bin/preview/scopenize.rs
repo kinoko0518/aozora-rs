@@ -72,7 +72,7 @@ impl ScopenizeApp {
                     Ok((_flat, scopes)) => {
                         self.scopes = scopes
                             .into_iter()
-                            .map(|s| ScopeDisplay {
+                            .map(|(_, s)| ScopeDisplay {
                                 deco_name: s.deco.to_string(),
                                 span: s.span,
                             })
