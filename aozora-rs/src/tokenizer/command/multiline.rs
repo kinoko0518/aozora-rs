@@ -25,18 +25,18 @@ use crate::{
 impl_sandwiched!(MultiLineEnds, BlockIndent, BlockIndentEnd);
 
 #[derive(Debug, Clone, Copy)]
-struct HangingIndent {
+pub struct HangingIndent {
     fst_lvl: usize,
     snd_lvl: usize,
 }
 impl_sandwiched!(MultiLineEnds, HangingIndent, BlockIndentEnd);
 
 #[derive(Debug, Clone, Copy)]
-struct Grounded;
+pub struct Grounded;
 impl_sandwiched!(MultiLineEnds, Grounded, GroundedEnd);
 
 #[derive(Debug, Clone, Copy)]
-struct LowFlying {
+pub struct LowFlying {
     level: usize,
 }
 impl_sandwiched!(MultiLineEnds, LowFlying, LowFlyingEnd);

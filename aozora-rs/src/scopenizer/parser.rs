@@ -37,7 +37,7 @@ pub fn scopenize<'s>(
                 flatten.push(FlatToken::Text(t.clone()));
             }
             AozoraTokenKind::RubyDelimiter => {
-                /// ルビ区切りが出たら次のトークンがテキスト、次の次のトークンが《ルビ》であることを期待します。
+                // ルビ区切りが出たら次のトークンがテキスト、次の次のトークンが《ルビ》であることを期待します。
                 if let (Some(t), Some(r)) = (peekable.next(), peekable.next())
                     && let (AozoraTokenKind::Text(text), AozoraTokenKind::Ruby(ruby)) =
                         (t.kind, r.kind)
@@ -47,6 +47,12 @@ pub fn scopenize<'s>(
                         deco: Deco::Ruby(ruby),
                         span: t.span,
                     });
+                } else {
+                    return Err(InvalidRubyDelimiterUsage {
+                        source_code: original.to_string(),
+                        failed_note: token.span,
+                    }
+                    .into());
                 }
             }
             AozoraTokenKind::Command(c) => match c {

@@ -4,14 +4,6 @@ use winnow::{Parser, combinator::alt, error::ContextError, token::take_while};
 
 use crate::prelude::*;
 
-pub fn is_hiragana(c: char) -> bool {
-    matches!(c, 'ぁ'..='ゖ')
-}
-
-pub fn is_katakana(c: char) -> bool {
-    matches!(c, 'ァ'..='ー')
-}
-
 pub fn is_kanji(c: char) -> bool {
     match c {
         '々' | '〆' | '〇' | 'ヶ' | '仝' => true,
