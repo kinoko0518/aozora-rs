@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use aozora_rs_gaiji::gaiji_to_char;
+use aozora_rs_tester::AnalysedData;
 use aozora_rs_tester::update_map;
 use futures::stream::{self, StreamExt};
 use winnow::{
@@ -9,31 +10,6 @@ use winnow::{
     error::ContextError,
     token::{any, take_until},
 };
-
-struct AnalysedData {
-    successed: usize,
-    failed: Vec<String>,
-}
-
-impl AnalysedData {
-    fn new() -> Self {
-        Self {
-            successed: 0,
-            failed: Vec::new(),
-        }
-    }
-    fn fail(&mut self, value: String) {
-        self.failed.push(value);
-    }
-    fn success(&mut self) {
-        self.successed += 1;
-    }
-    fn join(mut self, rhs: Self) -> Self {
-        self.successed += rhs.successed;
-        self.failed.extend(rhs.failed);
-        self
-    }
-}
 
 async fn analyse_file(path: &Path) -> Option<AnalysedData> {
     let read_bin = std::fs::read(path).ok()?;

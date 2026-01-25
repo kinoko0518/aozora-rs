@@ -15,6 +15,7 @@ winnow = "0.7.14"
 ratatui = "0.29"
 crossterm = "0.28"
 unicode-width = "0.1"
+rayon = "1.11.0"
 
 [[bin]]
 name = "preview"

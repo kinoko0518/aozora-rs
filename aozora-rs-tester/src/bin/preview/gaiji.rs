@@ -16,17 +16,17 @@ use ratatui::{
 
 use super::Screen;
 
-type GaijiMap = HashMap<String, char>;
+type GaijiMap = HashMap<String, String>;
 
 struct GaijiApp {
-    items: Vec<(String, char)>,
+    items: Vec<(String, String)>,
     filtered_indices: Vec<usize>,
     offset: usize,
     search_query: String,
 }
 
 impl GaijiApp {
-    fn new(items: Vec<(String, char)>) -> Self {
+    fn new(items: Vec<(String, String)>) -> Self {
         let filtered_indices: Vec<usize> = (0..items.len()).collect();
         Self {
             items,
@@ -109,7 +109,7 @@ pub fn run(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> io::Result<
     };
 
     // Convert to sorted Vec
-    let mut items: Vec<(String, char)> = map.into_iter().collect();
+    let mut items: Vec<(String, String)> = map.into_iter().collect();
     items.sort_by(|a, b| a.0.cmp(&b.0));
 
     let mut app = GaijiApp::new(items);
