@@ -71,8 +71,10 @@ impl ScopenizeApp {
                 match scopenize(tokens, &self.original_text) {
                     Ok((_flat, scopes)) => {
                         self.scopes = scopes
-                            .into_iter()
-                            .map(|(_, s)| ScopeDisplay {
+                            .scopes
+                            .into_values()
+                            .flatten()
+                            .map(|s| ScopeDisplay {
                                 deco_name: s.deco.to_string(),
                                 span: s.span,
                             })
