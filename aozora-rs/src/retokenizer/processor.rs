@@ -1,66 +1,92 @@
-use std::collections::HashMap;
+use std::borrow::Cow;
+use std::ops::Range;
 
-use miette::Diagnostic;
-use thiserror::Error;
-
-use crate::prelude::*;
-
-enum SandwichedDeco {
-    Bold,
-    Italic,
-    Bosen(BosenKind),
-    Boten(BotenKind),
-    Indent(usize),
-    Hanging((usize, usize)),
-    Grounded,
-    LowFlying(usize),
-    Mama,
-    Small(usize),
-    Big(usize),
-}
-
-pub struct RubiedText<'s> {
-    text: &'s str,
-    ruby: &'s str,
-}
-
-pub enum Retokenized<'s> {
-    RubiedText(RubiedText<'s>),
-    PlainText(&'s str),
-    AHead(&'s str),
-    BHead(&'s str),
-    CHead(&'s str),
-    HinV(&'s str),
-    Odoriji(Odoriji),
-    Break(Break),
-    Figure(Figure<'s>),
-}
-
-enum Element<'s> {
-    DecoBegin(SandwichedDeco),
-    DecoEnd(SandwichedDeco),
-    Flat(Retokenized<'s>),
-}
-
-#[derive(Error, Debug, Diagnostic)]
-#[error("入力が空です")]
-#[diagnostic(
-    code(aozora_rs::input_is_empty_on_retokenize),
-    url(docsrs),
-    help("このエラーは再トークン化層で発生しています。")
-)]
-pub struct EmptyInput;
+use crate::{
+    prelude::*,
+    retokenizer::prelude::{DecoQueue, Retokenized},
+    scopenizer::definition::Scopenized,
+};
 
 pub fn retokenize<'s>(
-    mut flat: Vec<(FlatToken, Span)>,
-    mut deco: HashMap<usize, Scope>,
-) -> Result<Vec<Element<'s>>, miette::Error> {
-    let last = flat
-        .last()
-        .map(|(_, span)| span.end)
-        .ok_or(EmptyInput.into())?;
+    mut flat: Vec<(FlatToken<'s>, Span)>,
+    mut deco: Scopenized<'s>,
+) -> Result<Vec<Retokenized<'s>>, miette::Error> {
+    flat.reverse();
+    let mut retokenized: Vec<Retokenized> = Vec::new();
+    let mut queue: DecoQueue = DecoQueue::new();
+
+    // Cow文字列をスライスするヘルパー
+    let slice_text = |t: &Cow<'s, str>, range: Range<usize>| -> Retokenized<'s> {
+        Retokenized::Text(match t {
+            Cow::Borrowed(b) => Cow::Borrowed(&b[range]),
+            Cow::Owned(o) => Cow::Owned(o[range].to_string()),
+        })
+    };
+
     while let Some((token, span)) = flat.pop() {
-        match token {}
+        match token {
+            FlatToken::Text(text) => {
+                let mut last_flushed_pos = 0;
+
+                for i in span.clone() {
+                    let relative_pos = i - span.start;
+                    let mut flushed_at_current_pos = false;
+
+                    // Scopeの終了を処理
+                    while let Some(d) = queue.pop(i) {
+                        // ここまでのテキストをフラッシュ
+                        retokenized.push(slice_text(&text, last_flushed_pos..relative_pos));
+                        last_flushed_pos = relative_pos;
+                        flushed_at_current_pos = true;
+
+                        retokenized.push(Retokenized::DecoEnd(d));
+                    }
+
+                    // Scopeの開始を処理
+                    while let Some(d) = deco.pop(i) {
+                        // まだフラッシュしていなければ、ここまでのテキストをフラッシュ
+                        if !flushed_at_current_pos {
+                            retokenized.push(slice_text(&text, last_flushed_pos..relative_pos));
+                            last_flushed_pos = relative_pos;
+                            flushed_at_current_pos = true;
+                        }
+
+                        retokenized.push(Retokenized::DecoBegin(d.deco.clone()));
+                        queue.push(d.span.end, d.deco);
+                    }
+                }
+
+                // 残りのテキストをフラッシュ
+                let len = span.end - span.start;
+                if last_flushed_pos != len {
+                    retokenized.push(slice_text(&text, last_flushed_pos..len));
+                }
+                while let Some(d) = queue.pop(span.end) {
+                    // 終了タグを積む
+                    retokenized.push(Retokenized::DecoEnd(d));
+                }
+            }
+            otherwise => {
+                for i in span {
+                    // Scopeの終了
+                    while let Some(d) = queue.pop(i) {
+                        retokenized.push(Retokenized::DecoEnd(d));
+                    }
+                    // Scopeの開始
+                    while let Some(d) = deco.pop(i) {
+                        retokenized.push(Retokenized::DecoBegin(d.deco.clone()));
+                        queue.push(d.span.end, d.deco);
+                    }
+                }
+
+                retokenized.push(match otherwise {
+                    FlatToken::Text(_) => unreachable!("Handled in the other branch"),
+                    FlatToken::Break(b) => Retokenized::Break(b),
+                    FlatToken::Figure(f) => Retokenized::Figure(f),
+                    FlatToken::Odoriji(o) => Retokenized::Odoriji(o),
+                });
+            }
+        }
     }
-    Ok(())
+    Ok(retokenized)
 }

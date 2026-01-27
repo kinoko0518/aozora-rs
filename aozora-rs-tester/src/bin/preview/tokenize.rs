@@ -1,7 +1,7 @@
 use std::io;
 use std::path::PathBuf;
 
-use aozora_rs::prelude::{AozoraTokenKind, Input, tokenize};
+use aozora_rs::prelude::{AozoraTokenKind, tokenize};
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use ratatui::{
     Frame, Terminal,
@@ -11,7 +11,6 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
 };
-use winnow::{LocatingSlice, Parser};
 
 use super::Screen;
 use crate::app_context::AppContext;
@@ -51,9 +50,8 @@ impl TokenizeApp {
             Ok(text) => {
                 self.original_text = text;
                 // Tokenize
-                let mut input: Input = LocatingSlice::new(&self.original_text);
-                match tokenize.parse_next(&mut input) {
-                    Ok(toks) => {
+                match tokenize(&self.original_text) {
+                    Ok((_meta, toks)) => {
                         self.tokens = toks
                             .into_iter()
                             .map(|t| {

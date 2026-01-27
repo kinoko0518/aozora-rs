@@ -48,7 +48,7 @@ fn take_until_special<'s>(input: &mut Input<'s>) -> Result<&'s str, ContextError
         .parse_next(input)
 }
 
-pub fn tokenize<'s>(input: &mut Input<'s>) -> Result<Vec<AozoraToken<'s>>, ContextError> {
+pub fn tokenize_nometa<'s>(input: &mut Input<'s>) -> Result<Vec<AozoraToken<'s>>, ContextError> {
     let mut result: Vec<AozoraToken> = repeat(
         0..,
         alt((

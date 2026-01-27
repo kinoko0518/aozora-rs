@@ -1,7 +1,7 @@
 mod app_context;
 mod gaiji;
 mod home;
-mod retokenized;
+
 mod scopenize;
 mod sync;
 mod theme;
@@ -21,7 +21,7 @@ pub enum Screen {
     Gaiji,
     Tokenize,
     Scopenize,
-    Retokenize,
+
     Sync,
     Exit,
 }
@@ -46,7 +46,7 @@ fn main() -> io::Result<()> {
             Screen::Gaiji => gaiji::run(&mut terminal)?,
             Screen::Tokenize => tokenize::run(&mut terminal, &mut context)?,
             Screen::Scopenize => scopenize::run(&mut terminal, &mut context)?,
-            Screen::Retokenize => retokenized::run(&mut terminal, &mut context)?,
+
             Screen::Sync => sync::run(&mut terminal)?,
             Screen::Exit => break,
         };

@@ -2,7 +2,7 @@ use std::io;
 use std::path::PathBuf;
 
 use ansi_to_tui::IntoText;
-use aozora_rs::prelude::{Input, scopenize, tokenize};
+use aozora_rs::prelude::{scopenize, tokenize};
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use miette::GraphicalReportHandler;
 use ratatui::{
@@ -13,7 +13,6 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
 };
-use winnow::{LocatingSlice, Parser};
 
 use super::Screen;
 use crate::app_context::AppContext;
@@ -58,9 +57,8 @@ impl ScopenizeApp {
                 self.original_text = text;
 
                 // Tokenize
-                let mut input: Input = LocatingSlice::new(&self.original_text);
-                let tokens = match tokenize.parse_next(&mut input) {
-                    Ok(t) => t,
+                let tokens = match tokenize(&self.original_text) {
+                    Ok((_, t)) => t,
                     Err(e) => {
                         self.error_message = Some(format!("トークン化エラー: {}", e));
                         return;
@@ -69,9 +67,9 @@ impl ScopenizeApp {
 
                 // Scopenize
                 match scopenize(tokens, &self.original_text) {
-                    Ok((_flat, scopes)) => {
+                    Ok((scopes, _flat)) => {
                         self.scopes = scopes
-                            .scopes
+                            .0
                             .into_values()
                             .flatten()
                             .map(|s| ScopeDisplay {

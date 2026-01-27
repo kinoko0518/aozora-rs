@@ -8,5 +8,5 @@ pub mod prelude {
         single::Single, wholeline::WholeLine,
     };
     pub use super::definition::*;
-    pub use super::parser::tokenize;
+    pub use super::parser::tokenize_nometa;
 }

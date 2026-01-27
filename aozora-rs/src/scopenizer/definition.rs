@@ -1,5 +1,41 @@
 use crate::prelude::*;
-use std::borrow::Cow;
+use std::{
+    borrow::Cow,
+    collections::{HashMap, hash_map::Entry},
+};
+
+pub struct Scopenized<'s>(pub HashMap<usize, Vec<Scope<'s>>>);
+
+impl<'s> Scopenized<'s> {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
+
+    pub fn push_s(&mut self, scope: Scope<'s>) {
+        self.0
+            .entry(scope.span.start)
+            .or_insert_with(|| Vec::new())
+            .push(scope)
+    }
+
+    pub fn push(&mut self, index: Span, deco: Deco<'s>) {
+        self.push_s(Scope { deco, span: index });
+    }
+
+    pub fn pop(&mut self, index: usize) -> Option<Scope<'s>> {
+        match self.0.entry(index) {
+            Entry::Occupied(mut entry) => {
+                let vec = entry.get_mut();
+                let val = vec.pop();
+                if vec.is_empty() {
+                    entry.remove();
+                }
+                val
+            }
+            Entry::Vacant(_) => None,
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct Scope<'s> {

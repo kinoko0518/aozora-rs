@@ -1,0 +1,31 @@
+.sesame {
+    text-emphasis-style: open sesame;
+}
+
+.circle {
+    text-emphasis-style: open circle;
+}
+
+.circle-filled {
+    text-emphasis-style: filled circle;
+}
+
+.double-circle {
+    text-emphasis-style: open double-circle;
+}
+
+.hebinome {
+    text-emphasis-style: filled double-circle;
+}
+
+.triangle {
+    text-emphasis-style: open triangle;
+}
+
+.triangle-filled {
+    text-emphasis-style: filled triangle;
+}
+
+.crossing {
+    text-emphasis-style: "×";
+}

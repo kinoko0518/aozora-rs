@@ -6,7 +6,6 @@ use thiserror::Error;
 #[error("注記が閉じられていません")]
 #[diagnostic(
     code(aozora_rs::unclosed_inline_note),
-    url(docsrs),
     help("この注記は行末で閉じられる必要があります。行を超えて注記を適用しようとしていませんか？")
 )]
 pub struct UnclosedInlineNote {
@@ -20,7 +19,6 @@ pub struct UnclosedInlineNote {
 #[error("前方参照に失敗しました")]
 #[diagnostic(
     code(aozora_rs::backref_failed),
-    url(docsrs),
     help(
         "この注記・ルビの前に本文が存在すること、対象文字列が直前に存在していることを確認してください。\n特に、ルビは｜で範囲指定を行わない限り直前に漢字を期待します。"
     )

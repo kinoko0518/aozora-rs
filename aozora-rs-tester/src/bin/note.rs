@@ -1,4 +1,4 @@
-use aozora_rs::prelude::{AozoraTokenKind, Note, tokenize};
+use aozora_rs::prelude::{AozoraTokenKind, Note, tokenize_nometa};
 use aozora_rs_gaiji::whole_gaiji_to_char;
 use aozora_rs_tester::{AnalysedData, update_map};
 use rayon::prelude::*;
@@ -14,7 +14,7 @@ fn analyse_file(path: &Path) -> Option<AnalysedData> {
     let read_original = encoding_rs::SHIFT_JIS.decode(&bytes).0;
     let read = whole_gaiji_to_char(&read_original);
 
-    let result = tokenize(&mut winnow::LocatingSlice::new(&read))
+    let result = tokenize_nometa(&mut winnow::LocatingSlice::new(&read))
         .ok()?
         .iter()
         .fold(AnalysedData::new(), |mut acc, token| {

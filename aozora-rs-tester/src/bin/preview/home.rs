@@ -24,7 +24,6 @@ impl HomeApp {
                 "外字マップ プレビュー",
                 "Tokenize プレビュー",
                 "Scopenize プレビュー",
-                "Retokenize プレビュー",
                 "青空文庫 同期",
             ],
             selected: 0,
@@ -48,8 +47,7 @@ impl HomeApp {
             0 => Screen::Gaiji,
             1 => Screen::Tokenize,
             2 => Screen::Scopenize,
-            3 => Screen::Retokenize,
-            4 => Screen::Sync,
+            3 => Screen::Sync,
             _ => Screen::Home,
         }
     }
@@ -71,8 +69,7 @@ pub fn run(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> io::Result<
                     KeyCode::Char('1') => return Ok(Screen::Gaiji),
                     KeyCode::Char('2') => return Ok(Screen::Tokenize),
                     KeyCode::Char('3') => return Ok(Screen::Scopenize),
-                    KeyCode::Char('4') => return Ok(Screen::Retokenize),
-                    KeyCode::Char('5') => return Ok(Screen::Sync),
+                    KeyCode::Char('4') => return Ok(Screen::Sync),
                     _ => {}
                 }
             }

@@ -90,7 +90,7 @@ impl std::fmt::Display for BosenKind {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Deco<'s> {
     Bold,
     Italic,
