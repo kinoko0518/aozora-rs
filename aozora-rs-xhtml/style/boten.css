@@ -1,31 +1,39 @@
 .sesame {
-    text-emphasis-style: open sesame;
+    text-emphasis-style: filled sesame;
+    display: inline;
 }
 
 .circle {
     text-emphasis-style: open circle;
+    display: inline;
 }
 
 .circle-filled {
     text-emphasis-style: filled circle;
+    display: inline;
 }
 
 .double-circle {
     text-emphasis-style: open double-circle;
+    display: inline;
 }
 
 .hebinome {
     text-emphasis-style: filled double-circle;
+    display: inline;
 }
 
 .triangle {
     text-emphasis-style: open triangle;
+    display: inline;
 }
 
 .triangle-filled {
     text-emphasis-style: filled triangle;
+    display: inline;
 }
 
 .crossing {
     text-emphasis-style: "×";
+    display: inline;
 }

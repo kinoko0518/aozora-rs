@@ -1,0 +1,19 @@
+.bosen-solid {
+    text-decoration-style: solid;
+}
+
+.bosen-double {
+    text-decoration-style: double;
+}
+
+.bosen-chan {
+    text-decoration-style: dotted;
+}
+
+.bosen-dashed {
+    text-decoration-style: dashed;
+}
+
+.bosen-wavy {
+    text-decoration-style: wavy;
+}

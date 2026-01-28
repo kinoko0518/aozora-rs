@@ -3,9 +3,9 @@ use std::borrow::Cow;
 use aozora_rs_gaiji::whole_gaiji_to_char;
 use winnow::{
     Parser,
-    combinator::{alt, cut_err, delimited, eof, not, opt, peek, repeat, repeat_till},
+    combinator::{alt, delimited, eof, not, opt, peek, repeat, repeat_till},
     error::ContextError,
-    token::{any, none_of, take_until},
+    token::{any, take_until},
 };
 
 use crate::tokenizer::prelude::*;

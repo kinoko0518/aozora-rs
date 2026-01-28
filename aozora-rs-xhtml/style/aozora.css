@@ -1,3 +1,31 @@
+@charset "utf-8";
+@namespace "http://www.w3.org/1999/xhtml";
+
+body {
+    /** フォント指定 **/
+    font-family: "Shippori Mincho", serif;
+    font-weight: 400;
+    font-style: normal;
+
+    /** レイアウト指定 **/
+    padding-left: 5em;
+    padding-right: 5em;
+}
+
+span {
+    line-height: 2.5;
+}
+
+.title {
+    font-size: 2em;
+    text-align: center;
+}
+
+.author {
+    font-size: 1.3em;
+    text-align: center;
+}
+
 .grounded {
     text-align: right;
 }

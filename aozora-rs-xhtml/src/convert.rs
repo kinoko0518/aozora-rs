@@ -2,6 +2,7 @@ use std::borrow::Cow;
 
 use aozora_rs::prelude::*;
 
+#[allow(unused)]
 pub enum XHTMLRequest<'s> {
     None,
     Eof,
@@ -11,7 +12,10 @@ pub enum XHTMLRequest<'s> {
 
 pub fn into_xhtml<'s>(retokenized: Retokenized<'s>) -> (Cow<'s, str>, XHTMLRequest<'s>) {
     match retokenized {
-        Retokenized::Text(t) => (t, XHTMLRequest::None),
+        Retokenized::Text(t) => (
+            Cow::Owned(format!("<span>{}</span>", t)),
+            XHTMLRequest::None,
+        ),
         Retokenized::Odoriji(o) => (
             Cow::Owned(format!("{}〵", if o.has_dakuten { "〴" } else { "〳" })),
             XHTMLRequest::None,
@@ -80,16 +84,14 @@ pub fn into_xhtml<'s>(retokenized: Retokenized<'s>) -> (Cow<'s, str>, XHTMLReque
             Deco::Italic => (Cow::Borrowed("<div class=\"italic\">"), XHTMLRequest::None),
             Deco::Indent(i) => (
                 Cow::Owned(format!(
-                    "<div class=\"indent_{}\" style=\"padding-left: {}em;\">",
-                    i, i
+                    "<div class=\"indent\" style=\"padding-left: {}em;\">",
+                    i
                 )),
                 XHTMLRequest::None,
             ),
             Deco::Hanging((f, s)) => (
                 Cow::Owned(format!(
-                    "<div class=\"haning_{}_{}\" style=\"text-indent: {}em;{}\">",
-                    f,
-                    s,
+                    "<div class=\"hanging\" style=\"text-indent: {}em;{}\">",
                     s,
                     if f == 0 {
                         Cow::Borrowed("")
