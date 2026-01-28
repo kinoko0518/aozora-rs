@@ -5,10 +5,10 @@ use crate::convert::into_xhtml;
 mod convert;
 
 fn main() -> Result<(), miette::Error> {
-    let (encoded, _, _) = encoding_rs::SHIFT_JIS.decode(include_bytes!("../example/oto.txt"));
-    let mut exported = File::create("./output.html").unwrap();
+    let (encoded, _, _) = encoding_rs::SHIFT_JIS.decode(include_bytes!("../example/shayo.txt"));
     let cleansed = encoded.replace("\r\n", "\n");
-    let parsed = aozora_rs::parse(&cleansed)?.1;
+    let (meta, parsed) = aozora_rs::parse(&cleansed)?;
+    let mut exported = File::create(format!("./[{}] {}.html", meta.author, meta.title)).unwrap();
 
     writeln!(
         exported,

@@ -44,7 +44,7 @@ pub fn into_xhtml<'s>(retokenized: Retokenized<'s>) -> (Cow<'s, str>, XHTMLReque
             Deco::AHead => (Cow::Borrowed("<h1 class=\"a_head\">"), XHTMLRequest::None),
             Deco::BHead => (Cow::Borrowed("<h2 class=\"b_head\">"), XHTMLRequest::None),
             Deco::CHead => (Cow::Borrowed("<h3 class=\"c_head\">"), XHTMLRequest::None),
-            Deco::Big(b) => (
+            Deco::Bigger(b) => (
                 Cow::Owned(format!(
                     "<div style=\"font-size: {}em;\" class=\"{}_bigger\">",
                     1.0 + 0.25 * (b as f32),
@@ -112,7 +112,7 @@ pub fn into_xhtml<'s>(retokenized: Retokenized<'s>) -> (Cow<'s, str>, XHTMLReque
                 XHTMLRequest::None,
             ),
             Deco::Mama => (Cow::Borrowed("<ruby>"), XHTMLRequest::None),
-            Deco::Small(s) => (
+            Deco::Smaller(s) => (
                 Cow::Owned(format!(
                     "<div style=\"font-size: {}em;\" class=\"{}_bigger\">",
                     1.0 - 0.25 * (s as f32),
