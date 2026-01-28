@@ -7,3 +7,4 @@ edition = "2024"
 encoding_rs = "0.8.35"
 aozora-rs = { path = "../aozora-rs" }
 zip = "7.2.0"
+miette = { version = "7.6", features = ["fancy"] }

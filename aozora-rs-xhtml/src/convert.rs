@@ -80,21 +80,21 @@ pub fn into_xhtml<'s>(retokenized: Retokenized<'s>) -> (Cow<'s, str>, XHTMLReque
             Deco::Italic => (Cow::Borrowed("<div class=\"italic\">"), XHTMLRequest::None),
             Deco::Indent(i) => (
                 Cow::Owned(format!(
-                    "<div class=\"indent_{}\" style=\"padding-left: {};\">",
+                    "<div class=\"indent_{}\" style=\"padding-left: {}em;\">",
                     i, i
                 )),
                 XHTMLRequest::None,
             ),
             Deco::Hanging((f, s)) => (
                 Cow::Owned(format!(
-                    "<div class=\"haning_{}_{}\" style=\"text-indent: {};{}\">",
+                    "<div class=\"haning_{}_{}\" style=\"text-indent: {}em;{}\">",
                     f,
                     s,
                     s,
                     if f == 0 {
                         Cow::Borrowed("")
                     } else {
-                        Cow::Owned(format!(" padding-left: {}", f))
+                        Cow::Owned(format!(" padding-left: {}em", f))
                     }
                 )),
                 XHTMLRequest::None,
@@ -106,7 +106,7 @@ pub fn into_xhtml<'s>(retokenized: Retokenized<'s>) -> (Cow<'s, str>, XHTMLReque
             Deco::HinV => (Cow::Borrowed("<div class=\"hinv\">"), XHTMLRequest::None),
             Deco::LowFlying(l) => (
                 Cow::Owned(format!(
-                    "<div class=\"lowflying_{} grounded\" style=\"padding-left: {};\">",
+                    "<div class=\"lowflying_{} grounded\" style=\"padding-left: {}em;\">",
                     l, l,
                 )),
                 XHTMLRequest::None,
