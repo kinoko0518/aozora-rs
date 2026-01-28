@@ -120,6 +120,7 @@ version = "0.1.0"
 dependencies = [
  "aozora-rs",
  "encoding_rs",
+ "miette",
  "zip",
 ]
 

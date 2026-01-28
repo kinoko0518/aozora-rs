@@ -67,7 +67,7 @@ pub fn retokenize<'s>(
                 }
             }
             otherwise => {
-                for i in span {
+                for i in span.clone() {
                     // Scopeの終了
                     while let Some(d) = queue.pop(i) {
                         retokenized.push(Retokenized::DecoEnd(d));
@@ -85,6 +85,10 @@ pub fn retokenize<'s>(
                     FlatToken::Figure(f) => Retokenized::Figure(f),
                     FlatToken::Odoriji(o) => Retokenized::Odoriji(o),
                 });
+
+                while let Some(d) = queue.pop(span.end) {
+                    retokenized.push(Retokenized::DecoEnd(d));
+                }
             }
         }
     }
