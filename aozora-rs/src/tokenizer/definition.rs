@@ -4,7 +4,7 @@ use std::borrow::Cow;
 
 #[derive(Debug, Clone)]
 pub enum AozoraTokenKind<'s> {
-    Command(Note<'s>),
+    Note(Note<'s>),
     Ruby(&'s str),
     RubyDelimiter,
     Odoriji(Odoriji),

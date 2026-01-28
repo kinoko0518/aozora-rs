@@ -2,6 +2,7 @@ use super::definition::*;
 use super::error::*;
 
 use crate::prelude::*;
+use crate::scopenizer::conversion::BackRefResult;
 use crate::scopenizer::conversion::backref_to_scope;
 use crate::tokenizer::prelude::*;
 
@@ -24,15 +25,20 @@ pub fn scopenize<'s>(
         match token.kind {
             AozoraTokenKind::Text(t) => {
                 while let Some(n) = peekable.peek() {
-                    if let Some(s) = backref_to_scope(&n.kind, (&t, token.span.clone())) {
-                        let scope = token.span.clone();
-                        scopes.push_s(s.map_err(|_| BackRefFailed {
-                            source_code: original.to_string(),
-                            failed_note: scope,
-                        })?);
-                        peekable.next();
-                    } else {
-                        break;
+                    let scope = token.span.clone();
+                    match backref_to_scope(&n.kind, (&t, token.span.clone())) {
+                        BackRefResult::ScopeConfirmed(s) => {
+                            scopes.push_s(s);
+                            peekable.next();
+                        }
+                        BackRefResult::BackRefFailed => Err::<_, miette::Error>(
+                            BackRefFailed {
+                                source_code: original.to_string(),
+                                failed_note: scope,
+                            }
+                            .into(),
+                        )?,
+                        BackRefResult::ItWontBackRef => break,
                     }
                 }
                 flatten.push((FlatToken::Text(t.clone()), token.span));
@@ -54,7 +60,7 @@ pub fn scopenize<'s>(
                     .into());
                 }
             }
-            AozoraTokenKind::Command(c) => match c {
+            AozoraTokenKind::Note(c) => match c {
                 Note::Sandwiched(s) => match s {
                     Sandwiched::Begin(b) => {
                         inline_stack.push((b, token.span));

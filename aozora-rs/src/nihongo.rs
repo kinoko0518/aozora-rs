@@ -6,7 +6,7 @@ use crate::prelude::*;
 
 pub fn is_kanji(c: char) -> bool {
     match c {
-        '々' | '〆' | '〇' | 'ヶ' | '仝' => true,
+        '々' | '〆' | '〇' | 'ヶ' | '仝' | '〓' => true,
         c if ('\u{4E00}'..='\u{9FFF}').contains(&c) => true,
         c if ('\u{3400}'..='\u{4DBF}').contains(&c) => true,
         c if ('\u{F900}'..='\u{FAFF}').contains(&c) => true,

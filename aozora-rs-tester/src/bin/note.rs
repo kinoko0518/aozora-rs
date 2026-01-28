@@ -19,7 +19,7 @@ fn analyse_file(path: &Path) -> Option<AnalysedData> {
         .iter()
         .fold(AnalysedData::new(), |mut acc, token| {
             match &token.kind {
-                AozoraTokenKind::Command(c) => match c {
+                AozoraTokenKind::Note(c) => match c {
                     Note::Unknown(s) => acc.fail(s.to_string()),
                     _ => acc.success(),
                 },

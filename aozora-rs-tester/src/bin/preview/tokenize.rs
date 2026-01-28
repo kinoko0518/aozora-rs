@@ -150,7 +150,7 @@ fn format_token_kind(kind: &AozoraTokenKind) -> String {
         AozoraTokenKind::Text(_) => "Text".to_string(),
         AozoraTokenKind::Ruby(_) => "Ruby".to_string(),
         AozoraTokenKind::RubyDelimiter => "RubyDelimiter".to_string(),
-        AozoraTokenKind::Command(_) => "Command".to_string(),
+        AozoraTokenKind::Note(_) => "Command".to_string(),
         AozoraTokenKind::Odoriji(_) => "Odoriji".to_string(),
         AozoraTokenKind::Br => "Br".to_string(),
     }

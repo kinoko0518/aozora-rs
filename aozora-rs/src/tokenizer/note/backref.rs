@@ -12,14 +12,14 @@ use winnow::{
 use crate::{
     nihongo::japanese_num,
     prelude::*,
-    tokenizer::command::definitions::{bosen, boten},
+    tokenizer::note::definitions::{bosen, boten},
 };
 
 #[derive(Debug, Clone, Copy)]
 pub struct BackRefSpec<'s>(pub &'s str);
 
 #[derive(Debug, Clone, Copy)]
-pub enum BackRefKind {
+pub enum BackRefKind<'s> {
     /// 太字
     Bold,
     /// 斜体
@@ -42,11 +42,13 @@ pub enum BackRefKind {
     Small(usize),
     /// N段階大きな文字
     Big(usize),
+    /// …はXXでは
+    Variation((&'s str, &'s str)),
 }
 
 #[derive(Debug, Clone, Copy)]
 pub struct BackRef<'s> {
-    pub kind: BackRefKind,
+    pub kind: BackRefKind<'s>,
     pub range: BackRefSpec<'s>,
 }
 
@@ -59,7 +61,7 @@ pub fn backref<'s>(input: &mut Input<'s>) -> Result<BackRef<'s>, ContextError> {
         "は中見出し".value(BackRefKind::BHead),
         "は小見出し".value(BackRefKind::CHead),
         alt(("はママ", "に「ママ」の注記")).value(BackRefKind::Mama),
-        "は縦中横".value(BackRefKind::HinV),
+        alt(("は縦中横", "は横一列")).value(BackRefKind::HinV),
         (
             "に",
             alt((
@@ -70,6 +72,14 @@ pub fn backref<'s>(input: &mut Input<'s>) -> Result<BackRef<'s>, ContextError> {
             .map(|(_, b)| b),
         ("は", japanese_num, "段階小さな文字").map(|(_, size, _)| BackRefKind::Small(size)),
         ("は", japanese_num, "段階大きな文字").map(|(_, size, _)| BackRefKind::Big(size)),
+        (
+            "は",
+            take_until(1.., "では"),
+            "では「",
+            take_until(0.., "」"),
+            "」",
+        )
+            .map(|(_, on, _, variation, _)| BackRefKind::Variation((on, variation))),
     ))
     .map(|b| BackRef {
         kind: b,

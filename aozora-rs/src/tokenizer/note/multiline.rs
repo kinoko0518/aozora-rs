@@ -19,27 +19,22 @@ use winnow::{
 use crate::{
     deco::{BlockIndent, Deco},
     nihongo::japanese_num,
-    tokenizer::command::{Input, SandwichedBegin},
+    tokenizer::note::{Input, SandwichedBegin},
 };
-
-impl_sandwiched!(MultiLineEnds, BlockIndent, BlockIndentEnd);
 
 #[derive(Debug, Clone, Copy)]
 pub struct HangingIndent {
     fst_lvl: usize,
     snd_lvl: usize,
 }
-impl_sandwiched!(MultiLineEnds, HangingIndent, BlockIndentEnd);
 
 #[derive(Debug, Clone, Copy)]
 pub struct Grounded;
-impl_sandwiched!(MultiLineEnds, Grounded, GroundedEnd);
 
 #[derive(Debug, Clone, Copy)]
 pub struct LowFlying {
     level: usize,
 }
-impl_sandwiched!(MultiLineEnds, LowFlying, LowFlyingEnd);
 
 #[derive(Debug, Clone, Copy)]
 pub enum MultiLineBegins {
@@ -56,10 +51,10 @@ pub enum MultiLineBegins {
 impl SandwichedBegin<MultiLineEnds> for MultiLineBegins {
     fn do_match(&self, rhs: &MultiLineEnds) -> bool {
         match self {
-            Self::BlockIndent(b) => b.do_match(rhs),
-            Self::Grounded(g) => g.do_match(rhs),
-            Self::HangingIndent(h) => h.do_match(rhs),
-            Self::LowFlying(l) => l.do_match(rhs),
+            Self::BlockIndent(_) => matches!(rhs, MultiLineEnds::BlockIndentEnd),
+            Self::Grounded(_) => matches!(rhs, MultiLineEnds::GroundedEnd),
+            Self::HangingIndent(_) => matches!(rhs, MultiLineEnds::BlockIndentEnd),
+            Self::LowFlying(_) => matches!(rhs, MultiLineEnds::LowFlyingEnd),
         }
     }
 }

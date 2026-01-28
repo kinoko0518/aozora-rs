@@ -67,7 +67,7 @@ impl std::fmt::Display for Break {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "[#{}]",
+            "［＃{}］",
             match self {
                 Self::BreakLine => "改行",
                 Self::PageBreak => "改ページ",
