@@ -2,7 +2,7 @@ name: Release WASM Build
 
 on:
   release:
-    types: [created]
+    types: [published]
 
 permissions:
   contents: write
