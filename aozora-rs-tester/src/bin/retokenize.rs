@@ -16,8 +16,8 @@ fn main() -> Result<()> {
     let content = fs::read_to_string(&path).into_diagnostic()?;
 
     let (_meta, tokens) = tokenize(&content)?;
-    let (deco, flat) = scopenize(tokens, &content)?;
-    let retokenized = retokenize(flat, deco)?;
+    let ((deco, flat), _) = scopenize(tokens, &content).into_tuple();
+    let retokenized = retokenize(flat, deco);
 
     for item in retokenized {
         match item {

@@ -118,7 +118,7 @@ pub fn into_xhtml<'s>(retokenized: Retokenized<'s>) -> (Cow<'s, str>, XHTMLReque
                 Cow::Owned(format!(
                     "<div style=\"font-size: {}em;\" class=\"{}_bigger\">",
                     1.0 - 0.25 * (s as f32),
-                    b
+                    s
                 )),
                 XHTMLRequest::None,
             ),

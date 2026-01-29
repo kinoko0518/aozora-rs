@@ -66,28 +66,18 @@ impl ScopenizeApp {
                 };
 
                 // Scopenize
-                match scopenize(tokens, &self.original_text) {
-                    Ok((scopes, _flat)) => {
-                        self.scopes = scopes
-                            .0
-                            .into_values()
-                            .flatten()
-                            .map(|s| ScopeDisplay {
-                                deco_name: s.deco.to_string(),
-                                span: s.span,
-                            })
-                            .collect();
-                        // Sort by start position
-                        self.scopes.sort_by_key(|s| s.span.start);
-                    }
-                    Err(e) => {
-                        let mut buf = String::new();
-                        GraphicalReportHandler::new()
-                            .render_report(&mut buf, e.as_ref())
-                            .unwrap();
-                        self.error_message = Some(buf);
-                    }
-                }
+                let ((scopes, _flat), _) = scopenize(tokens, &self.original_text).into_tuple();
+                self.scopes = scopes
+                    .0
+                    .into_values()
+                    .flatten()
+                    .map(|s| ScopeDisplay {
+                        deco_name: s.deco.to_string(),
+                        span: s.span,
+                    })
+                    .collect();
+                // Sort by start position
+                self.scopes.sort_by_key(|s| s.span.start);
             }
             Err(e) => {
                 self.error_message = Some(format!("読み込みエラー: {}", e));
