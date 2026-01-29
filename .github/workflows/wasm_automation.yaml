@@ -27,11 +27,15 @@ jobs:
           version: "latest"
 
       - name: Build WASM
-        # aozora-rs-xhtml ディレクトリに対して wasm-pack を実行
         run: wasm-pack build aozora-rs-xhtml --target bundler
+
+      - name: Zip pkg directory
+        run: |
+          cd aozora-rs-xhtml
+          zip -r aozora-rs-xhtml-pkg.zip pkg
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: target/wasm32-unknown-unknown/release/aozora_rs_xhtml.wasm
+          files: aozora-rs-xhtml/aozora-rs-xhtml-pkg.zip
