@@ -10,7 +10,7 @@ use crate::{
 pub fn retokenize<'s>(
     mut flat: Vec<(FlatToken<'s>, Span)>,
     mut deco: Scopenized<'s>,
-) -> Result<Vec<Retokenized<'s>>, miette::Error> {
+) -> Vec<Retokenized<'s>> {
     flat.reverse();
     let mut retokenized: Vec<Retokenized> = Vec::new();
     let mut queue: DecoQueue = DecoQueue::new();
@@ -92,5 +92,5 @@ pub fn retokenize<'s>(
             }
         }
     }
-    Ok(retokenized)
+    retokenized
 }

@@ -97,9 +97,53 @@ pub fn tokenize<'s>(
     ))
 }
 
-pub fn parse<'s>(input: &'s str) -> Result<(AozoraMeta<'s>, Vec<Retokenized<'s>>), miette::Error> {
-    let (meta, tokens) = tokenize(input)?;
-    let (scopenized, flattoken) = scopenize(tokens, input)?;
-    let retokenizde = retokenize(flattoken, scopenized)?;
-    Ok((meta, retokenizde))
+pub fn parse<'s>(input: &'s str) -> AZResult<(AozoraMeta<'s>, Vec<Retokenized<'s>>)> {
+    let (meta, tokens) = tokenize(input).unwrap();
+    let ((scopenized, flattoken), errors) = scopenize(tokens, input).into_tuple();
+    let retokenizde = retokenize(flattoken, scopenized);
+    AZResultC::from(errors).finally((meta, retokenizde))
+}
+
+pub struct AZResultC {
+    errors: Vec<miette::Error>,
+}
+
+impl AZResultC {
+    pub fn new() -> Self {
+        Self { errors: Vec::new() }
+    }
+
+    pub fn from(errors: Vec<miette::Error>) -> Self {
+        Self { errors }
+    }
+
+    pub fn push(&mut self, e: miette::Error) {
+        self.errors.push(e);
+    }
+
+    pub fn finally<T>(self, result: T) -> AZResult<T> {
+        AZResult {
+            inside: result,
+            errors: self.errors,
+        }
+    }
+}
+
+/// Graceful Degradationに対応するためのResult型
+pub struct AZResult<T> {
+    inside: T,
+    errors: Vec<miette::Error>,
+}
+
+impl<T> AZResult<T> {
+    pub fn unwrap(self) -> T {
+        for e in self.errors {
+            eprintln!("{:?}", e);
+        }
+        self.inside
+    }
+
+    pub fn into_tuple(self) -> (T, Vec<miette::Error>) {
+        (self.inside, self.errors)
+    }
 }
