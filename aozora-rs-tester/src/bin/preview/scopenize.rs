@@ -4,7 +4,6 @@ use std::path::PathBuf;
 use ansi_to_tui::IntoText;
 use aozora_rs::prelude::{scopenize, tokenize};
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
-use miette::GraphicalReportHandler;
 use ratatui::{
     Frame, Terminal,
     backend::CrosstermBackend,
