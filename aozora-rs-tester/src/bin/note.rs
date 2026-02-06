@@ -1,4 +1,4 @@
-use aozora_rs::prelude::{AozoraTokenKind, Note, tokenize_nometa};
+use aozora_rs_core::prelude::{AozoraTokenKind, Note, tokenize_nometa};
 use aozora_rs_gaiji::whole_gaiji_to_char;
 use aozora_rs_tester::{AnalysedData, update_map};
 use rayon::prelude::*;

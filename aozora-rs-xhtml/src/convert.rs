@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use aozora_rs::prelude::*;
+use aozora_rs_core::prelude::*;
 
 #[allow(unused)]
 pub enum XHTMLRequest<'s> {

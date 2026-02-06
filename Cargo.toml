@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "aozora-rs", "aozora-rs-tester",
+    "aozora-rs-core", "aozora-rs-tester",
     "aozora-rs-gaiji", "aozora-rs-xhtml"
 ]
 resolver = "3"

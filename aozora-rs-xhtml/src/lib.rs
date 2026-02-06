@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use crate::convert::into_xhtml;
-use aozora_rs::prelude::*;
+use aozora_rs_core::prelude::*;
 use wasm_bindgen::prelude::*;
 use winnow::LocatingSlice;
 
@@ -41,7 +41,7 @@ pub fn convert_with_no_meta(input: &str) -> String {
 ///
 /// 既存の青空文庫書式で書かれた作品をパースして独自の表示を行いたいときなどに有用です。
 pub fn convert_with_meta(input: &str) -> NovelResult {
-    let (meta, parsed) = aozora_rs::parse(input).unwrap();
+    let (meta, parsed) = aozora_rs_core::parse(input).unwrap();
     let main_text = parsed
         .into_iter()
         .map(|t| into_xhtml(t).0)

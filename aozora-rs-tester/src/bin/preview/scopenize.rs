@@ -2,7 +2,7 @@ use std::io;
 use std::path::PathBuf;
 
 use ansi_to_tui::IntoText;
-use aozora_rs::prelude::{scopenize, tokenize};
+use aozora_rs_core::prelude::{scopenize, tokenize};
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use ratatui::{
     Frame, Terminal,

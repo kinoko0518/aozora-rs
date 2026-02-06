@@ -7,7 +7,7 @@ edition = "2024"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-aozora-rs = { path = "../aozora-rs" }
+aozora-rs-core = { path = "../aozora-rs-core" }
 miette = { version = "7.6", features = ["fancy"] }
 wasm-bindgen = "0.2"
 winnow = "0.7.14"

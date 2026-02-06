@@ -57,7 +57,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "aozora-rs"
+name = "aozora-rs-core"
 version = "0.1.0"
 dependencies = [
  "aozora-rs-gaiji",
@@ -88,7 +88,7 @@ name = "aozora-rs-tester"
 version = "0.1.0"
 dependencies = [
  "ansi-to-tui",
- "aozora-rs",
+ "aozora-rs-core",
  "aozora-rs-gaiji",
  "crossterm",
  "encoding_rs",
@@ -107,7 +107,7 @@ dependencies = [
 name = "aozora-rs-xhtml"
 version = "0.1.0"
 dependencies = [
- "aozora-rs",
+ "aozora-rs-core",
  "miette",
  "wasm-bindgen",
  "winnow",

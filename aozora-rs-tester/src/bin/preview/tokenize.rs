@@ -1,7 +1,7 @@
 use std::io;
 use std::path::PathBuf;
 
-use aozora_rs::prelude::{AozoraTokenKind, tokenize};
+use aozora_rs_core::prelude::{AozoraTokenKind, tokenize};
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use ratatui::{
     Frame, Terminal,

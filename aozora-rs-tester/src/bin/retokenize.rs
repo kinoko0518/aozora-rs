@@ -2,7 +2,7 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 
-use aozora_rs::prelude::{Retokenized, retokenize, scopenize, tokenize};
+use aozora_rs_core::prelude::{Retokenized, retokenize, scopenize, tokenize};
 use miette::{IntoDiagnostic, Result};
 
 fn main() -> Result<()> {
