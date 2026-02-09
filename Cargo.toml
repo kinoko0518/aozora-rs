@@ -2,5 +2,5 @@
 members = [
     "aozora-rs-core", "aozora-rs-tester",
     "aozora-rs-gaiji", "aozora-rs-xhtml"
-]
+, "aozora-rs-epub", "aozora-rs"]
 resolver = "3"

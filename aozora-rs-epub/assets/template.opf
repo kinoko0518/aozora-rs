@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package
+ xmlns="http://www.idpf.org/2007/opf"
+ version="3.0"
+ xml:lang="ja"
+ unique-identifier="unique-id"
+ prefix="rendition: http://www.idpf.org/vocab/rendition/#
+         ebpaj: http://www.ebpaj.jp/
+         fixed-layout-jp: http://www.digital-comic.jp/
+         ibooks: http://vocabulary.itunes.apple.com/rdf/ibooks/vocabulary-extensions-1.0/"
+>
+		<metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+<!-- 作品名 -->
+		<dc:title id="title">［＃タイトル］</dc:title>
+<!-- 著者名 -->
+		<dc:creator id="creator01">［＃著者］</dc:creator>
+<!-- 言語 -->
+		<dc:language id="pub-lang">［＃言語コード］</dc:language>
+<!-- ファイルid -->
+		<dc:identifier id="unique-id">urn:uuid:［＃UUID］</dc:identifier>
+<!-- 更新日 -->
+		<meta property="dcterms:modified">［＃更新日］</meta>
+
+<!-- etc. -->
+<meta property="ebpaj:guide-version">1.1.3</meta>
+<meta property="ibooks:version">1.1.2</meta>
+	</metadata>
+
+	<manifest>
+<!-- navigation -->
+		<item media-type="application/xhtml+xml" id="nav" href="nav.xhtml" properties="nav"/>
+<!-- style -->
+［＃スタイル］
+<!-- image -->
+［＃画像］
+<!-- xhtml -->
+［＃XHTML］
+	</manifest>
+
+	<spine page-progression-direction="rtl" toc="ncx">
+		<itemref idref="title-page" linear="yes"/>
+		<itemref idref="nav" linear="yes"/>
+
+		<itemref linear="yes" idref="sec0001"/>
+		<itemref linear="yes" idref="sec0002"/>
+	</spine>
+
+</package>

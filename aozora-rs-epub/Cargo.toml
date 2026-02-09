@@ -1,0 +1,13 @@
+[package]
+name = "aozora-rs-epub"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+chrono = "0.4.43"
+uuid = {version = "1.20.0", features = ["v5", "fast-rng", "macro-diagnostics", "js"]}
+zip = "7.4.0"
+aozora-rs-core = { path = "../aozora-rs-core" }
+aozora-rs-xhtml = { path = "../aozora-rs-xhtml" }
+miette = { version = "7.6.0", features = ["fancy"] }
+thiserror = "2.0.18"
