@@ -1,0 +1,14 @@
+[package]
+name = "aozora-rs"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+aozora-rs-epub = { version = "0.1.0", path = "../aozora-rs-epub" }
+aozora-rs-xhtml = { version = "0.1.0", path = "../aozora-rs-xhtml" }
+miette = "7.6.0"
+wasm-bindgen = "0.2.108"
+zip = "7.4.0"
+
+[lib]
+crate-type = ["cdylib"]
