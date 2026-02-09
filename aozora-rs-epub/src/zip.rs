@@ -5,6 +5,7 @@ use std::{
     path::Path,
 };
 
+use encoding_rs::SHIFT_JIS;
 use miette::Diagnostic;
 use thiserror::Error;
 use zip::result::ZipError;
@@ -62,10 +63,21 @@ pub enum AozoraZipError {
         help("ファイルが破損していないかを確認してください。")
     )]
     BrokenZip(ZipError),
+
+    #[error("エンコードエラーが発生しました")]
+    #[diagnostic(
+        code(aozora_rs_epub::encoding_error),
+        help("Shift-JISファイルの場合は sjis オプションを有効にしてください。")
+    )]
+    EncodingError,
 }
 
 impl AozoraZip {
     pub fn read_from_zip_inner(zip: &[u8]) -> Result<Self, AozoraZipError> {
+        Self::read_from_zip_with_encoding(zip, false)
+    }
+
+    pub fn read_from_zip_with_encoding(zip: &[u8], sjis: bool) -> Result<Self, AozoraZipError> {
         let mut zip =
             zip::ZipArchive::new(Cursor::new(zip)).map_err(|e| AozoraZipError::BrokenZip(e))?;
         let mut images = HashMap::new();
@@ -96,11 +108,23 @@ impl AozoraZip {
                     css.insert(c.name().to_string(), buff);
                 }
                 "txt" => {
-                    let mut buff = String::new();
-                    c.read_to_string(&mut buff)
-                        .map_err(|e| AozoraZipError::Io(e))?;
+                    let text = if sjis {
+                        let mut buff = Vec::new();
+                        c.read_to_end(&mut buff)
+                            .map_err(|e| AozoraZipError::Io(e))?;
+                        let (decoded, _, had_errors) = SHIFT_JIS.decode(&buff);
+                        if had_errors {
+                            return Err(AozoraZipError::EncodingError);
+                        }
+                        decoded.replace("\r\n", "\n")
+                    } else {
+                        let mut buff = String::new();
+                        c.read_to_string(&mut buff)
+                            .map_err(|e| AozoraZipError::Io(e))?;
+                        buff
+                    };
                     if txt.is_none() {
-                        txt = Some(buff);
+                        txt = Some(text);
                     } else {
                         return Err(AozoraZipError::MultiTextFound);
                     }

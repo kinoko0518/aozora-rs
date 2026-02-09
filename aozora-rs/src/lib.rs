@@ -1,6 +1,12 @@
-use aozora_rs_epub::AozoraZip;
 use std::{fs::File, io::Cursor, path::Path};
 use wasm_bindgen::{JsError, prelude::wasm_bindgen};
+
+// Re-exports for CLI usage (pure functions only - no file I/O)
+pub use aozora_rs_core::AZResult;
+pub use aozora_rs_epub::{AozoraZip, AozoraZipError, from_aozora_zip};
+pub use aozora_rs_xhtml::{
+    NovelResult, NovelResultNoMeta, XHTMLResult, convert_with_meta, convert_with_no_meta,
+};
 
 fn into_js_error<E: std::fmt::Display>(err: E) -> JsError {
     JsError::new(&format!("{}", err))

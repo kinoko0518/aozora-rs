@@ -18,7 +18,7 @@ pub fn into_xhtml<'s>(retokenized: &MappedToken<'s>) -> Cow<'s, str> {
                 .unwrap_or("".to_string())
         )),
         Retokenized::Break(b) => match b {
-            Break::BreakLine => Cow::Borrowed("<br>"),
+            Break::BreakLine => Cow::Borrowed("<br />"),
             Break::PageBreak | Break::ColumnBreak => Cow::Borrowed(""),
             Break::RectoBreak => Cow::Borrowed(
                 "<div style=\"page-break-before: right; break-before: right;\"></div>",
