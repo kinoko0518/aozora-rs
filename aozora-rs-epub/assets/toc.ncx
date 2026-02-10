@@ -14,7 +14,7 @@
 		<navLabel>
 			<text>［＃タイトル］</text>
 		</navLabel>
-		<content src="xhtml/title.xhtml"/>
+		<content src="xhtml/［＃最初のXHTML］"/>
 	</navPoint>
 </navMap>
 </ncx>

@@ -9,7 +9,7 @@ use aozora_rs_xhtml::get_xhtml_filename;
 use miette::Diagnostic;
 use std::io::Write;
 use thiserror::Error;
-use zip::{ZipWriter, write::SimpleFileOptions};
+use zip::{write::SimpleFileOptions, ZipWriter};
 
 #[derive(Diagnostic, Debug, Error)]
 #[error("依存関係にあるファイルが存在しません")]
@@ -70,7 +70,12 @@ pub fn from_aozora_zip<T>(
 
     for (i, x) in meta.xhtmls.xhtmls.iter().enumerate() {
         writer.start_file(format!("item/xhtml/{}", get_xhtml_filename(i)), options)?;
-        writer.write_all(x.as_bytes())?;
+        writer.write_all(
+            include_str!("../assets/template.xhtml")
+                .replace("［＃コンテンツ］", x)
+                .replace("［＃タイトル］", meta.title)
+                .as_bytes(),
+        )?;
     }
 
     let mut azresult = AZResultC::new();

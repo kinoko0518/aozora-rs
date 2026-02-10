@@ -1,4 +1,4 @@
-use aozora_rs_xhtml::XHTMLResult;
+use aozora_rs_xhtml::{XHTMLResult, get_xhtml_filename};
 use chrono::prelude::*;
 use uuid::Uuid;
 
@@ -74,11 +74,23 @@ impl<'s> EpubMeta<'s> {
             .xhtmls.xhtmls
             .iter()
             .enumerate()
-            .map(|(num, p)| {
+            .map(|(num, _)| {
                 format!(
-                    "       <item id=\"xhtml{:>04}\" href=\"{}\" media-type=\"application/xhtml+xml\"/>",
+                    "       <item id=\"sec{:>04}\" href=\"xhtml/xhtml{:>04}.xhtml\" media-type=\"application/xhtml+xml\"/>",
                     num,
-                    p
+                    num
+                )
+            })
+            .collect::<Vec<String>>()
+            .join("\n");
+        let spine = &self
+            .xhtmls.xhtmls
+            .iter()
+            .enumerate()
+            .map(|(num, _)| {
+                format!(
+                    "\t\t<itemref linear=\"yes\" idref=\"sec{:>04}\" />",
+                    num
                 )
             })
             .collect::<Vec<String>>()
@@ -89,12 +101,13 @@ impl<'s> EpubMeta<'s> {
             .replace("［＃UUID］", &self.uuid.to_string())
             .replace(
                 "［＃最終更新日］",
-                &self.meta.format("YYYY-MM-DDThh:mm:ssZ").to_string(),
+                &self.meta.format("%Y-%m-%dT%H:%M:%SZ").to_string(),
             )
             .replace("［＃著者］", self.author)
             .replace("［＃スタイル］", styles)
             .replace("［＃画像］", images)
             .replace("［＃XHTML］", xhtmls)
+            .replace("［＃スパイン］", spine)
     }
 
     pub fn into_ncx(&self) -> String {
@@ -102,6 +115,7 @@ impl<'s> EpubMeta<'s> {
         template
             .replace("［＃UUID］", &self.uuid.to_string())
             .replace("［＃タイトル］", self.title)
+            .replace("［＃最初のXHTML］", &get_xhtml_filename(0))
     }
 
     pub fn into_nav(&self) -> String {
@@ -111,6 +125,9 @@ impl<'s> EpubMeta<'s> {
             .iter()
             .map(|c| format!("      <li><a href=\"{}\">{}</a></li>", c.get_nav(), c.name));
         include_str!("../assets/nav.xhtml")
+            .replace("［＃タイトル］", self.title)
+            .replace("［＃CSS］", "")
+            .replace("［＃最初のXHTML］", &get_xhtml_filename(0))
             .replace("［＃章］", &navs.collect::<Vec<String>>().join("\n"))
     }
 }

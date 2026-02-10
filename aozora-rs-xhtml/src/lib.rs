@@ -34,7 +34,7 @@ fn from_retokenized<'s>(retokenized: Vec<Retokenized<'s>>) -> XHTMLResult<'s> {
     let xhtmls = mapped
         .xhtmls
         .iter()
-        .map(|x| x.iter().map(|m| into_xhtml(m)).join(""))
+        .map(|x| x.iter().map(|m| into_xhtml(m)).join("\n"))
         .collect::<Vec<String>>();
     let chapters = mapped
         .xhtmls
