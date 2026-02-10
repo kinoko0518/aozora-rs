@@ -104,7 +104,7 @@ jobs:
       - name: Zip pkg directory
         run: |
           cd aozora-rs
-          zip -r aozora-rs-pkg.zip pkg
+          zip -r aozora-rs-wasm-pkg.zip pkg
 
       - name: Download QA result
         uses: actions/download-artifact@v4
@@ -149,7 +149,7 @@ jobs:
           append_body: true
           body: ${{ steps.release_body.outputs.BODY }}
           files: |
-            aozora-rs/aozora-rs-pkg.zip
+            aozora-rs/aozora-rs-wasm-pkg.zip
             qa-result.zip
             ayame-linux-x86_64.zip
             ayame-macos-aarch64.zip

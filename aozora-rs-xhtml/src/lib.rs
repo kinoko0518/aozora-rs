@@ -10,27 +10,31 @@ mod dom;
 pub use definitions::*;
 pub use dom::{Mapped, MappedToken};
 
-pub struct NovelResult<'s> {
-    pub title: &'s str,
-    pub author: &'s str,
-    pub xhtmls: XHTMLResult<'s>,
+pub struct NovelResult {
+    pub title: String,
+    pub author: String,
+    pub xhtmls: XHTMLResult,
     pub errors: Vec<miette::Error>,
 }
 
-pub struct NovelResultNoMeta<'s> {
-    pub xhtmls: XHTMLResult<'s>,
+pub struct NovelResultNoMeta {
+    pub xhtmls: XHTMLResult,
     pub errors: Vec<miette::Error>,
 }
 
-pub struct XHTMLResult<'s> {
+pub struct XHTMLResult {
     pub xhtmls: Vec<String>,
-    pub dependency: Vec<&'s str>,
+    pub dependency: Vec<String>,
     pub chapters: Vec<Chapter>,
 }
 
-fn from_retokenized<'s>(retokenized: Vec<Retokenized<'s>>) -> XHTMLResult<'s> {
+fn from_retokenized<'s>(retokenized: Vec<Retokenized<'s>>) -> XHTMLResult {
     let mapped = into_mapped(retokenized);
-    let dependency = mapped.dependency;
+    let dependency = mapped
+        .dependency
+        .iter()
+        .map(|s| s.to_string())
+        .collect::<Vec<String>>();
     let xhtmls = mapped
         .xhtmls
         .iter()
@@ -53,7 +57,7 @@ fn from_retokenized<'s>(retokenized: Vec<Retokenized<'s>>) -> XHTMLResult<'s> {
 /// 特別な表記を一切考慮せず、入力すべてに対して常に一般的なルールに基づきパースを行います。
 ///
 /// 自身のサイトの中に青空文庫書式で書いたテキストをHTMLとして埋め込みたいときなどにご活用ください。
-pub fn convert_with_no_meta<'s>(input: &'s str) -> NovelResultNoMeta<'s> {
+pub fn convert_with_no_meta<'s>(input: &'s str) -> NovelResultNoMeta {
     let mut input_slice = LocatingSlice::new(input);
     let tokens = tokenize_nometa(&mut input_slice).unwrap();
     let ((scopenized, flattoken), errors) = scopenize(tokens, input).into_tuple();
@@ -66,12 +70,12 @@ pub fn convert_with_no_meta<'s>(input: &'s str) -> NovelResultNoMeta<'s> {
 /// 特別な表記を考慮し、メタデータとして解析します。
 ///
 /// 既存の青空文庫書式で書かれた作品をパースして独自の表示を行いたいときなどに有用です。
-pub fn convert_with_meta<'s>(input: &'s str) -> NovelResult<'s> {
+pub fn convert_with_meta(input: &str) -> NovelResult {
     let ((meta, parsed), errors) = aozora_rs_core::parse(input).into_tuple();
 
     NovelResult {
-        title: meta.title,
-        author: meta.author,
+        title: meta.title.to_string(),
+        author: meta.author.to_string(),
         xhtmls: from_retokenized(parsed),
         errors,
     }

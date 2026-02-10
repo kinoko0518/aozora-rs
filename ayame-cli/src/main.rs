@@ -1,9 +1,9 @@
-use aozora_rs::{XHTMLResult, convert_with_meta};
+use aozora_rs::{AozoraZip, NovelResult, XHTMLResult, build_epub, convert_with_meta};
 use clap::{Parser, Subcommand};
 use encoding_rs::SHIFT_JIS;
 use miette::{IntoDiagnostic, Result, miette};
 use std::fs;
-use std::io::{Cursor, Write};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
 #[derive(Parser)]
@@ -88,19 +88,29 @@ fn decode_bytes(bytes: &[u8], sjis: bool) -> Result<String> {
     }
 }
 
-fn read_source_text(source: &Path, sjis: bool) -> Result<String> {
+/// Zipバイト列からAozoraZipを読み込む（エンコーディングに応じて分岐）
+fn read_aozora_zip(bytes: &[u8], sjis: bool) -> Result<AozoraZip> {
+    if sjis {
+        AozoraZip::read_from_shift_jis_zip(bytes)
+    } else {
+        AozoraZip::read_from_utf8_zip(bytes)
+    }
+    .map_err(|e| miette!("{}", e))
+}
+
+/// ソースファイルからNovelResultを取得する
+fn read_novel_result(source: &Path, sjis: bool) -> Result<NovelResult> {
     let ext = source.extension().and_then(|e| e.to_str()).unwrap_or("");
+    let bytes = fs::read(source).into_diagnostic()?;
 
     match ext.to_lowercase().as_str() {
         "txt" => {
-            let bytes = fs::read(source).into_diagnostic()?;
-            decode_bytes(&bytes, sjis)
+            let text = decode_bytes(&bytes, sjis)?;
+            Ok(convert_with_meta(&text))
         }
         "zip" => {
-            let bytes = fs::read(source).into_diagnostic()?;
-            let azz = aozora_rs::AozoraZip::read_from_zip_with_encoding(&bytes, sjis)
-                .map_err(|e| miette!("{}", e))?;
-            Ok(azz.text)
+            let azz = read_aozora_zip(&bytes, sjis)?;
+            Ok(azz.nresult)
         }
         _ => Err(miette!("サポートされていないファイル形式です: .{}", ext)),
     }
@@ -139,9 +149,7 @@ fn write_xhtml_files(
 fn handle_xhtml(source: PathBuf, merge: bool, sjis: bool, output: Option<PathBuf>) -> Result<()> {
     let output_dir = get_output_dir(output)?;
     let file_stem = get_file_stem(&source)?;
-    let text = read_source_text(&source, sjis)?;
-
-    let result = convert_with_meta(&text);
+    let result = read_novel_result(&source, sjis)?;
 
     // Print errors if any
     for error in &result.errors {
@@ -158,16 +166,14 @@ fn handle_epub(source: PathBuf, sjis: bool, output: Option<PathBuf>) -> Result<(
     let file_stem = get_file_stem(&source)?;
 
     let ext = source.extension().and_then(|e| e.to_str()).unwrap_or("");
-
     let bytes = fs::read(&source).into_diagnostic()?;
 
     let azz = match ext.to_lowercase().as_str() {
-        "zip" => aozora_rs::AozoraZip::read_from_zip_with_encoding(&bytes, sjis)
-            .map_err(|e| miette!("{}", e))?,
+        "zip" => read_aozora_zip(&bytes, sjis)?,
         "txt" => {
             let text = decode_bytes(&bytes, sjis)?;
-            aozora_rs::AozoraZip {
-                text,
+            AozoraZip {
+                nresult: convert_with_meta(&text),
                 images: std::collections::HashMap::new(),
                 css: std::collections::HashMap::new(),
             }
@@ -176,18 +182,16 @@ fn handle_epub(source: PathBuf, sjis: bool, output: Option<PathBuf>) -> Result<(
     };
 
     let output_path = output_dir.join(format!("{}.epub", file_stem));
-    let mut epub_buffer = Cursor::new(Vec::new());
 
-    let result = aozora_rs::from_aozora_zip::<Cursor<Vec<u8>>>(&mut epub_buffer, azz, Vec::new())
-        .map_err(|e| miette!("{}", e))?;
+    let result = build_epub(azz).map_err(|e| miette!("{}", e))?;
+    let (epub_bytes, errors) = result.into_tuple();
 
-    // Print any warnings using into_tuple() to access private errors
-    let (_, errors) = result.into_tuple();
+    // Print any warnings
     for error in &errors {
         eprintln!("警告: {:?}", error);
     }
 
-    fs::write(&output_path, epub_buffer.into_inner()).into_diagnostic()?;
+    fs::write(&output_path, epub_bytes).into_diagnostic()?;
     println!("生成完了: {}", output_path.display());
 
     Ok(())

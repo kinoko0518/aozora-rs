@@ -8,6 +8,5 @@ aozora-rs-gaiji = { path="../aozora-rs-gaiji" }
 encoding_rs = "0.8.35"
 enum_dispatch = "0.3.13"
 miette = "7.6.0"
-tester = "0.9.1"
 thiserror = "2.0.17"
 winnow = "0.7.14"

@@ -95,6 +95,9 @@ pub fn into_xhtml<'s>(retokenized: &MappedToken<'s>) -> Cow<'s, str> {
         Retokenized::DecoEnd(e) => match e {
             Deco::Mama => Cow::Borrowed("<rt>ママ</rt></ruby>"),
             Deco::Ruby(r) => Cow::Owned(format!("<rt>{}</rt></ruby>", r)),
+            Deco::AHead => Cow::Borrowed("</h1>"),
+            Deco::BHead => Cow::Borrowed("</h2>"),
+            Deco::CHead => Cow::Borrowed("</h3>"),
             _ => Cow::Borrowed("</div>"),
         },
     }

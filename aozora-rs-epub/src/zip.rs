@@ -1,11 +1,10 @@
 use std::{
     collections::HashMap,
-    fs,
     io::{Cursor, Read},
-    path::Path,
+    string::FromUtf8Error,
 };
 
-use encoding_rs::SHIFT_JIS;
+use aozora_rs_xhtml::NovelResult;
 use miette::Diagnostic;
 use thiserror::Error;
 use zip::result::ZipError;
@@ -29,7 +28,7 @@ impl ImgExtension {
 }
 
 pub struct AozoraZip {
-    pub text: String,
+    pub nresult: NovelResult,
     pub images: HashMap<String, (ImgExtension, Vec<u8>)>,
     pub css: HashMap<String, String>,
 }
@@ -70,14 +69,41 @@ pub enum AozoraZipError {
         help("Shift-JISファイルの場合は sjis オプションを有効にしてください。")
     )]
     EncodingError,
+
+    #[error("txtファイルが破損しています")]
+    #[diagnostic(
+        code(aozora_rs_epub::encoding_error),
+        help("Shift-JISファイルの場合は sjis オプションを有効にしてください。")
+    )]
+    BrokenText(FromUtf8Error),
 }
 
 impl AozoraZip {
-    pub fn read_from_zip_inner(zip: &[u8]) -> Result<Self, AozoraZipError> {
-        Self::read_from_zip_with_encoding(zip, false)
+    pub fn read_from_shift_jis_zip(zip: &[u8]) -> Result<Self, AozoraZipError> {
+        Self::read_from_zip(
+            zip,
+            |data: Vec<u8>| -> Result<NovelResult, AozoraZipError> {
+                let (encoded, _, _) = encoding_rs::SHIFT_JIS.decode(&data);
+                Ok(aozora_rs_xhtml::convert_with_meta(&encoded))
+            },
+        )
     }
 
-    pub fn read_from_zip_with_encoding(zip: &[u8], sjis: bool) -> Result<Self, AozoraZipError> {
+    pub fn read_from_utf8_zip(zip: &[u8]) -> Result<Self, AozoraZipError> {
+        Self::read_from_zip(
+            zip,
+            |data: Vec<u8>| -> Result<NovelResult, AozoraZipError> {
+                Ok(aozora_rs_xhtml::convert_with_meta(
+                    &String::from_utf8(data).map_err(|e| AozoraZipError::BrokenText(e))?,
+                ))
+            },
+        )
+    }
+
+    fn read_from_zip<'s>(
+        zip: &[u8],
+        txtf: impl Fn(Vec<u8>) -> Result<NovelResult, AozoraZipError>,
+    ) -> Result<Self, AozoraZipError> {
         let mut zip =
             zip::ZipArchive::new(Cursor::new(zip)).map_err(|e| AozoraZipError::BrokenZip(e))?;
         let mut images = HashMap::new();
@@ -108,19 +134,9 @@ impl AozoraZip {
                     css.insert(c.name().to_string(), buff);
                 }
                 "txt" => {
-                    let text = if sjis {
-                        let mut buff = Vec::new();
-                        c.read_to_end(&mut buff)
-                            .map_err(|e| AozoraZipError::Io(e))?;
-                        let (decoded, _, had_errors) = SHIFT_JIS.decode(&buff);
-                        if had_errors {
-                            return Err(AozoraZipError::EncodingError);
-                        }
-                        decoded.replace("\r\n", "\n")
-                    } else {
-                        let mut buff = String::new();
-                        c.read_to_string(&mut buff)
-                            .map_err(|e| AozoraZipError::Io(e))?;
+                    let text = {
+                        let mut buff: Vec<u8> = Vec::new();
+                        c.read(&mut buff).map_err(|e| AozoraZipError::Io(e))?;
                         buff
                     };
                     if txt.is_none() {
@@ -132,72 +148,15 @@ impl AozoraZip {
                 _ => (),
             }
         }
+        let nresult = if let Some(s) = txt {
+            txtf(s)?
+        } else {
+            return Err(AozoraZipError::NoTextFound);
+        };
         Ok(Self {
-            text: if let Some(s) = txt {
-                s
-            } else {
-                return Err(AozoraZipError::NoTextFound);
-            },
+            nresult,
             images,
             css,
         })
-    }
-
-    pub fn read_from_dir(path: &Path) -> Result<Self, miette::Error> {
-        Self::read_from_dir_inner(path).map_err(|e| e.into())
-    }
-
-    fn read_from_dir_inner(path: &Path) -> Result<Self, AozoraZipError> {
-        let mut text = None;
-        let mut images: HashMap<String, (ImgExtension, Vec<u8>)> = HashMap::new();
-        let mut custom_style: HashMap<String, String> = HashMap::new();
-
-        for dir in fs::read_dir(path)? {
-            let path = dir?.path();
-
-            macro_rules! img_insert {
-                ($ext:expr) => {
-                    if let (Some(file_name), Some(path)) =
-                        (path.file_name().and_then(|f| f.to_str()), path.to_str())
-                    {
-                        images.insert(file_name.to_string(), ($ext, fs::read(path)?));
-                    }
-                };
-            }
-
-            if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
-                match ext {
-                    "txt" => {
-                        if text.is_none() {
-                            text = Some(fs::read_to_string(&path)?);
-                        } else {
-                            return Err(AozoraZipError::MultiTextFound);
-                        }
-                    }
-                    "jpg" | "JPG" | "jpeg" | "JPEG" => img_insert!(ImgExtension::Jpeg),
-                    "png" | "PNG" => img_insert!(ImgExtension::Png),
-                    "gif" | "GIF" => img_insert!(ImgExtension::Gif),
-                    "svg" | "SVG" => img_insert!(ImgExtension::Svg),
-                    "css" => {
-                        if let (Some(file_name), Some(path)) =
-                            (path.file_name().and_then(|f| f.to_str()), path.to_str())
-                        {
-                            custom_style.insert(file_name.to_string(), fs::read_to_string(path)?);
-                        }
-                    }
-                    _ => (),
-                }
-            }
-        }
-
-        if let Some(text) = text {
-            Ok(Self {
-                text,
-                images,
-                css: custom_style,
-            })
-        } else {
-            return Err(AozoraZipError::NoTextFound);
-        }
     }
 }

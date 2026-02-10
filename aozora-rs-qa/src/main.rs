@@ -25,7 +25,7 @@ pub struct AnalysedData {
 impl AnalysedData {
     fn fancy(&self) -> String {
         format!(
-            "\t成功: {}\n\t失敗: {}\n\t成功率: {}%\n\t処理時間: {:?}",
+            "*成功*: {}\n\t*失敗*: {}\n\t*成功率*: {}%\n\t*処理時間*: {:?}",
             self.success,
             self.fail,
             (self.success as f32) / ((self.success + self.fail) as f32) * 100.0,
@@ -60,8 +60,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("解析が終了しました！（{:?}）", analyse_duration.elapsed());
 
     println!("調査報告書を作成中です……");
-    writeln!(summary, "==== aozora-rs　品質保証プログラム ====")?;
-    writeln!(summary, "\n注記解析結果：")?;
+    writeln!(summary, "# aozora-rs　品質保証プログラム")?;
+    writeln!(summary, "\n## 注記解析結果")?;
     writeln!(
         summary,
         "{}",
@@ -70,7 +70,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Err(e) => e.to_string(),
         }
     )?;
-    writeln!(summary, "\n外字解析結果：")?;
+    writeln!(summary, "\n## 外字解析結果")?;
     writeln!(
         summary,
         "{}",

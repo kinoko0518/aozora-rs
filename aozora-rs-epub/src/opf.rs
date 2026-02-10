@@ -11,8 +11,8 @@ pub struct EpubMeta<'s> {
     pub meta: DateTime<Local>,
     pub uuid: Uuid,
     pub styles: Vec<&'s str>,
-    pub images: Vec<(&'s str, ImgExtension)>,
-    pub xhtmls: XHTMLResult<'s>,
+    pub images: Vec<(String, ImgExtension)>,
+    pub xhtmls: XHTMLResult,
 }
 
 impl<'s> EpubMeta<'s> {
@@ -27,8 +27,8 @@ impl<'s> EpubMeta<'s> {
         author: &'s str,
         language: &'s str,
         styles: Vec<&'s str>,
-        images: Vec<(&'s str, ImgExtension)>,
-        xhtmls: XHTMLResult<'s>,
+        images: Vec<(String, ImgExtension)>,
+        xhtmls: XHTMLResult,
     ) -> Self {
         Self {
             title,
@@ -84,15 +84,11 @@ impl<'s> EpubMeta<'s> {
             .collect::<Vec<String>>()
             .join("\n");
         let spine = &self
-            .xhtmls.xhtmls
+            .xhtmls
+            .xhtmls
             .iter()
             .enumerate()
-            .map(|(num, _)| {
-                format!(
-                    "\t\t<itemref linear=\"yes\" idref=\"sec{:>04}\" />",
-                    num
-                )
-            })
+            .map(|(num, _)| format!("\t\t<itemref linear=\"yes\" idref=\"sec{:>04}\" />", num))
             .collect::<Vec<String>>()
             .join("\n");
         template

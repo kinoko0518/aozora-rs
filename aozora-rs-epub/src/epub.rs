@@ -9,7 +9,7 @@ use aozora_rs_xhtml::get_xhtml_filename;
 use miette::Diagnostic;
 use std::io::Write;
 use thiserror::Error;
-use zip::{write::SimpleFileOptions, ZipWriter};
+use zip::{ZipWriter, write::SimpleFileOptions};
 
 #[derive(Diagnostic, Debug, Error)]
 #[error("依存関係にあるファイルが存在しません")]
@@ -27,30 +27,29 @@ pub fn from_aozora_zip<T>(
     azz: AozoraZip,
     styles: Vec<&str>,
 ) -> Result<AZResult<()>, Box<dyn std::error::Error>> {
-    let result = aozora_rs_xhtml::convert_with_meta(&azz.text);
     let mut writer = ZipWriter::new(acc);
     let options = SimpleFileOptions::default();
     let meta = EpubMeta::new(
-        result.title,
-        result.author,
+        azz.nresult.title.as_str(),
+        azz.nresult.author.as_str(),
         "ja",
         styles,
-        result
+        azz.nresult
             .xhtmls
             .dependency
             .iter()
             .filter_map(|img| {
-                let ext = match *img {
+                let ext = match img.as_str() {
                     "png" | "PNG" => Some(ImgExtension::Png),
                     "jpg" | "JPG" | "jpeg" | "JPEG" => Some(ImgExtension::Jpeg),
                     "gif" | "GIF" => Some(ImgExtension::Gif),
                     "svg" | "SVG" => Some(ImgExtension::Svg),
                     _ => None,
                 }?;
-                Some((*img, ext))
+                Some((img.clone(), ext))
             })
-            .collect::<Vec<(&str, ImgExtension)>>(),
-        result.xhtmls,
+            .collect::<Vec<(String, ImgExtension)>>(),
+        azz.nresult.xhtmls,
     );
 
     writer.start_file("mimetype", options)?;
@@ -80,7 +79,7 @@ pub fn from_aozora_zip<T>(
 
     let mut azresult = AZResultC::new();
     for d in meta.xhtmls.dependency {
-        if let Some(img) = azz.images.get(d) {
+        if let Some(img) = azz.images.get(&d) {
             writer.start_file(format!("item/image/{}", d), options)?;
             writer.write(&img.1)?;
         } else {

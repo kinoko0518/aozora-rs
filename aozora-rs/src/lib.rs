@@ -1,24 +1,45 @@
 use std::{fs::File, io::Cursor, path::Path};
 use wasm_bindgen::{JsError, prelude::wasm_bindgen};
 
-// Re-exports for CLI usage (pure functions only - no file I/O)
-pub use aozora_rs_core::AZResult;
-pub use aozora_rs_epub::{AozoraZip, AozoraZipError, from_aozora_zip};
+// ── 再エクスポート ──────────────────────────────────
+pub use aozora_rs_core::{AZResult, AZResultC};
+pub use aozora_rs_epub::{AozoraZip, AozoraZipError};
 pub use aozora_rs_xhtml::{
     NovelResult, NovelResultNoMeta, XHTMLResult, convert_with_meta, convert_with_no_meta,
 };
+
+// ── ネイティブAPI ──────────────────────────────────
+
+/// AozoraZipからEPUBのバイト列をオンメモリで構築して返します。
+///
+/// 構築中に発生した非致命的エラー（画像の依存関係不足など）は
+/// `AZResult` のerrorsとして返されます。
+pub fn build_epub(azz: AozoraZip) -> Result<AZResult<Vec<u8>>, Box<dyn std::error::Error>> {
+    let mut acc = Cursor::new(Vec::new());
+    let result = aozora_rs_epub::from_aozora_zip::<Cursor<Vec<u8>>>(&mut acc, azz, Vec::new())?;
+    let (_, errors) = result.into_tuple();
+    Ok(AZResultC::from(errors).finally(acc.into_inner()))
+}
+
+/// AozoraZipからEPUBを構築し、指定パスに直接書き込みます。
+pub fn save_epub(azz: AozoraZip, to: &Path) -> Result<AZResult<()>, Box<dyn std::error::Error>> {
+    let mut acc = File::create(to)?;
+    let result = aozora_rs_epub::from_aozora_zip::<File>(&mut acc, azz, Vec::new())?;
+    Ok(result)
+}
+
+// ── WASM API ────────────────────────────────────
 
 fn into_js_error<E: std::fmt::Display>(err: E) -> JsError {
     JsError::new(&format!("{}", err))
 }
 
 fn reports_to_single_string(reports: Vec<miette::Report>) -> String {
-    let msg = reports
+    reports
         .iter()
         .map(|r| format!("{:?}", r))
         .collect::<Vec<_>>()
-        .join("\n");
-    msg
+        .join("\n")
 }
 
 #[wasm_bindgen]
@@ -35,7 +56,7 @@ pub struct StandaloneXHTML {
 ///
 /// ご自身のサイト自体を青空文庫書式で記述する用途に便利です。
 #[wasm_bindgen]
-pub fn generate_standalone_xhtml(from: &str, delimiter: &str) -> StandaloneXHTML {
+pub fn generate_standalone_xhtml_wasm(from: &str, delimiter: &str) -> StandaloneXHTML {
     let result = aozora_rs_xhtml::convert_with_no_meta(from);
     StandaloneXHTML {
         result: result.xhtmls.xhtmls.join(delimiter),
@@ -65,7 +86,7 @@ pub struct BookData {
 ///
 /// https://github.com/kinoko0518/aozora-rs/issues/7
 #[wasm_bindgen]
-pub fn parse_to_book_data(from: &str) -> BookData {
+pub fn parse_to_book_data_wasm(from: &str) -> BookData {
     let result = aozora_rs_xhtml::convert_with_meta(from);
     BookData {
         title: result.title.to_string(),
@@ -77,20 +98,15 @@ pub fn parse_to_book_data(from: &str) -> BookData {
 
 /// zipであることを期待するバイト列を受けとり、構築したepubのバイト列をオンメモリで構築して返します。
 #[wasm_bindgen]
-pub fn build_epub_bytes(from: &[u8]) -> Result<Vec<u8>, JsError> {
-    let azz = AozoraZip::read_from_zip_inner(from).map_err(into_js_error)?;
+pub fn build_epub_bytes_wasm(from: &[u8], is_sjis: bool) -> Result<Vec<u8>, JsError> {
+    let azz = if is_sjis {
+        AozoraZip::read_from_shift_jis_zip(from)
+    } else {
+        AozoraZip::read_from_utf8_zip(from)
+    }
+    .map_err(into_js_error)?;
     let mut acc = Cursor::new(Vec::new());
     aozora_rs_epub::from_aozora_zip::<Cursor<Vec<u8>>>(&mut acc, azz, Vec::new())
         .map_err(into_js_error)?;
     Ok(acc.into_inner())
-}
-
-/// zipであることを期待するバイト列を受けとり、指定されたパスに構築したepubの直接書き込みを行います。
-///
-/// WASMでは動作しないため、wasm_bindgenタグはつきません。
-pub fn save_epub_to_file(from: &[u8], to: &Path) -> Result<(), JsError> {
-    let azz = AozoraZip::read_from_zip_inner(from).map_err(into_js_error)?;
-    let mut acc = File::create(to).map_err(into_js_error)?;
-    aozora_rs_epub::from_aozora_zip::<File>(&mut acc, azz, Vec::new()).map_err(into_js_error)?;
-    Ok(())
 }
