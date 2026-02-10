@@ -20,5 +20,5 @@ miette = { version = "7.6.0", features = ["fancy"] }
 ansi-to-tui = "7.0.0"
 
 [[bin]]
-name = "preview"
-path = "src/bin/preview/main.rs"
+name = "qa"
+path = "./src/main.rs"

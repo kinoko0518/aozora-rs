@@ -1,6 +1,8 @@
 [workspace]
 members = [
-    "aozora-rs-core", "aozora-rs-tester",
-    "aozora-rs-gaiji", "aozora-rs-xhtml"
-, "aozora-rs-epub", "aozora-rs", "ayame-cli"]
+    "aozora-rs-core", "aozora-rs-qa",
+    "aozora-rs-gaiji", "aozora-rs-xhtml",
+    "aozora-rs-epub", "aozora-rs",
+    "ayame-cli"
+]
 resolver = "3"
