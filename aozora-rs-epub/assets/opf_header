@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<package
+    xmlns="http://www.idpf.org/2007/opf"
+    version="3.0"
+    xml:lang="ja"
+    unique-identifier="unique-id"
+    prefix="rendition: http://www.idpf.org/vocab/rendition/#
+         ebpaj: http://www.ebpaj.jp/
+         fixed-layout-jp: http://www.digital-comic.jp/
+         ibooks: http://vocabulary.itunes.apple.com/rdf/ibooks/vocabulary-extensions-1.0/"
+>

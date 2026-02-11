@@ -30,7 +30,6 @@ impl ImgExtension {
 pub struct AozoraZip {
     pub nresult: NovelResult,
     pub images: HashMap<String, (ImgExtension, Vec<u8>)>,
-    pub css: HashMap<String, String>,
 }
 
 #[derive(Debug, Error, Diagnostic)]
@@ -107,7 +106,6 @@ impl AozoraZip {
         let mut zip =
             zip::ZipArchive::new(Cursor::new(zip)).map_err(|e| AozoraZipError::BrokenZip(e))?;
         let mut images = HashMap::new();
-        let mut css = HashMap::new();
         let mut txt = None;
 
         let zip_len = zip.len();
@@ -127,12 +125,6 @@ impl AozoraZip {
                 "png" | "PNG" => img_insert!(ImgExtension::Png),
                 "gif" | "GIF" => img_insert!(ImgExtension::Gif),
                 "svg" | "SVG" => img_insert!(ImgExtension::Svg),
-                "css" | "CSS" => {
-                    let mut buff = String::new();
-                    c.read_to_string(&mut buff)
-                        .map_err(|e| AozoraZipError::Io(e))?;
-                    css.insert(c.name().to_string(), buff);
-                }
                 "txt" => {
                     let text = {
                         let mut buff: Vec<u8> = Vec::new();
@@ -153,10 +145,6 @@ impl AozoraZip {
         } else {
             return Err(AozoraZipError::NoTextFound);
         };
-        Ok(Self {
-            nresult,
-            images,
-            css,
-        })
+        Ok(Self { nresult, images })
     }
 }

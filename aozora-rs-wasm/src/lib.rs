@@ -1,7 +1,7 @@
 use std::io::Cursor;
 use wasm_bindgen::{JsError, prelude::wasm_bindgen};
 
-use aozora_rs_epub::AozoraZip;
+pub use aozora_rs_epub::{AozoraZip, EpubSetting};
 
 fn into_js_error<E: std::fmt::Display>(err: E) -> JsError {
     JsError::new(&format!("{}", err))
@@ -75,7 +75,15 @@ pub fn parse_to_book_data(from: &str) -> BookData {
 pub fn build_epub_bytes(from: &[u8]) -> Result<Vec<u8>, JsError> {
     let azz = AozoraZip::read_from_utf8_zip(from).map_err(into_js_error)?;
     let mut acc = Cursor::new(Vec::new());
-    aozora_rs_epub::from_aozora_zip::<Cursor<Vec<u8>>>(&mut acc, azz, Vec::new())
-        .map_err(into_js_error)?;
+    aozora_rs_epub::from_aozora_zip::<Cursor<Vec<u8>>>(
+        &mut acc,
+        azz,
+        Vec::new(),
+        EpubSetting {
+            language: "ja",
+            is_rtl: true,
+        },
+    )
+    .map_err(into_js_error)?;
     Ok(acc.into_inner())
 }

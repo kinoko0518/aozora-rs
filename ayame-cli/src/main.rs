@@ -1,4 +1,6 @@
-use aozora_rs::{AozoraZip, NovelResult, XHTMLResult, convert_with_meta, from_aozora_zip};
+use aozora_rs::{
+    AozoraZip, EpubSetting, NovelResult, XHTMLResult, convert_with_meta, from_aozora_zip,
+};
 use clap::{Parser, Subcommand};
 use encoding_rs::SHIFT_JIS;
 use miette::{IntoDiagnostic, Result, miette};
@@ -175,7 +177,6 @@ fn handle_epub(source: PathBuf, sjis: bool, output: Option<PathBuf>) -> Result<(
             AozoraZip {
                 nresult: convert_with_meta(&text),
                 images: std::collections::HashMap::new(),
-                css: std::collections::HashMap::new(),
             }
         }
         _ => return Err(miette!("サポートされていないファイル形式です: .{}", ext)),
@@ -184,8 +185,16 @@ fn handle_epub(source: PathBuf, sjis: bool, output: Option<PathBuf>) -> Result<(
     let output_path = output_dir.join(format!("{}.epub", file_stem));
 
     let mut epub_buffer = Cursor::new(Vec::new());
-    let result = from_aozora_zip::<Cursor<Vec<u8>>>(&mut epub_buffer, azz, Vec::new())
-        .map_err(|e| miette!("{}", e))?;
+    let result = from_aozora_zip::<Cursor<Vec<u8>>>(
+        &mut epub_buffer,
+        azz,
+        Vec::new(),
+        EpubSetting {
+            language: "ja",
+            is_rtl: true,
+        },
+    )
+    .map_err(|e| miette!("{}", e))?;
     let (_, errors) = result.into_tuple();
 
     // Print any warnings

@@ -1,56 +1,96 @@
-use std::io::Seek;
+//! # epub
+//! epubを実際に生成する部分です。生成にあたって、以下のルールが適用されます。
+//! - UUIDは著者名とタイトルを'|'で連結したものをSHA-1でハッシュ化したもの。
+//! - xhtmlはitem/xhtmlの中に連番（sec0000.xhtml、sec0001.xhtml...）で配置される。idは拡張子を除いたファイル名と同じ。
+//! - cssはitem/cssの中に連番（style0000.css、style0001.css）で配置される。idは拡張子を除いたファイル名と同じ。
+//! - 画像はitem/imageの中に名前そのままで配置される。idは連番（image0000、image0001）
 
-use crate::{
-    opf::EpubMeta,
-    zip::{AozoraZip, ImgExtension},
-};
+mod nav;
+mod ncx;
+mod opf;
+mod xhtml;
+
+use std::io::{Seek, Write};
+
 use aozora_rs_core::{AZResult, AZResultC};
-use aozora_rs_xhtml::get_xhtml_filename;
-use miette::Diagnostic;
-use std::io::Write;
-use thiserror::Error;
+use chrono::Local;
+use uuid::Uuid;
 use zip::{ZipWriter, write::SimpleFileOptions};
 
-#[derive(Diagnostic, Debug, Error)]
-#[error("依存関係にあるファイルが存在しません")]
-#[diagnostic(
-    code(aozora_rs_epub::dependency_no_found),
-    help("対象のファイルが存在し、プログラムがアクセスできる状態にあることを確認してください。")
-)]
-struct DependencyNotFound {
-    #[source_code]
-    target: String,
+use crate::{AozoraZip, ImgExtension};
+
+pub struct EpubSetting<'s> {
+    pub language: &'s str,
+    pub is_rtl: bool,
+}
+
+pub struct EpubWriter<'s> {
+    vzip: AozoraZip,
+    setting: EpubSetting<'s>,
+    lud: chrono::DateTime<Local>,
+    styles: Vec<&'s str>,
+}
+
+impl EpubWriter<'_> {
+    pub fn uuid(&self) -> Uuid {
+        let namespace = Uuid::NAMESPACE_OID;
+        let seed = format!("{}|{}", &self.vzip.nresult.author, &self.vzip.nresult.title);
+        Uuid::new_v5(&namespace, seed.as_bytes())
+    }
+
+    pub fn xhtmls(&self) -> impl Iterator<Item = String> {
+        self.vzip
+            .nresult
+            .xhtmls
+            .xhtmls
+            .iter()
+            .enumerate()
+            .map(|(num, _)| format!("xhtml/sec{:>04}.xhtml", num))
+    }
+
+    pub fn css(&self) -> impl Iterator<Item = String> {
+        self.styles
+            .iter()
+            .enumerate()
+            .map(|(num, _)| format!("style/style{:>04}.css", num))
+    }
+
+    pub fn images(&self) -> impl Iterator<Item = (String, ImgExtension)> {
+        self.vzip
+            .nresult
+            .xhtmls
+            .dependency
+            .iter()
+            .filter_map(|i| Some((i, ImgExtension::from_extension(i)?)))
+            .map(|(i, e)| (format!("images/{i}"), e))
+    }
+
+    pub fn apply_css(&self, writer: &mut impl Write) -> Result<(), std::io::Error> {
+        for css in self.css() {
+            writeln!(
+                writer,
+                "\t\t<link rel=\"stylesheet\" type=\"text/css\" href=\"{}\" />",
+                css
+            )?;
+        }
+        Ok(())
+    }
 }
 
 pub fn from_aozora_zip<T>(
     acc: impl Write + Seek,
     azz: AozoraZip,
     styles: Vec<&str>,
+    setting: EpubSetting,
 ) -> Result<AZResult<()>, Box<dyn std::error::Error>> {
     let mut writer = ZipWriter::new(acc);
     let options = SimpleFileOptions::default();
-    let meta = EpubMeta::new(
-        azz.nresult.title.as_str(),
-        azz.nresult.author.as_str(),
-        "ja",
+    let epub_writer = EpubWriter {
+        vzip: azz,
+        setting,
         styles,
-        azz.nresult
-            .xhtmls
-            .dependency
-            .iter()
-            .filter_map(|img| {
-                let ext = match img.as_str() {
-                    "png" | "PNG" => Some(ImgExtension::Png),
-                    "jpg" | "JPG" | "jpeg" | "JPEG" => Some(ImgExtension::Jpeg),
-                    "gif" | "GIF" => Some(ImgExtension::Gif),
-                    "svg" | "SVG" => Some(ImgExtension::Svg),
-                    _ => None,
-                }?;
-                Some((img.clone(), ext))
-            })
-            .collect::<Vec<(String, ImgExtension)>>(),
-        azz.nresult.xhtmls,
-    );
+        lud: Local::now(),
+    };
 
     writer.start_file("mimetype", options)?;
     writer.write_all(include_str!("../assets/mimetype").as_bytes())?;
@@ -59,35 +99,27 @@ pub fn from_aozora_zip<T>(
     writer.write_all(include_str!("../assets/container.xml").as_bytes())?;
 
     writer.start_file("item/standard.opf", options)?;
-    writer.write_all(meta.into_opf().as_bytes())?;
+    epub_writer.write_opf(&mut writer)?;
 
     writer.start_file("item/toc.ncx", options)?;
-    writer.write_all(meta.into_ncx().as_bytes())?;
+    epub_writer.write_ncx(&mut writer)?;
 
     writer.start_file("item/nav.xhtml", options)?;
-    writer.write_all(meta.into_nav().as_bytes())?;
+    epub_writer.write_nav(&mut writer)?;
 
-    for (i, x) in meta.xhtmls.xhtmls.iter().enumerate() {
-        writer.start_file(format!("item/xhtml/{}", get_xhtml_filename(i)), options)?;
-        writer.write_all(
-            include_str!("../assets/template.xhtml")
-                .replace("［＃コンテンツ］", x)
-                .replace("［＃タイトル］", meta.title)
-                .as_bytes(),
-        )?;
+    for (i, x) in epub_writer.vzip.nresult.xhtmls.xhtmls.iter().enumerate() {
+        writer.start_file(format!("item/xhtml/sec{:>04}.xhtml", i), options)?;
+        epub_writer.write_xhtml(&x, &mut writer)?;
     }
 
     let mut azresult = AZResultC::new();
-    for d in meta.xhtmls.dependency {
-        if let Some(img) = azz.images.get(&d) {
+    for d in epub_writer.vzip.nresult.xhtmls.dependency {
+        if let Some(img) = epub_writer.vzip.images.get(&d) {
             writer.start_file(format!("item/image/{}", d), options)?;
             writer.write(&img.1)?;
         } else {
             azresult.push(
-                DependencyNotFound {
-                    target: d.to_string(),
-                }
-                .into(),
+                miette::miette!("依存関係にあるファイルが見つかりませんでした：{}", d).into(),
             );
         }
     }
