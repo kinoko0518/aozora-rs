@@ -3,6 +3,40 @@ members = [
     "aozora-rs-core", "aozora-rs-qa",
     "aozora-rs-gaiji", "aozora-rs-xhtml",
     "aozora-rs-epub", "aozora-rs",
-    "ayame-cli"
+    "aozora-rs-wasm", "ayame-cli"
 ]
 resolver = "3"
+
+[workspace.dependencies]
+aozora-rs = { version = "0.1.0", path = "./aozora-rs" }
+aozora-rs-core = { version = "0.1.0", path = "./aozora-rs-core" }
+aozora-rs-gaiji = { version = "0.1.0", path = "./aozora-rs-gaiji" }
+aozora-rs-xhtml = { version = "0.1.0", path = "./aozora-rs-xhtml" }
+aozora-rs-epub = { version = "0.1.0", path = "./aozora-rs-epub" }
+aozora-rs-wasm = { version = "0.1.0", path = "./aozora-rs-wasm" }
+
+encoding_rs = "0.8.35"
+miette = { version = "7.6.0", features = ["fancy"] }
+winnow = "0.7.14"
+thiserror = "2.0.18"
+itertools = "0.14.0"
+chrono = "0.4.43"
+uuid = { version = "1.20.0", features = ["v5", "fast-rng", "macro-diagnostics", "js"] }
+zip = "7.4.0"
+wasm-bindgen = "0.2.108"
+clap = { version = "4.5", features = ["derive"] }
+tokio = { version = "1.49.0", features = ["full"] }
+reqwest = { version = "0.11", features = ["blocking"] }
+futures = "0.3.31"
+rkyv = { version = "0.7.45", features = ["validation"] }
+walkdir = "2.5.0"
+ratatui = "0.29"
+crossterm = "0.28"
+unicode-width = "0.1"
+rayon = "1.11.0"
+ansi-to-tui = "7.0.0"
+bimap = "0.6.3"
+pdfium-render = "0.8"
+flate2 = "1.0"
+tar = "0.4"
+enum_dispatch = "0.3.13"

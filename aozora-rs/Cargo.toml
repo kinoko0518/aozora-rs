@@ -4,12 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-aozora-rs-core = { version = "0.1.0", path = "../aozora-rs-core" }
-aozora-rs-epub = { version = "0.1.0", path = "../aozora-rs-epub" }
-aozora-rs-xhtml = { version = "0.1.0", path = "../aozora-rs-xhtml" }
-miette = "7.6.0"
-wasm-bindgen = "0.2.108"
-zip = "7.4.0"
-
-[lib]
-crate-type = ["cdylib", "rlib"]
+aozora-rs-core = { workspace = true }
+aozora-rs-epub = { workspace = true }
+aozora-rs-xhtml = { workspace = true }

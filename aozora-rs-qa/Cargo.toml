@@ -4,20 +4,20 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-aozora-rs-core = { path = "../aozora-rs-core" }
-aozora-rs-gaiji = { path="../aozora-rs-gaiji" }
-encoding_rs = "0.8.35"
-futures = "0.3.31"
-rkyv = { version = "0.7", features = ["validation"] }
-tokio = {version="1.49.0", features = ["full"]}
-walkdir = "2.5.0"
-winnow = "0.7.14"
-ratatui = "0.29"
-crossterm = "0.28"
-unicode-width = "0.1"
-rayon = "1.11.0"
-miette = { version = "7.6.0", features = ["fancy"] }
-ansi-to-tui = "7.0.0"
+aozora-rs-core = { workspace = true }
+aozora-rs-gaiji = { workspace = true }
+encoding_rs = { workspace = true }
+futures = { workspace = true }
+rkyv = { workspace = true }
+tokio = { workspace = true }
+walkdir = { workspace = true }
+winnow = { workspace = true }
+ratatui = { workspace = true }
+crossterm = { workspace = true }
+unicode-width = { workspace = true }
+rayon = { workspace = true }
+miette = { workspace = true }
+ansi-to-tui = { workspace = true }
 
 [[bin]]
 name = "qa"

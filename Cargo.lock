@@ -130,9 +130,6 @@ dependencies = [
  "aozora-rs-core",
  "aozora-rs-epub",
  "aozora-rs-xhtml",
- "miette",
- "wasm-bindgen",
- "zip",
 ]
 
 [[package]]
@@ -193,6 +190,17 @@ dependencies = [
  "unicode-width 0.1.14",
  "walkdir",
  "winnow",
+]
+
+[[package]]
+name = "aozora-rs-wasm"
+version = "0.1.0"
+dependencies = [
+ "aozora-rs-core",
+ "aozora-rs-epub",
+ "aozora-rs-xhtml",
+ "miette",
+ "wasm-bindgen",
 ]
 
 [[package]]

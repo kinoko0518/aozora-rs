@@ -99,11 +99,11 @@ jobs:
           version: "latest"
 
       - name: Build WASM
-        run: wasm-pack build aozora-rs --target bundler
+        run: wasm-pack build aozora-rs-wasm --target bundler
 
       - name: Zip pkg directory
         run: |
-          cd aozora-rs
+          cd aozora-rs-wasm
           zip -r aozora-rs-wasm-pkg.zip pkg
 
       - name: Download QA result
@@ -149,7 +149,7 @@ jobs:
           append_body: true
           body: ${{ steps.release_body.outputs.BODY }}
           files: |
-            aozora-rs/aozora-rs-wasm-pkg.zip
+            aozora-rs-wasm/aozora-rs-wasm-pkg.zip
             qa-result.zip
             ayame-linux-x86_64.zip
             ayame-macos-aarch64.zip

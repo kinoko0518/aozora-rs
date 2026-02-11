@@ -8,7 +8,7 @@ name = "ayame"
 path = "src/main.rs"
 
 [dependencies]
-aozora-rs = { version = "0.1.0", path = "../aozora-rs" }
-clap = { version = "4", features = ["derive"] }
-encoding_rs = "0.8"
-miette = { version = "7.6.0", features = ["fancy"] }
+aozora-rs = { workspace = true }
+clap = { workspace = true }
+encoding_rs = { workspace = true }
+miette = { workspace = true }

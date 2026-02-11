@@ -1,5 +1,5 @@
 [package]
-name = "aozora-rs-xhtml"
+name = "aozora-rs-wasm"
 version = "0.1.0"
 edition = "2024"
 
@@ -8,6 +8,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 aozora-rs-core = { workspace = true }
-itertools = { workspace = true }
+aozora-rs-epub = { workspace = true }
+aozora-rs-xhtml = { workspace = true }
 miette = { workspace = true }
-winnow = { workspace = true }
+wasm-bindgen = { workspace = true }

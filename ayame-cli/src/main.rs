@@ -1,9 +1,9 @@
-use aozora_rs::{AozoraZip, NovelResult, XHTMLResult, build_epub, convert_with_meta};
+use aozora_rs::{AozoraZip, NovelResult, XHTMLResult, convert_with_meta, from_aozora_zip};
 use clap::{Parser, Subcommand};
 use encoding_rs::SHIFT_JIS;
 use miette::{IntoDiagnostic, Result, miette};
 use std::fs;
-use std::io::Write;
+use std::io::{Cursor, Write};
 use std::path::{Path, PathBuf};
 
 #[derive(Parser)]
@@ -183,15 +183,17 @@ fn handle_epub(source: PathBuf, sjis: bool, output: Option<PathBuf>) -> Result<(
 
     let output_path = output_dir.join(format!("{}.epub", file_stem));
 
-    let result = build_epub(azz).map_err(|e| miette!("{}", e))?;
-    let (epub_bytes, errors) = result.into_tuple();
+    let mut epub_buffer = Cursor::new(Vec::new());
+    let result = from_aozora_zip::<Cursor<Vec<u8>>>(&mut epub_buffer, azz, Vec::new())
+        .map_err(|e| miette!("{}", e))?;
+    let (_, errors) = result.into_tuple();
 
     // Print any warnings
     for error in &errors {
         eprintln!("警告: {:?}", error);
     }
 
-    fs::write(&output_path, epub_bytes).into_diagnostic()?;
+    fs::write(&output_path, epub_buffer.into_inner()).into_diagnostic()?;
     println!("生成完了: {}", output_path.display());
 
     Ok(())
