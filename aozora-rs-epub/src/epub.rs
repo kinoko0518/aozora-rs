@@ -112,6 +112,11 @@ pub fn from_aozora_zip<T>(
         epub_writer.write_xhtml(&x, &mut writer)?;
     }
 
+    for (i, css) in epub_writer.styles.iter().enumerate() {
+        writer.start_file(format!("item/style/style{:>04}.css", i), options)?;
+        writer.write_all(css.as_bytes())?;
+    }
+
     let mut azresult = AZResultC::new();
     for d in epub_writer.vzip.nresult.xhtmls.dependency {
         if let Some(img) = epub_writer.vzip.images.get(&d) {

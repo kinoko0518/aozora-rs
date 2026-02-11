@@ -3,7 +3,7 @@ members = [
     "aozora-rs-core", "aozora-rs-qa",
     "aozora-rs-gaiji", "aozora-rs-xhtml",
     "aozora-rs-epub", "aozora-rs",
-    "aozora-rs-wasm", "ayame-cli"
+    "aozora-rs-wasm", "ayame-cli",
 ]
 resolver = "3"
 
