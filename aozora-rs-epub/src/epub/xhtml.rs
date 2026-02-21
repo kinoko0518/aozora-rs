@@ -12,14 +12,12 @@ impl EpubWriter<'_> {
 
         writer.write_all(b"<head>\n\t<meta charset=\"UTF-8\" />\n")?;
 
-        writeln!(writer, "\t<title>{}</title>\n", &self.nresult.meta.title)?;
-        self.apply_css(writer)?;
+        writeln!(writer, "\t<title>{}</title>", &self.nresult.meta.title)?;
+        self.apply_css(writer, "../style/")?;
 
-        writeln!(
-            writer,
-            "</head>\n<body>\n\t<div class=\"main\">{}\t</div>\n</body>\n</html>",
-            content
-        )?;
+        writer.write_all(b"</head>\n<body>\n\t<div class=\"main\">\n")?;
+        writer.write_all(content.as_bytes())?;
+        writer.write_all(b"\n\t</div>\n</body>\n</html>\n")?;
 
         Ok(())
     }

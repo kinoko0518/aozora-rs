@@ -75,12 +75,16 @@ impl EpubWriter<'_> {
             .map(|(i, e)| (format!("images/{i}"), e))
     }
 
-    pub fn apply_css(&self, writer: &mut impl Write) -> Result<(), std::io::Error> {
-        for css in self.css() {
+    pub fn apply_css(
+        &self,
+        writer: &mut impl Write,
+        base_path: &str,
+    ) -> Result<(), std::io::Error> {
+        for (i, _) in self.styles.iter().enumerate() {
             writeln!(
                 writer,
-                "\t\t<link rel=\"stylesheet\" type=\"text/css\" href=\"{}\" />",
-                css
+                "\t<link rel=\"stylesheet\" type=\"text/css\" href=\"{}style{:>04}.css\" />",
+                base_path, i
             )?;
         }
         Ok(())

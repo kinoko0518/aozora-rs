@@ -6,7 +6,7 @@ use crate::dom::MappedToken;
 
 pub fn into_xhtml<'s>(mapped: &MappedToken<'s>) -> Cow<'s, str> {
     match &mapped.content {
-        Retokenized::Text(t) => Cow::Owned(format!("<span>{}</span>", t)),
+        Retokenized::Text(t) => Cow::Owned(format!("<span>{}</span>", t.replace('\r', ""))),
         Retokenized::Odoriji(o) => {
             Cow::Owned(format!("{}〵", if o.has_dakuten { "〴" } else { "〳" }))
         }

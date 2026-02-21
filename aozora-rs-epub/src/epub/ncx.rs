@@ -22,18 +22,22 @@ impl EpubWriter<'_> {
     fn write_ncx_navmaps(&self, writer: &mut impl Write) -> Result<(), std::io::Error> {
         writer.write_all("<navMap>\n".as_bytes())?;
 
-        let iter = self
-            .nresult
-            .xhtmls
-            .chapters
-            .iter()
-            .map(|c| (&c.name, c.xhtml_id));
-        for c in iter {
-            writer.write_all("\t<navPoint id=\"toc1\" playOrder=\"1\">\n".as_bytes())?;
+        for (i, chapter) in self.nresult.xhtmls.chapters.iter().enumerate() {
+            let order = i + 1;
+            writeln!(
+                writer,
+                "\t<navPoint id=\"toc{}\" playOrder=\"{}\">",
+                order, order
+            )?;
             writer.write_all("\t\t<navLabel>\n".as_bytes())?;
-            writeln!(writer, "\t\t\t<text>{}</text>", c.0)?;
+            writeln!(writer, "\t\t\t<text>{}</text>", chapter.name)?;
             writer.write_all("\t\t</navLabel>\n".as_bytes())?;
-            writeln!(writer, "\t\t<content src=\"xhtml/sec{:>04}\"/>", c.1)?;
+            writeln!(
+                writer,
+                "\t\t<content src=\"xhtml/sec{:>04}.xhtml#{}\"/>",
+                chapter.xhtml_id,
+                chapter.get_id()
+            )?;
             writer.write_all("\t</navPoint>\n".as_bytes())?;
         }
 
