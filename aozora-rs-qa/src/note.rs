@@ -1,6 +1,6 @@
 use crate::{AnalysedData, MapCache};
-use aozora_rs_core::prelude::{AozoraTokenKind, Note};
-use aozora_rs_core::tokenize;
+use aozora_rs_core::tokenizer::Note;
+use aozora_rs_core::{AozoraTokenKind, parse_meta, tokenize};
 use aozora_rs_gaiji::whole_gaiji_to_char;
 use rayon::prelude::*;
 use std::fmt::Write as FmtWrite;
@@ -10,23 +10,26 @@ use std::{
     fs::{self},
     path::{Path, PathBuf},
 };
+use winnow::LocatingSlice;
 
 fn analyse_file(path: &Path) -> Option<(usize, usize, String)> {
     let bytes = fs::read(path).ok()?;
 
     let read_original = encoding_rs::SHIFT_JIS.decode(&bytes).0;
-    let read = whole_gaiji_to_char(&read_original);
+    let mut read = whole_gaiji_to_char(&read_original);
 
     let mut success = 0;
     let mut fail = 0;
     let mut failed_notes = String::new();
 
-    for token in tokenize(&read).map(|(_, tokens)| tokens).ok()? {
+    // メタデータは不要なので捨てる
+    let _ = parse_meta(&mut read);
+    for token in tokenize(&mut LocatingSlice::new(&read)).ok()? {
         match &token.kind {
             AozoraTokenKind::Note(c) => match c {
                 Note::Unknown(s) => {
                     fail += 1;
-                    writeln!(failed_notes, "{}", s);
+                    let _ = writeln!(failed_notes, "{}", s);
                 }
                 _ => {
                     success += 1;

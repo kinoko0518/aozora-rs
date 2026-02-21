@@ -9,12 +9,12 @@ impl EpubWriter<'_> {
         write!(
             writer,
             "\t\t<!-- 作品名 -->\n\t\t<dc:title id=\"title\">{}</dc:title>\n",
-            &self.vzip.nresult.title
+            self.nresult.meta.title
         )?;
         write!(
             writer,
             "\t\t<!-- 著者名 -->\n\t\t<dc:creator id=\"creator01\">{}</dc:creator>\n",
-            &self.vzip.nresult.author
+            self.nresult.meta.author
         )?;
         write!(
             writer,
@@ -94,7 +94,6 @@ impl EpubWriter<'_> {
 
     fn write_opf_spine(&self, writer: &mut impl Write) -> Result<(), std::io::Error> {
         let spines = self
-            .vzip
             .nresult
             .xhtmls
             .xhtmls
@@ -105,7 +104,7 @@ impl EpubWriter<'_> {
         writeln!(
             writer,
             "\t<spine page-progression-direction=\"{}\" toc=\"ncx\">",
-            if self.setting.is_rtl { "rtl" } else { "ltl" }
+            if self.setting.is_rtl { "rtl" } else { "ltr" }
         )?;
         writer.write_all("\t\t<itemref idref=\"nav\" linear=\"yes\" />\n".as_bytes())?;
         for s in spines {

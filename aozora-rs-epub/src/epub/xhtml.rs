@@ -12,7 +12,7 @@ impl EpubWriter<'_> {
 
         writer.write_all(b"<head>\n\t<meta charset=\"UTF-8\" />\n")?;
 
-        writeln!(writer, "\t<title>{}</title>\n", &self.vzip.nresult.title)?;
+        writeln!(writer, "\t<title>{}</title>\n", &self.nresult.meta.title)?;
         self.apply_css(writer)?;
 
         writeln!(

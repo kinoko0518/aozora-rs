@@ -1,0 +1,119 @@
+@charset "utf-8";
+
+/* 
+ * 構造的スタイル定義 (Prelude)
+ * aozora-rs-xhtmlが出力するHTMLタグを正しく、意図通りに表示するためのスタイルセット。
+ * 装飾的な「美しさ」ではなく、構造的な「正しさ」を担保することを目的とする。
+ */
+
+/* 実線による強調表現（傍線）を表示するため */
+.bosen-solid {
+    text-decoration-style: solid;
+}
+
+/* 二重線による強調表現（二重傍線）を表示するため */
+.bosen-double {
+    text-decoration-style: double;
+}
+
+/* 点線による強調表現（鎖線）を表示するため */
+.bosen-chan {
+    text-decoration-style: dotted;
+}
+
+/* 破線による強調表現を表示するため */
+.bosen-dashed {
+    text-decoration-style: dashed;
+}
+
+/* 波線による強調表現を表示するため */
+.bosen-wavy {
+    text-decoration-style: wavy;
+}
+
+/* 胡麻（ごま）形状の傍点を表示するため */
+.sesame {
+    text-emphasis-style: filled sesame;
+    display: inline;
+}
+
+/* 白丸形状の傍点を表示するため */
+.circle {
+    text-emphasis-style: open circle;
+    display: inline;
+}
+
+/* 黒丸形状の傍点を表示するため */
+.circle-filled {
+    text-emphasis-style: filled circle;
+    display: inline;
+}
+
+/* 二重丸（白）形状の傍点を表示するため */
+.double-circle {
+    text-emphasis-style: open double-circle;
+    display: inline;
+}
+
+/* 蛇の目（二重丸・黒）形状の傍点を表示するため */
+.hebinome {
+    text-emphasis-style: filled double-circle;
+    display: inline;
+}
+
+/* 三角（白）形状の傍点を表示するため */
+.triangle {
+    text-emphasis-style: open triangle;
+    display: inline;
+}
+
+/* 三角（黒）形状の傍点を表示するため */
+.triangle-filled {
+    text-emphasis-style: filled triangle;
+    display: inline;
+}
+
+/* ×印形状の傍点を表示するため */
+.crossing {
+    text-emphasis-style: "×";
+    display: inline;
+}
+
+/* 重要な語句を太字で強調表示するため */
+.bold {
+    font-weight: 700;
+}
+
+/* 引用や強調などで斜体として表現されるべき箇所を表示するため */
+.italic {
+    font-style: italic;
+}
+
+/* 縦書き中で英数字などを横書き（縦中横）として正立させるため */
+.hinv {
+    text-combine-upright: all;
+    /* Internet Explorer等の旧ブラウザ互換性のために念のため残すが、基本はallでよい */
+    -webkit-text-combine: horizontal;
+    -ms-text-combine-horizontal: all;
+}
+
+/* 署名や日付など、行末（縦書きでは下、横書きでは右）に揃えるべき要素を配置するため */
+.grounded {
+    text-align: right;
+}
+
+/* 表題や区切りなど、行の中央に配置すべき要素を表示するため */
+.vhcentre {
+    text-align: center;
+}
+
+/* 親要素の幅を超えて画像がはみ出すのを防ぎ、画面内に収めるため */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* ルビの読み仮名を本文に対して適切な相対サイズで表示するため */
+rt {
+    font-size: 0.5em;
+}

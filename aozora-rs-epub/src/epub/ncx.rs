@@ -23,7 +23,6 @@ impl EpubWriter<'_> {
         writer.write_all("<navMap>\n".as_bytes())?;
 
         let iter = self
-            .vzip
             .nresult
             .xhtmls
             .chapters
@@ -52,7 +51,7 @@ impl EpubWriter<'_> {
         writeln!(
             writer,
             "\n<docTitle>\n\t<text>{}</text>\n</docTitle>",
-            &self.vzip.nresult.title
+            self.nresult.meta.title
         )?;
         self.write_ncx_navmaps(writer)?;
 

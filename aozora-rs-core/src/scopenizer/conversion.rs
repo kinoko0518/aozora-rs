@@ -1,8 +1,8 @@
 use crate::{
     nihongo::is_kanji,
-    prelude::*,
-    scopenizer::definition::{Break, FlatToken, Scope},
-    tokenizer::prelude::*,
+    scopenizer::definition::{Break, FlatToken, ScopeKind},
+    tokenizer::*,
+    *,
 };
 
 impl<'s> Single<'s> {
@@ -20,7 +20,7 @@ impl<'s> Single<'s> {
 pub enum BackRefResult<'s> {
     ItWontBackRef,
     BackRefFailed,
-    ScopeConfirmed(Scope<'s>),
+    ScopeConfirmed(ScopeKind<'s>),
 }
 
 pub fn backref_to_scope<'s>(
@@ -28,7 +28,7 @@ pub fn backref_to_scope<'s>(
     target: (&str, Span),
 ) -> BackRefResult<'s> {
     match backref_maybe {
-        AozoraTokenKind::Ruby(ruby) => BackRefResult::ScopeConfirmed(Scope {
+        AozoraTokenKind::Ruby(ruby) => BackRefResult::ScopeConfirmed(ScopeKind {
             deco: Deco::Ruby(ruby),
             span: {
                 // 漢字であり続けるバイト数を取得
@@ -66,7 +66,7 @@ pub fn backref_to_scope<'s>(
                     };
                     span.map(|s| (deco, s))
                 }) {
-                    Some((deco, span)) => BackRefResult::ScopeConfirmed(Scope { deco, span }),
+                    Some((deco, span)) => BackRefResult::ScopeConfirmed(ScopeKind { deco, span }),
                     None => BackRefResult::BackRefFailed,
                 }
             } else {

@@ -1,7 +1,7 @@
 mod epub;
 mod zip;
 
-pub use epub::{EpubSetting, from_aozora_zip};
+pub use epub::{EpubSetting, from_aozora_zip, from_sjis_aozora_zip, from_utf8_aozora_zip};
 pub use zip::{AozoraZip, AozoraZipError};
 
 pub enum ImgExtension {

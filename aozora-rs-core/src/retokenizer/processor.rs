@@ -2,9 +2,9 @@ use std::borrow::Cow;
 use std::ops::Range;
 
 use crate::{
-    prelude::*,
-    retokenizer::prelude::{DecoQueue, Retokenized},
-    scopenizer::definition::Scopenized,
+    retokenizer::{DecoQueue, Retokenized},
+    scopenizer::{FlatToken, Scopenized},
+    *,
 };
 
 pub fn retokenize<'s>(

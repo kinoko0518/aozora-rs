@@ -1,11 +1,11 @@
-use aozora_rs::{
-    AozoraZip, EpubSetting, NovelResult, XHTMLResult, convert_with_meta, from_aozora_zip,
+use aozora_rs::EpubSetting;
+use ayame_core::{
+    Encoding, WritingDirection, generate_epub, generate_xhtml, layout_css, resolve_builtin_css,
 };
 use clap::{Parser, Subcommand};
-use encoding_rs::SHIFT_JIS;
 use miette::{IntoDiagnostic, Result, miette};
 use std::fs;
-use std::io::{Cursor, Write};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
 #[derive(Parser)]
@@ -44,6 +44,14 @@ enum Commands {
         #[arg(long)]
         sjis: bool,
 
+        /// 横書きで生成（デフォルト: 縦書き）
+        #[arg(long)]
+        horizontal: bool,
+
+        /// 適用するCSS（組み込み名またはファイルパス、複数指定可）
+        #[arg(long)]
+        css: Vec<String>,
+
         /// 出力先ディレクトリ（デフォルト: カレントディレクトリ）
         #[arg(short, long)]
         output: Option<PathBuf>,
@@ -70,69 +78,62 @@ fn get_file_stem(source: &Path) -> Result<String> {
         .ok_or_else(|| miette!("ファイル名を取得できませんでした"))
 }
 
-/// Shift-JISバイト列をUTF-8文字列に変換し、\r\nを\nに置換
-fn decode_shift_jis(bytes: &[u8]) -> Result<String> {
-    let (decoded, _, had_errors) = SHIFT_JIS.decode(bytes);
-    if had_errors {
-        return Err(miette!("Shift-JISデコード中にエラーが発生しました"));
-    }
-    // Replace \r\n with \n
-    Ok(decoded.replace("\r\n", "\n"))
-}
-
-/// バイト列をUTF-8文字列に変換（sjisフラグに応じて処理を分岐）
-fn decode_bytes(bytes: &[u8], sjis: bool) -> Result<String> {
+fn to_encoding(sjis: bool) -> Encoding {
     if sjis {
-        decode_shift_jis(bytes)
+        Encoding::ShiftJis
     } else {
-        String::from_utf8(bytes.to_vec())
-            .map_err(|_| miette!("UTF-8として読み取れませんでした。Shift-JISファイルの場合は --sjis オプションを指定してください"))
+        Encoding::Utf8
     }
 }
 
-/// Zipバイト列からAozoraZipを読み込む（エンコーディングに応じて分岐）
-fn read_aozora_zip(bytes: &[u8], sjis: bool) -> Result<AozoraZip> {
-    if sjis {
-        AozoraZip::read_from_shift_jis_zip(bytes)
-    } else {
-        AozoraZip::read_from_utf8_zip(bytes)
-    }
-    .map_err(|e| miette!("{}", e))
+fn is_zip(source: &Path) -> bool {
+    source
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.eq_ignore_ascii_case("zip"))
+        .unwrap_or(false)
 }
 
-/// ソースファイルからNovelResultを取得する
-fn read_novel_result(source: &Path, sjis: bool) -> Result<NovelResult> {
-    let ext = source.extension().and_then(|e| e.to_str()).unwrap_or("");
-    let bytes = fs::read(source).into_diagnostic()?;
+/// CSS名リストからCSS文字列リストを構築する
+fn resolve_css(css_names: &[String], direction: &WritingDirection) -> Result<Vec<String>> {
+    let mut css_contents = vec![layout_css(direction).to_string()];
 
-    match ext.to_lowercase().as_str() {
-        "txt" => {
-            let text = decode_bytes(&bytes, sjis)?;
-            Ok(convert_with_meta(&text))
+    for name in css_names {
+        if let Some(builtin) = resolve_builtin_css(name) {
+            css_contents.push(builtin.to_string());
+        } else {
+            let path = Path::new(name);
+            if path.exists() {
+                let content = fs::read_to_string(path).into_diagnostic()?;
+                css_contents.push(content);
+            } else {
+                return Err(miette!("CSSファイルが見つかりません: {}", name));
+            }
         }
-        "zip" => {
-            let azz = read_aozora_zip(&bytes, sjis)?;
-            Ok(azz.nresult)
-        }
-        _ => Err(miette!("サポートされていないファイル形式です: .{}", ext)),
     }
+
+    Ok(css_contents)
 }
 
-fn write_xhtml_files(
-    xhtmls: &XHTMLResult,
-    output_dir: &Path,
-    file_stem: &str,
-    merge: bool,
-) -> Result<()> {
+fn handle_xhtml(source: PathBuf, merge: bool, sjis: bool, output: Option<PathBuf>) -> Result<()> {
+    let output_dir = get_output_dir(output)?;
+    let file_stem = get_file_stem(&source)?;
+    let bytes = fs::read(&source).into_diagnostic()?;
+
+    let (xhtmls, errors) = generate_xhtml(&bytes, is_zip(&source), &to_encoding(sjis))
+        .map_err(|e| miette!("{}", e))?;
+
+    for error in &errors {
+        eprintln!("警告: {:?}", error);
+    }
+
     if merge {
-        // Merge all XHTMLs with <hr> delimiter
         let merged = xhtmls.xhtmls.join("\n<hr />\n");
         let output_path = output_dir.join(format!("{}.xhtml", file_stem));
         let mut file = fs::File::create(&output_path).into_diagnostic()?;
         file.write_all(merged.as_bytes()).into_diagnostic()?;
         println!("生成完了: {}", output_path.display());
     } else {
-        // Write individual XHTML files
         for (i, xhtml) in xhtmls.xhtmls.iter().enumerate() {
             let filename = if xhtmls.xhtmls.len() == 1 {
                 format!("{}.xhtml", file_stem)
@@ -145,64 +146,46 @@ fn write_xhtml_files(
             println!("生成完了: {}", output_path.display());
         }
     }
-    Ok(())
-}
-
-fn handle_xhtml(source: PathBuf, merge: bool, sjis: bool, output: Option<PathBuf>) -> Result<()> {
-    let output_dir = get_output_dir(output)?;
-    let file_stem = get_file_stem(&source)?;
-    let result = read_novel_result(&source, sjis)?;
-
-    // Print errors if any
-    for error in &result.errors {
-        eprintln!("警告: {:?}", error);
-    }
-
-    write_xhtml_files(&result.xhtmls, &output_dir, &file_stem, merge)?;
 
     Ok(())
 }
 
-fn handle_epub(source: PathBuf, sjis: bool, output: Option<PathBuf>) -> Result<()> {
+fn handle_epub(
+    source: PathBuf,
+    sjis: bool,
+    horizontal: bool,
+    css_names: Vec<String>,
+    output: Option<PathBuf>,
+) -> Result<()> {
     let output_dir = get_output_dir(output)?;
     let file_stem = get_file_stem(&source)?;
-
-    let ext = source.extension().and_then(|e| e.to_str()).unwrap_or("");
     let bytes = fs::read(&source).into_diagnostic()?;
 
-    let azz = match ext.to_lowercase().as_str() {
-        "zip" => read_aozora_zip(&bytes, sjis)?,
-        "txt" => {
-            let text = decode_bytes(&bytes, sjis)?;
-            AozoraZip {
-                nresult: convert_with_meta(&text),
-                images: std::collections::HashMap::new(),
-            }
-        }
-        _ => return Err(miette!("サポートされていないファイル形式です: .{}", ext)),
+    let direction = if horizontal {
+        WritingDirection::Horizontal
+    } else {
+        WritingDirection::Vertical
     };
 
-    let output_path = output_dir.join(format!("{}.epub", file_stem));
+    let css_contents = resolve_css(&css_names, &direction)?;
+    let css_refs: Vec<&str> = css_contents.iter().map(|s| s.as_str()).collect();
 
-    let mut epub_buffer = Cursor::new(Vec::new());
-    let result = from_aozora_zip::<Cursor<Vec<u8>>>(
-        &mut epub_buffer,
-        azz,
-        Vec::new(),
-        EpubSetting {
-            language: "ja",
-            is_rtl: true,
-        },
+    let setting = EpubSetting {
+        language: "ja",
+        is_rtl: !horizontal,
+    };
+
+    let epub_bytes = generate_epub(
+        &bytes,
+        is_zip(&source),
+        &to_encoding(sjis),
+        css_refs,
+        setting,
     )
     .map_err(|e| miette!("{}", e))?;
-    let (_, errors) = result.into_tuple();
 
-    // Print any warnings
-    for error in &errors {
-        eprintln!("警告: {:?}", error);
-    }
-
-    fs::write(&output_path, epub_buffer.into_inner()).into_diagnostic()?;
+    let output_path = output_dir.join(format!("{}.epub", file_stem));
+    fs::write(&output_path, epub_bytes).into_diagnostic()?;
     println!("生成完了: {}", output_path.display());
 
     Ok(())
@@ -223,9 +206,11 @@ fn main() -> Result<()> {
         Commands::Epub {
             source,
             sjis,
+            horizontal,
+            css,
             output,
         } => {
-            handle_epub(source, sjis, output)?;
+            handle_epub(source, sjis, horizontal, css, output)?;
         }
     }
 

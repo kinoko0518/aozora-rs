@@ -2,7 +2,7 @@
 
 use winnow::{Parser, combinator::alt, error::ContextError};
 
-use crate::prelude::*;
+use crate::*;
 
 pub fn boten(input: &mut Input) -> Result<BotenKind, ContextError> {
     (

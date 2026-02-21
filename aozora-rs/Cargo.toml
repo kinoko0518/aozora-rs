@@ -7,3 +7,4 @@ edition = "2024"
 aozora-rs-core = { workspace = true }
 aozora-rs-epub = { workspace = true }
 aozora-rs-xhtml = { workspace = true }
+winnow.workspace = true

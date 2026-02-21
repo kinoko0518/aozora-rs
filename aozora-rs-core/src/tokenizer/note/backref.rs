@@ -11,8 +11,8 @@ use winnow::{
 
 use crate::{
     nihongo::japanese_num,
-    prelude::*,
     tokenizer::note::definitions::{bosen, boten},
+    *,
 };
 
 #[derive(Debug, Clone, Copy)]

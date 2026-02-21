@@ -1,13 +1,13 @@
 use winnow::{Parser, combinator::alt, error::ContextError};
 
-use crate::prelude::*;
 use crate::tokenizer::note::backref::BackRef;
 use crate::tokenizer::note::backref::backref;
 use crate::tokenizer::note::multiline::multiline;
 use crate::tokenizer::note::sandwiched::sandwiched;
 use crate::tokenizer::note::single::single;
 use crate::tokenizer::note::wholeline::{WholeLine, wholeline};
-use crate::tokenizer::prelude::*;
+use crate::tokenizer::*;
+use crate::*;
 
 pub mod backref;
 pub mod definitions;

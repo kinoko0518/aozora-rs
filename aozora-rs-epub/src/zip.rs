@@ -4,34 +4,20 @@ use std::{
     string::FromUtf8Error,
 };
 
-use aozora_rs_xhtml::NovelResult;
 use miette::Diagnostic;
 use thiserror::Error;
+use winnow::error::ContextError;
 use zip::result::ZipError;
 
-pub enum ImgExtension {
-    Png,
-    Jpeg,
-    Gif,
-    Svg,
-}
+use crate::ImgExtension;
 
-impl ImgExtension {
-    pub fn into_media_type(&self) -> &str {
-        match self {
-            Self::Png => "png",
-            Self::Jpeg => "jpeg",
-            Self::Gif => "gif",
-            Self::Svg => "svg+xml",
-        }
-    }
-}
-
+/// Zipファイルから読み込んだ、青空文庫書式の解析に必要なデータを保持する構造体です。
 pub struct AozoraZip {
-    pub nresult: NovelResult,
+    pub txt: Vec<u8>,
     pub images: HashMap<String, (ImgExtension, Vec<u8>)>,
 }
 
+/// AozoraZipからepubやXHTMLを生成するときに発生しうるエラーを列挙したエラー型です。
 #[derive(Debug, Error, Diagnostic)]
 pub enum AozoraZipError {
     #[error("ファイル操作中にエラーが発生しました")]
@@ -75,60 +61,41 @@ pub enum AozoraZipError {
         help("Shift-JISファイルの場合は sjis オプションを有効にしてください。")
     )]
     BrokenText(FromUtf8Error),
+
+    #[error("トークン化に失敗しました")]
+    #[diagnostic(
+        code(aozora_rs_epub::encoding_error),
+        help(
+            "原理的に失敗しないエラーです。お手数ですが、公開できるものであれば入力したデータとともに開発者へご連絡ください。"
+        )
+    )]
+    TokenizeFailed(ContextError),
+
+    #[error("メタデータの解析に失敗しました")]
+    #[diagnostic(
+        code(aozora_rs_epub::encoding_error),
+        help("入力が青空文庫書式に従っていることを確認してください。")
+    )]
+    BrokenMetaData(miette::Report),
 }
 
 impl AozoraZip {
-    pub fn read_from_shift_jis_zip(zip: &[u8]) -> Result<Self, AozoraZipError> {
-        Self::read_from_zip(
-            zip,
-            |data: Vec<u8>| -> Result<NovelResult, AozoraZipError> {
-                let (encoded, _, _) = encoding_rs::SHIFT_JIS.decode(&data);
-                Ok(aozora_rs_xhtml::convert_with_meta(&encoded))
-            },
-        )
-    }
-
-    pub fn read_from_utf8_zip(zip: &[u8]) -> Result<Self, AozoraZipError> {
-        Self::read_from_zip(
-            zip,
-            |data: Vec<u8>| -> Result<NovelResult, AozoraZipError> {
-                Ok(aozora_rs_xhtml::convert_with_meta(
-                    &String::from_utf8(data).map_err(|e| AozoraZipError::BrokenText(e))?,
-                ))
-            },
-        )
-    }
-
-    fn read_from_zip<'s>(
-        zip: &[u8],
-        txtf: impl Fn(Vec<u8>) -> Result<NovelResult, AozoraZipError>,
-    ) -> Result<Self, AozoraZipError> {
+    pub fn read_from_zip<'s>(zip: &[u8]) -> Result<Self, AozoraZipError> {
         let mut zip =
             zip::ZipArchive::new(Cursor::new(zip)).map_err(|e| AozoraZipError::BrokenZip(e))?;
-        let mut images = HashMap::new();
+        let images = HashMap::new();
         let mut txt = None;
 
         let zip_len = zip.len();
         for c in 0..zip_len {
             let c = zip.by_index(c).map_err(|e| AozoraZipError::BrokenZip(e));
             let mut c = c?;
-            macro_rules! img_insert {
-                ($ext:expr) => {{
-                    let mut buff = Vec::new();
-                    c.read_to_end(&mut buff)
-                        .map_err(|e| AozoraZipError::Io(e))?;
-                    images.insert(c.name().to_string(), ($ext, buff));
-                }};
-            }
             match c.name().rsplit_once(".").map(|(_, r)| r).unwrap_or("") {
-                "jpg" | "jpeg" | "JPG" | "JPEG" => img_insert!(ImgExtension::Jpeg),
-                "png" | "PNG" => img_insert!(ImgExtension::Png),
-                "gif" | "GIF" => img_insert!(ImgExtension::Gif),
-                "svg" | "SVG" => img_insert!(ImgExtension::Svg),
                 "txt" => {
                     let text = {
                         let mut buff: Vec<u8> = Vec::new();
-                        c.read(&mut buff).map_err(|e| AozoraZipError::Io(e))?;
+                        c.read_to_end(&mut buff)
+                            .map_err(|e| AozoraZipError::Io(e))?;
                         buff
                     };
                     if txt.is_none() {
@@ -141,10 +108,13 @@ impl AozoraZip {
             }
         }
         let nresult = if let Some(s) = txt {
-            txtf(s)?
+            s
         } else {
             return Err(AozoraZipError::NoTextFound);
         };
-        Ok(Self { nresult, images })
+        Ok(Self {
+            txt: nresult,
+            images,
+        })
     }
 }

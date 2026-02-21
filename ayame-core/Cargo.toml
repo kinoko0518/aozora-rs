@@ -1,0 +1,11 @@
+[package]
+name = "ayame-core"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+aozora-rs = { workspace = true }
+encoding_rs = { workspace = true }
+thiserror = { workspace = true }
+miette = { workspace = true }
+serde = { workspace = true }

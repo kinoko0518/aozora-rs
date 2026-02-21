@@ -1,4 +1,4 @@
-use aozora_rs_core::prelude::{Break, Deco, Retokenized};
+use aozora_rs_core::{Deco, Retokenized, scopenizer::Break};
 use itertools::Itertools;
 
 use crate::definitions::{CDepth, Chapter};

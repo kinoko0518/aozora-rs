@@ -1,7 +1,8 @@
+use aozora_rs::{
+    EpubSetting, from_sjis_aozora_zip, parse_meta, retokenized_to_xhtml, str_to_retokenized,
+};
 use std::io::Cursor;
 use wasm_bindgen::{JsError, prelude::wasm_bindgen};
-
-pub use aozora_rs_epub::{AozoraZip, EpubSetting};
 
 fn into_js_error<E: std::fmt::Display>(err: E) -> JsError {
     JsError::new(&format!("{}", err))
@@ -30,12 +31,16 @@ pub struct StandaloneXHTML {
 ///
 /// ご自身のサイト自体を青空文庫書式で記述する用途に便利です。
 #[wasm_bindgen]
-pub fn generate_standalone_xhtml(from: &str, delimiter: &str) -> StandaloneXHTML {
-    let result = aozora_rs_xhtml::convert_with_no_meta(from);
-    StandaloneXHTML {
-        result: result.xhtmls.xhtmls.join(delimiter),
-        occured_error: reports_to_single_string(result.errors),
-    }
+pub fn generate_standalone_xhtml(from: &str, delimiter: &str) -> Result<StandaloneXHTML, JsError> {
+    let meta = parse_meta(from).map_err(|e| JsError::new(&e.to_string()))?;
+    let (retokenized, errors) = str_to_retokenized(from)
+        .map_err(|e| JsError::new(&e.to_string()))?
+        .into_tuple();
+    let xhtml = retokenized_to_xhtml(retokenized, meta, errors);
+    Ok(StandaloneXHTML {
+        result: xhtml.xhtmls.xhtmls.join(delimiter),
+        occured_error: reports_to_single_string(xhtml.errors),
+    })
 }
 
 #[wasm_bindgen]
@@ -60,25 +65,28 @@ pub struct BookData {
 ///
 /// https://github.com/kinoko0518/aozora-rs/issues/7
 #[wasm_bindgen]
-pub fn parse_to_book_data(from: &str) -> BookData {
-    let result = aozora_rs_xhtml::convert_with_meta(from);
-    BookData {
-        title: result.title.to_string(),
-        author: result.author.to_string(),
+pub fn parse_to_book_data(from: &str) -> Result<BookData, JsError> {
+    let meta = parse_meta(from).map_err(|e| JsError::new(&e.to_string()))?;
+    let (retokenized, errors) = str_to_retokenized(from)
+        .map_err(|e| JsError::new(&e.to_string()))?
+        .into_tuple();
+    let result = retokenized_to_xhtml(retokenized, meta, errors);
+    Ok(BookData {
+        title: result.meta.title.to_string(),
+        author: result.meta.author.to_string(),
         xhtmls: result.xhtmls.xhtmls,
         errors: reports_to_single_string(result.errors),
-    }
+    })
 }
 
 /// zipであることを期待するバイト列を受けとり、構築したepubのバイト列をオンメモリで構築して返します。
 #[wasm_bindgen]
-pub fn build_epub_bytes(from: &[u8]) -> Result<Vec<u8>, JsError> {
-    let azz = AozoraZip::read_from_utf8_zip(from).map_err(into_js_error)?;
+pub fn build_epub_bytes(from: &[u8], styles: Vec<String>) -> Result<Vec<u8>, JsError> {
     let mut acc = Cursor::new(Vec::new());
-    aozora_rs_epub::from_aozora_zip::<Cursor<Vec<u8>>>(
+    from_sjis_aozora_zip::<Cursor<Vec<u8>>>(
         &mut acc,
-        azz,
-        Vec::new(),
+        from,
+        styles.iter().map(|s| s.as_str()).collect::<Vec<&str>>(),
         EpubSetting {
             language: "ja",
             is_rtl: true,

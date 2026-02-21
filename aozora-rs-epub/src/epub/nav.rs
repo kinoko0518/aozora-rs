@@ -6,12 +6,10 @@ impl EpubWriter<'_> {
     fn write_nav_head(&self, writer: &mut impl Write) -> std::io::Result<()> {
         writer.write_all(b"<head>\n")?;
         writer.write_all(b"\t<meta charset=\"UTF-8\" />\n")?;
-        writeln!(writer, "\t<title>{}</title>", &self.vzip.nresult.title)?;
-        writer.write_all(b"\t<style type=\"text/css\">\n")?;
+        writeln!(writer, "\t<title>{}</title>", self.nresult.meta.title)?;
 
         self.apply_css(writer)?;
 
-        writer.write_all(b"\t</style>\n")?;
         writer.write_all(b"</head>\n")?;
 
         Ok(())
@@ -25,7 +23,7 @@ impl EpubWriter<'_> {
             "\t\t\t<li><a epub:type=\"toc\" href=\"nav.xhtml\">目次</a></li>\n".as_bytes(),
         )?;
 
-        for chapter in &self.vzip.nresult.xhtmls.chapters {
+        for chapter in &self.nresult.xhtmls.chapters {
             let filename = format!("xhtml/sec{:>04}.xhtml", chapter.xhtml_id);
             let id = chapter.get_id();
             let name = &chapter.name;
@@ -46,7 +44,7 @@ impl EpubWriter<'_> {
         writer.write_all("\t\t<h1>目　次</h1>\n".as_bytes())?;
         writer.write_all(b"\t\t<ol>\n")?;
 
-        for chapter in &self.vzip.nresult.xhtmls.chapters {
+        for chapter in &self.nresult.xhtmls.chapters {
             let filename = format!("xhtml/sec{:>04}.xhtml", chapter.xhtml_id);
             let id = chapter.get_id();
             let name = &chapter.name;

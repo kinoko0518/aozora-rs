@@ -1,8 +1,7 @@
 mod conversion;
-pub mod definition;
+mod definition;
 mod error;
 mod parser;
 
-pub mod prelude {
-    pub use super::parser::scopenize;
-}
+pub use crate::scopenizer::definition::{Break, FlatToken, ScopeKind, Scopenized};
+pub use crate::scopenizer::parser::scopenize;

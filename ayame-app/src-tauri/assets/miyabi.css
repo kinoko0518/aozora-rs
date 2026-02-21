@@ -1,0 +1,71 @@
+@charset "utf-8";
+
+/* 
+ * 美学的スタイル定義 (Miyabi)
+ * テキストを「読む」だけでなく、「美しく鑑賞する」ためのスタイルセット。
+ * 可読性、美しさ、そして紙の書籍のような風合いをデジタル上で再現することを目的とする。
+ */
+
+body {
+    /* 明朝体を使用し、情緒豊かで可読性の高い文字を表示するため */
+    font-family: "Shippori Mincho", serif;
+    font-weight: 400;
+    font-style: normal;
+
+    /* ゆったりとした行間を確保し、視線の移動をスムーズにするため */
+    line-height: 2.5;
+
+    /* 画面端との間に余白を設け、窮屈さを感じさせないようにするため */
+    padding-inline: 5em;
+    padding-block: 2em;
+
+    /* 文字の輪郭を滑らかにし、デジタル画面上でのちらつきを抑えて美しく表示するため */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
+    /* 行末を揃え、ブロックとしての文章の美しさを整えるため */
+    text-align: justify;
+
+    /* 句読点が行頭に来ることを防ぎ、自然な文章の流れを作るため（ぶら下げ組） */
+    hanging-punctuation: allow-end;
+}
+
+span {
+    /* インライン要素でも行間を維持し、レイアウト崩れを防ぐため */
+    line-height: 2.5;
+
+    /* 文字詰めを有効にし、パラパラとした間延び感をなくして引き締まった印象にするため */
+    font-feature-settings: "palt";
+
+    /* 文字間にわずかな「ゆとり」を持たせ、詰めすぎによる圧迫感を軽減するため */
+    letter-spacing: 0.05em;
+}
+
+.title {
+    /* タイトルを大きく表示し、作品の顔として存在感を際立たせるため */
+    font-size: 2em;
+
+    /* 画面中央に配置し、視線を中心へと誘導するため */
+    text-align: center;
+
+    /* 余白を持たせ、本文との区切りを明確にするため */
+    margin-bottom: 1em;
+    margin-top: 2em;
+
+    /* タイトルでも文字詰めを有効にし、バランスを整えるため */
+    font-feature-settings: "palt";
+}
+
+.author {
+    /* 著者名をタイトルより控えめなサイズで表示し、階層構造を視覚的に表現するため */
+    font-size: 1.3em;
+
+    /* 画面中央に配置し、タイトルとの一体感を持たせるため */
+    text-align: center;
+
+    /* 本文が始まる前に十分な余白を取り、呼吸を整える空間を作るため */
+    margin-bottom: 3em;
+
+    /* 著者名でも文字詰めを有効にし、バランスを整えるため */
+    font-feature-settings: "palt";
+}

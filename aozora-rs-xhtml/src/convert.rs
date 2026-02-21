@@ -1,11 +1,11 @@
 use std::borrow::Cow;
 
-use aozora_rs_core::prelude::*;
+use aozora_rs_core::{scopenizer::Break, *};
 
 use crate::dom::MappedToken;
 
-pub fn into_xhtml<'s>(retokenized: &MappedToken<'s>) -> Cow<'s, str> {
-    match &retokenized.content {
+pub fn into_xhtml<'s>(mapped: &MappedToken<'s>) -> Cow<'s, str> {
+    match &mapped.content {
         Retokenized::Text(t) => Cow::Owned(format!("<span>{}</span>", t)),
         Retokenized::Odoriji(o) => {
             Cow::Owned(format!("{}〵", if o.has_dakuten { "〴" } else { "〳" }))
@@ -30,15 +30,15 @@ pub fn into_xhtml<'s>(retokenized: &MappedToken<'s>) -> Cow<'s, str> {
         Retokenized::DecoBegin(b) => match &b {
             Deco::AHead => Cow::Owned(format!(
                 "<h1 class=\"a_head\" id=\"{}\">",
-                retokenized.chapter.as_ref().unwrap().get_id()
+                mapped.chapter.as_ref().unwrap().get_id()
             )),
             Deco::BHead => Cow::Owned(format!(
                 "<h2 class=\"b_head\" id=\"{}\">",
-                retokenized.chapter.as_ref().unwrap().get_id()
+                mapped.chapter.as_ref().unwrap().get_id()
             )),
             Deco::CHead => Cow::Owned(format!(
                 "<h3 class=\"c_head\" id=\"{}\">",
-                retokenized.chapter.as_ref().unwrap().get_id()
+                mapped.chapter.as_ref().unwrap().get_id()
             )),
             Deco::Bigger(b) => Cow::Owned(format!(
                 "<div style=\"font-size: {}em;\" class=\"{}_bigger\">",

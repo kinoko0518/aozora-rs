@@ -4,7 +4,7 @@ use winnow::{
     error::ContextError,
 };
 
-use crate::{nihongo::japanese_num, prelude::*};
+use crate::{nihongo::japanese_num, *};
 
 #[derive(Debug, Clone)]
 pub enum WholeLine {

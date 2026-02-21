@@ -1,0 +1,12 @@
+@charset "utf-8";
+
+html,
+body,
+.main {
+    writing-mode: vertical-rl !important;
+    -webkit-writing-mode: vertical-rl !important;
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}

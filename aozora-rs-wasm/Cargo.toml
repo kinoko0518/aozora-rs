@@ -7,8 +7,6 @@ edition = "2024"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-aozora-rs-core = { workspace = true }
-aozora-rs-epub = { workspace = true }
-aozora-rs-xhtml = { workspace = true }
+aozora-rs = { workspace = true }
 miette = { workspace = true }
 wasm-bindgen = { workspace = true }

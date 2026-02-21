@@ -4,7 +4,7 @@ use std::{
     usize,
 };
 
-use crate::prelude::*;
+use crate::{scopenizer::Break, *};
 
 #[derive(Debug, Clone)]
 pub enum Retokenized<'s> {

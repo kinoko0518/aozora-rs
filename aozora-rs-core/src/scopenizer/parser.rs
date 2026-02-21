@@ -1,13 +1,13 @@
 use super::definition::*;
 use super::error::*;
 
-use crate::prelude::*;
 use crate::scopenizer::conversion::BackRefResult;
 use crate::scopenizer::conversion::backref_to_scope;
-use crate::tokenizer::prelude::*;
+use crate::tokenizer::*;
+use crate::*;
 
 pub fn scopenize<'s>(
-    tokens: Vec<AozoraToken<'s>>,
+    tokens: Vec<Tokenized<'s>>,
     original: &str,
 ) -> AZResult<(Scopenized<'s>, Vec<(FlatToken<'s>, Span)>)> {
     // 改行などのBreakをまたがない注記用のスタック

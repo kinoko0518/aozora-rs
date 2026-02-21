@@ -1,5 +1,5 @@
-use crate::prelude::*;
-use crate::tokenizer::prelude::*;
+use crate::tokenizer::*;
+use crate::*;
 use std::borrow::Cow;
 
 #[derive(Debug, Clone)]
@@ -13,7 +13,7 @@ pub enum AozoraTokenKind<'s> {
 }
 
 #[derive(Debug, Clone)]
-pub struct AozoraToken<'s> {
+pub struct Tokenized<'s> {
     pub kind: AozoraTokenKind<'s>,
     pub span: Span,
 }

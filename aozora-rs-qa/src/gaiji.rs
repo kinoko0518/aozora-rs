@@ -32,7 +32,7 @@ fn analyse_file(path: &Path) -> Option<(usize, usize, String)> {
                     acc.0 += 1;
                 } else {
                     acc.1 += 1;
-                    writeln!(acc.2, "{}", e);
+                    let _ = writeln!(acc.2, "{}", e);
                 }
                 acc
             },

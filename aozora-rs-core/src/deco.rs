@@ -90,6 +90,7 @@ impl std::fmt::Display for BosenKind {
     }
 }
 
+/// 青空文庫書式で扱われる装飾のEnumです。
 #[derive(Debug, Clone)]
 pub enum Deco<'s> {
     Bold,
@@ -139,6 +140,9 @@ impl std::fmt::Display for Deco<'_> {
     }
 }
 
+/// 青空文庫書式形式で挿入される図表の意味を純化したものです。
+///
+/// aozora-rs-coreの時点ではIO操作を行わず、パス、キャプション、サイズ指定の情報のみを保持しています。
 #[derive(Debug, Clone)]
 pub struct Figure<'s> {
     pub path: &'s str,

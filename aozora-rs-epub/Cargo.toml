@@ -12,3 +12,4 @@ aozora-rs-core = { workspace = true }
 aozora-rs-xhtml = { workspace = true }
 miette = { workspace = true }
 thiserror = { workspace = true }
+winnow.workspace = true

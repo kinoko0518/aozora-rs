@@ -5,8 +5,8 @@
 use winnow::{Parser, combinator::alt, error::ContextError};
 
 use crate::nihongo::japanese_num;
-use crate::prelude::*;
 use crate::tokenizer::note::{SandwichedBegin, definitions::*};
+use crate::*;
 
 #[derive(Debug, Clone, Copy)]
 pub enum SandwichedBegins {

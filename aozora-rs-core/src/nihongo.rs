@@ -2,7 +2,7 @@ use std::char::from_u32;
 
 use winnow::{Parser, combinator::alt, error::ContextError, token::take_while};
 
-use crate::prelude::*;
+use crate::*;
 
 pub fn is_kanji(c: char) -> bool {
     match c {

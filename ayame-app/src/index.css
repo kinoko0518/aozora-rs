@@ -1,0 +1,231 @@
+@import "tailwindcss";
+
+@theme {
+    /* Semantic Color Palette */
+
+    /* Backgrounds */
+    --color-background: #0c1222;
+    /* Deep Indigo (Ai) */
+    --color-surface: #16203a;
+    /* Card/Panel BG */
+    --color-surface-hover: #1e2b4d;
+    --color-overlay: rgba(12, 18, 34, 0.85);
+
+    /* Typography */
+    --color-text-main: #f8fafc;
+    /* Slate 50 */
+    --color-text-sub: #94a3b8;
+    /* Slate 400 */
+    --color-text-muted: #64748b;
+    /* Slate 500 */
+
+    /* Primary Accent (Action) */
+    --color-primary: #f43f5e;
+    /* Rose 500 */
+    --color-primary-hover: #fb7185;
+    /* Rose 400 */
+    --color-primary-subtle: rgba(244, 63, 94, 0.1);
+    --color-primary-fg: #ffffff;
+
+    /* Borders */
+    --color-border-main: #334155;
+    /* Slate 700 */
+    --color-border-subtle: #1e293b;
+    /* Slate 800 */
+
+    /* Functional */
+    --color-success: #10b981;
+    /* Emerald 500 */
+    --color-warning: #f59e0b;
+    /* Amber 500 */
+    --color-error: #ef4444;
+    /* Red 500 */
+
+    /* Texture */
+    --texture-noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+
+    /* Layout */
+    --radius-pill: 9999px;
+    --radius-lg: 16px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+
+    /* Fonts */
+    --font-heading: "Inter", "Noto Sans JP", sans-serif;
+    --font-body: "Inter", "Noto Sans JP", sans-serif;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-glow: 0 0 15px rgba(244, 63, 94, 0.3);
+}
+
+/* Base Styles */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-body);
+    background-color: var(--color-background);
+    color: var(--color-text-main);
+
+    /* Noise Texture Background */
+    background-image: var(--texture-noise);
+    /* background-size: cover; Noise SVG usually tiles better without cover if small, but let's see */
+    background-repeat: repeat;
+    background-blend-mode: overlay;
+
+    min-height: 100vh;
+    overflow: hidden;
+    /* App-like feel */
+    user-select: none;
+    -webkit-font-smoothing: antialiased;
+}
+
+#root {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+    /* subtle gradient overlay for depth */
+    background: radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.4) 100%);
+    position: relative;
+}
+
+/* Typography */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    margin: 0;
+}
+
+/* Utilities */
+.glass-panel {
+    background: rgba(22, 32, 58, 0.7);
+    /* Translucent Ai */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: var(--shadow-md);
+}
+
+.card {
+    background-color: var(--color-surface);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border-main);
+    transition: all 0.2s ease;
+}
+
+.card:hover {
+    border-color: var(--color-text-sub);
+}
+
+/* Buttons */
+.btn-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-pill);
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: none;
+    outline: none;
+}
+
+.btn-primary {
+    background-color: var(--color-primary);
+    color: var(--color-primary-fg);
+    box-shadow: var(--shadow-glow);
+    border-radius: var(--radius-md);
+    /* Fix: User requested radius */
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: var(--color-primary-hover);
+    transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+    background-color: var(--color-surface-hover);
+    color: var(--color-text-muted);
+}
+
+.btn-secondary {
+    background-color: var(--color-surface);
+    color: var(--color-text-main);
+    border: 1px solid var(--color-border-main);
+    border-radius: var(--radius-md);
+    /* Fix: User requested radius */
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background-color: var(--color-surface-hover);
+    border-color: var(--color-text-sub);
+}
+
+/* Inputs */
+.input-field {
+    background-color: rgba(12, 18, 34, 0.5);
+    border: 1px solid var(--color-border-main);
+    border-radius: var(--radius-sm);
+    padding: 0.6rem 1rem;
+    color: var(--color-text-main);
+    font-family: var(--font-body);
+    width: 100%;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+
+.input-field:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px var(--color-primary-subtle);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--color-surface-hover);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-sub);
+}

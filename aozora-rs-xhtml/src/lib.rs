@@ -1,7 +1,6 @@
 use crate::{convert::into_xhtml, dom::into_mapped};
-use aozora_rs_core::prelude::*;
+use aozora_rs_core::*;
 use itertools::Itertools;
-use winnow::LocatingSlice;
 
 mod convert;
 mod definitions;
@@ -10,16 +9,10 @@ mod dom;
 pub use definitions::*;
 pub use dom::{Mapped, MappedToken};
 
-pub struct NovelResult {
-    pub title: String,
-    pub author: String,
+pub struct NovelResult<'s> {
     pub xhtmls: XHTMLResult,
-    pub errors: Vec<miette::Error>,
-}
-
-pub struct NovelResultNoMeta {
-    pub xhtmls: XHTMLResult,
-    pub errors: Vec<miette::Error>,
+    pub meta: AozoraMeta<'s>,
+    pub errors: Vec<miette::Report>,
 }
 
 pub struct XHTMLResult {
@@ -53,30 +46,14 @@ fn from_retokenized<'s>(retokenized: Vec<Retokenized<'s>>) -> XHTMLResult {
     }
 }
 
-/// 一行目はタイトル、二行目は著者名、【テキスト中に現れる記号について】を無視といった
-/// 特別な表記を一切考慮せず、入力すべてに対して常に一般的なルールに基づきパースを行います。
-///
-/// 自身のサイトの中に青空文庫書式で書いたテキストをHTMLとして埋め込みたいときなどにご活用ください。
-pub fn convert_with_no_meta<'s>(input: &'s str) -> NovelResultNoMeta {
-    let mut input_slice = LocatingSlice::new(input);
-    let tokens = tokenize_nometa(&mut input_slice).unwrap();
-    let ((scopenized, flattoken), errors) = scopenize(tokens, input).into_tuple();
-    let retokenized = retokenize(flattoken, scopenized);
-    let xhtmls = from_retokenized(retokenized);
-    NovelResultNoMeta { xhtmls, errors }
-}
-
-/// 一行目はタイトル、二行目は著者名、【テキスト中に現れる記号について】を無視といった
-/// 特別な表記を考慮し、メタデータとして解析します。
-///
-/// 既存の青空文庫書式で書かれた作品をパースして独自の表示を行いたいときなどに有用です。
-pub fn convert_with_meta(input: &str) -> NovelResult {
-    let ((meta, parsed), errors) = aozora_rs_core::parse(input).into_tuple();
-
+pub fn retokenized_to_xhtml<'s>(
+    retokenized: Vec<Retokenized>,
+    meta: AozoraMeta<'s>,
+    errors: Vec<miette::Error>,
+) -> NovelResult<'s> {
     NovelResult {
-        title: meta.title.to_string(),
-        author: meta.author.to_string(),
-        xhtmls: from_retokenized(parsed),
+        xhtmls: from_retokenized(retokenized),
+        meta,
         errors,
     }
 }

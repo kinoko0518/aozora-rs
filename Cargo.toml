@@ -4,6 +4,7 @@ members = [
     "aozora-rs-gaiji", "aozora-rs-xhtml",
     "aozora-rs-epub", "aozora-rs",
     "aozora-rs-wasm", "ayame-cli",
+    "ayame-core", "ayame-app/src-tauri"
 ]
 resolver = "3"
 
@@ -14,6 +15,9 @@ aozora-rs-gaiji = { version = "0.1.0", path = "./aozora-rs-gaiji" }
 aozora-rs-xhtml = { version = "0.1.0", path = "./aozora-rs-xhtml" }
 aozora-rs-epub = { version = "0.1.0", path = "./aozora-rs-epub" }
 aozora-rs-wasm = { version = "0.1.0", path = "./aozora-rs-wasm" }
+ayame-core = { version = "0.1.0", path = "./ayame-core" }
+
+serde = { version = "1", features = ["derive"] }
 
 encoding_rs = "0.8.35"
 miette = { version = "7.6.0", features = ["fancy"] }
@@ -22,7 +26,7 @@ thiserror = "2.0.18"
 itertools = "0.14.0"
 chrono = "0.4.43"
 uuid = { version = "1.20.0", features = ["v5", "fast-rng", "macro-diagnostics", "js"] }
-zip = "7.4.0"
+zip = { version = "2.2.0", default-features = false, features = ["deflate", "time"] }
 wasm-bindgen = "0.2.108"
 clap = { version = "4.5", features = ["derive"] }
 tokio = { version = "1.49.0", features = ["full"] }

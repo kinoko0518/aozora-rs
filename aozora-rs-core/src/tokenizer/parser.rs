@@ -8,8 +8,8 @@ use winnow::{
     token::{any, take_until},
 };
 
-use crate::tokenizer::prelude::*;
-use crate::{prelude::*, tokenizer::note::command};
+use crate::tokenizer::*;
+use crate::{tokenizer::note::command, *};
 
 fn ruby<'s>(input: &mut Input<'s>) -> Result<&'s str, ContextError> {
     const END: char = '》';
@@ -60,8 +60,8 @@ fn take_until_special<'s>(input: &mut Input<'s>) -> Result<&'s str, ContextError
         .parse_next(input)
 }
 
-pub fn tokenize_nometa<'s>(input: &mut Input<'s>) -> Result<Vec<AozoraToken<'s>>, ContextError> {
-    let mut result: Vec<AozoraToken> = repeat(
+pub fn tokenize<'s>(input: &mut Input<'s>) -> Result<Vec<Tokenized<'s>>, ContextError> {
+    let mut result: Vec<Tokenized> = repeat(
         0..,
         alt((
             special,
@@ -78,7 +78,7 @@ pub fn tokenize_nometa<'s>(input: &mut Input<'s>) -> Result<Vec<AozoraToken<'s>>
             } else {
                 s
             };
-            AozoraToken {
+            Tokenized {
                 kind: k,
                 span: span,
             }
