@@ -27,9 +27,9 @@ enum Commands {
         #[arg(long)]
         merge: bool,
 
-        /// 入力ファイルがShift-JISでエンコードされている場合に指定
+        /// 入力ファイルがUTF-8でエンコードされている場合に指定（デフォルト: Shift-JIS）
         #[arg(long)]
-        sjis: bool,
+        utf8: bool,
 
         /// 出力先ディレクトリ（デフォルト: カレントディレクトリ）
         #[arg(short, long)]
@@ -40,17 +40,25 @@ enum Commands {
         /// 入力ファイル（.txt または .zip）
         source: PathBuf,
 
-        /// 入力ファイルがShift-JISでエンコードされている場合に指定
+        /// 入力ファイルがUTF-8でエンコードされている場合に指定（デフォルト: Shift-JIS）
         #[arg(long)]
-        sjis: bool,
+        utf8: bool,
 
         /// 横書きで生成（デフォルト: 縦書き）
         #[arg(long)]
         horizontal: bool,
 
-        /// 適用するCSS（組み込み名またはファイルパス、複数指定可）
+        /// preludeを適用しない
         #[arg(long)]
-        css: Vec<String>,
+        no_prelude: bool,
+
+        /// miyabiを適用しない
+        #[arg(long)]
+        no_miyabi: bool,
+
+        /// 追加で適用するCSSファイルのパス（複数指定可）
+        #[arg(long)]
+        css: Vec<PathBuf>,
 
         /// 出力先ディレクトリ（デフォルト: カレントディレクトリ）
         #[arg(short, long)]
@@ -78,11 +86,11 @@ fn get_file_stem(source: &Path) -> Result<String> {
         .ok_or_else(|| miette!("ファイル名を取得できませんでした"))
 }
 
-fn to_encoding(sjis: bool) -> Encoding {
-    if sjis {
-        Encoding::ShiftJis
-    } else {
+fn to_encoding(utf8: bool) -> Encoding {
+    if utf8 {
         Encoding::Utf8
+    } else {
+        Encoding::ShiftJis
     }
 }
 
@@ -94,33 +102,40 @@ fn is_zip(source: &Path) -> bool {
         .unwrap_or(false)
 }
 
-/// CSS名リストからCSS文字列リストを構築する
-fn resolve_css(css_names: &[String], direction: &WritingDirection) -> Result<Vec<String>> {
+/// CSSコンテンツリストを構築する
+fn resolve_css(
+    direction: &WritingDirection,
+    no_prelude: bool,
+    no_miyabi: bool,
+    extra_css: &[PathBuf],
+) -> Result<Vec<String>> {
     let mut css_contents = vec![layout_css(direction).to_string()];
 
-    for name in css_names {
-        if let Some(builtin) = resolve_builtin_css(name) {
-            css_contents.push(builtin.to_string());
+    if !no_prelude {
+        css_contents.push(resolve_builtin_css("prelude").unwrap().to_string());
+    }
+    if !no_miyabi {
+        css_contents.push(resolve_builtin_css("miyabi").unwrap().to_string());
+    }
+
+    for path in extra_css {
+        if path.exists() {
+            let content = fs::read_to_string(path).into_diagnostic()?;
+            css_contents.push(content);
         } else {
-            let path = Path::new(name);
-            if path.exists() {
-                let content = fs::read_to_string(path).into_diagnostic()?;
-                css_contents.push(content);
-            } else {
-                return Err(miette!("CSSファイルが見つかりません: {}", name));
-            }
+            return Err(miette!("CSSファイルが見つかりません: {}", path.display()));
         }
     }
 
     Ok(css_contents)
 }
 
-fn handle_xhtml(source: PathBuf, merge: bool, sjis: bool, output: Option<PathBuf>) -> Result<()> {
+fn handle_xhtml(source: PathBuf, merge: bool, utf8: bool, output: Option<PathBuf>) -> Result<()> {
     let output_dir = get_output_dir(output)?;
     let file_stem = get_file_stem(&source)?;
     let bytes = fs::read(&source).into_diagnostic()?;
 
-    let (xhtmls, errors) = generate_xhtml(&bytes, is_zip(&source), &to_encoding(sjis))
+    let (xhtmls, errors) = generate_xhtml(&bytes, is_zip(&source), &to_encoding(utf8))
         .map_err(|e| miette!("{}", e))?;
 
     for error in &errors {
@@ -152,9 +167,11 @@ fn handle_xhtml(source: PathBuf, merge: bool, sjis: bool, output: Option<PathBuf
 
 fn handle_epub(
     source: PathBuf,
-    sjis: bool,
+    utf8: bool,
     horizontal: bool,
-    css_names: Vec<String>,
+    no_prelude: bool,
+    no_miyabi: bool,
+    extra_css: Vec<PathBuf>,
     output: Option<PathBuf>,
 ) -> Result<()> {
     let output_dir = get_output_dir(output)?;
@@ -167,7 +184,7 @@ fn handle_epub(
         WritingDirection::Vertical
     };
 
-    let css_contents = resolve_css(&css_names, &direction)?;
+    let css_contents = resolve_css(&direction, no_prelude, no_miyabi, &extra_css)?;
     let css_refs: Vec<&str> = css_contents.iter().map(|s| s.as_str()).collect();
 
     let setting = EpubSetting {
@@ -178,7 +195,7 @@ fn handle_epub(
     let epub_bytes = generate_epub(
         &bytes,
         is_zip(&source),
-        &to_encoding(sjis),
+        &to_encoding(utf8),
         css_refs,
         setting,
     )
@@ -198,19 +215,21 @@ fn main() -> Result<()> {
         Commands::Xhtml {
             source,
             merge,
-            sjis,
+            utf8,
             output,
         } => {
-            handle_xhtml(source, merge, sjis, output)?;
+            handle_xhtml(source, merge, utf8, output)?;
         }
         Commands::Epub {
             source,
-            sjis,
+            utf8,
             horizontal,
+            no_prelude,
+            no_miyabi,
             css,
             output,
         } => {
-            handle_epub(source, sjis, horizontal, css, output)?;
+            handle_epub(source, utf8, horizontal, no_prelude, no_miyabi, css, output)?;
         }
     }
 

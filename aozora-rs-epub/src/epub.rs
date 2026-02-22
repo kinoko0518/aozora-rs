@@ -19,7 +19,7 @@ use aozora_rs_core::{AZResult, AZResultC, parse_meta, retokenize, scopenize, tok
 use aozora_rs_xhtml::NovelResult;
 use chrono::Local;
 use uuid::Uuid;
-use winnow::LocatingSlice;
+
 use zip::{ZipWriter, write::SimpleFileOptions};
 
 use crate::{AozoraZip, AozoraZipError, ImgExtension};
@@ -93,10 +93,11 @@ impl EpubWriter<'_> {
 
 /// &strからNovelResultを生成します。
 fn str_to_novel_result<'s>(str: &'s str) -> Result<NovelResult<'s>, AozoraZipError> {
-    let meta = parse_meta(&mut &str).map_err(|e| AozoraZipError::BrokenMetaData(e))?;
-    let tokenized =
-        tokenize(&mut LocatingSlice::new(&str)).map_err(|e| AozoraZipError::TokenizeFailed(e))?;
-    let ((scopenized, flat), error) = scopenize(tokenized, str).into_tuple();
+    let mut body = str;
+    let meta = parse_meta(&mut body).map_err(|e| AozoraZipError::BrokenMetaData(e))?;
+    let tokenized = tokenize(&mut winnow::LocatingSlice::new(body))
+        .map_err(|e| AozoraZipError::TokenizeFailed(e))?;
+    let ((scopenized, flat), error) = scopenize(tokenized, body).into_tuple();
     let retokenized = retokenize(flat, scopenized);
     Ok(aozora_rs_xhtml::retokenized_to_xhtml(
         retokenized,

@@ -1,8 +1,6 @@
 use miette::Diagnostic;
 use thiserror::Error;
-use winnow::{
-    LocatingSlice, Parser, combinator::delimited, error::ContextError, token::take_until,
-};
+use winnow::{Parser, combinator::delimited, error::ContextError, token::take_until};
 
 pub struct AozoraMeta<'s> {
     pub title: &'s str,
@@ -26,8 +24,9 @@ struct NoTitleFound;
 struct NoAuthorFound;
 
 /// タイトル、著者、【テキスト中に現れる記号について】といったファイルの先頭に記述される特別な情報を解析し、AozoraMetaに纏めます。
-pub fn parse_meta<'s>(input: &'s str) -> Result<AozoraMeta<'s>, miette::Error> {
-    let input = &mut LocatingSlice::new(input);
+///
+/// パース成功後、`input` はメタデータ部分が消費された本文の先頭を指します。
+pub fn parse_meta<'s>(input: &mut &'s str) -> Result<AozoraMeta<'s>, miette::Error> {
     // タイトルをパース
     let title: &str = (take_until::<_, _, ContextError>(1.., "\n"), '\n')
         .map(|(s, _): (&str, char)| s.trim())
@@ -49,6 +48,5 @@ pub fn parse_meta<'s>(input: &'s str) -> Result<AozoraMeta<'s>, miette::Error> {
         delimited(about_symbol, take_until(0.., about_symbol), about_symbol)
             .void()
             .parse_next(input);
-    // 本文を処理
     Ok(AozoraMeta { title, author })
 }

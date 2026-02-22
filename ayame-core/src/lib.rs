@@ -94,9 +94,10 @@ pub fn decode_bytes(bytes: &[u8], encoding: &Encoding) -> Result<String, AyameEr
 
 /// テキストからNovelResultを生成する
 pub fn text_to_novel_result<'s>(text: &'s str) -> Result<NovelResult<'s>, AyameError> {
-    let meta = parse_meta(text).map_err(|e| AyameError::MetadataError(e.to_string()))?;
+    let mut body = text;
+    let meta = parse_meta(&mut body).map_err(|e| AyameError::MetadataError(e.to_string()))?;
     let az_result =
-        str_to_retokenized(text).map_err(|e| AyameError::TokenizeError(e.to_string()))?;
+        str_to_retokenized(body).map_err(|e| AyameError::TokenizeError(e.to_string()))?;
     let (retokenized, errors) = az_result.into_tuple();
     Ok(retokenized_to_xhtml(retokenized, meta, errors))
 }
@@ -115,7 +116,8 @@ pub fn scan_metadata(
         decode_bytes(data, encoding)?
     };
 
-    let meta = parse_meta(&text).map_err(|e| AyameError::MetadataError(e.to_string()))?;
+    let mut s = text.as_str();
+    let meta = parse_meta(&mut s).map_err(|e| AyameError::MetadataError(e.to_string()))?;
     Ok(OwnedAozoraMeta {
         title: meta.title.to_string(),
         author: meta.author.to_string(),

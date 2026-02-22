@@ -1,12 +1,8 @@
 @charset "utf-8";
 
-html,
-body,
-.main {
-    writing-mode: vertical-rl !important;
-    -webkit-writing-mode: vertical-rl !important;
-    height: 100%;
-    width: 100%;
+body {
+    writing-mode: vertical-rl;
+    -webkit-writing-mode: vertical-rl;
     margin: 0;
     padding: 0;
 }

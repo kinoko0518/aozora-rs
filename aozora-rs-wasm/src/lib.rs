@@ -32,8 +32,9 @@ pub struct StandaloneXHTML {
 /// ご自身のサイト自体を青空文庫書式で記述する用途に便利です。
 #[wasm_bindgen]
 pub fn generate_standalone_xhtml(from: &str, delimiter: &str) -> Result<StandaloneXHTML, JsError> {
-    let meta = parse_meta(from).map_err(|e| JsError::new(&e.to_string()))?;
-    let (retokenized, errors) = str_to_retokenized(from)
+    let mut body = from;
+    let meta = parse_meta(&mut body).map_err(|e| JsError::new(&e.to_string()))?;
+    let (retokenized, errors) = str_to_retokenized(body)
         .map_err(|e| JsError::new(&e.to_string()))?
         .into_tuple();
     let xhtml = retokenized_to_xhtml(retokenized, meta, errors);
@@ -66,8 +67,9 @@ pub struct BookData {
 /// https://github.com/kinoko0518/aozora-rs/issues/7
 #[wasm_bindgen]
 pub fn parse_to_book_data(from: &str) -> Result<BookData, JsError> {
-    let meta = parse_meta(from).map_err(|e| JsError::new(&e.to_string()))?;
-    let (retokenized, errors) = str_to_retokenized(from)
+    let mut body = from;
+    let meta = parse_meta(&mut body).map_err(|e| JsError::new(&e.to_string()))?;
+    let (retokenized, errors) = str_to_retokenized(body)
         .map_err(|e| JsError::new(&e.to_string()))?
         .into_tuple();
     let result = retokenized_to_xhtml(retokenized, meta, errors);

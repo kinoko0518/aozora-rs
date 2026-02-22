@@ -41,32 +41,38 @@ pub fn into_xhtml<'s>(mapped: &MappedToken<'s>) -> Cow<'s, str> {
                 mapped.chapter.as_ref().unwrap().get_id()
             )),
             Deco::Bigger(b) => Cow::Owned(format!(
-                "<div style=\"font-size: {}em;\" class=\"{}_bigger\">",
+                "<span style=\"font-size: {}em;\" class=\"{}_bigger\">",
                 1.0 + 0.25 * (*b as f32),
                 b
             )),
             Deco::Bosen(b) => Cow::Borrowed(match b {
-                BosenKind::Plain => "<div style=\"text-decoration-style: solid;\">",
-                BosenKind::Double => "<div style=\"text-decoration-style: double;\">",
-                BosenKind::Chain => "<div style=\"text-decoration-style: dotted;\">",
-                BosenKind::Dashed => "<div style=\"text-decoration-style: dashed;\">",
-                BosenKind::Wavy => "<div style=\"text-decoration-style: wavy;\">",
+                BosenKind::Plain => "<span style=\"text-decoration-style: solid;\">",
+                BosenKind::Double => "<span style=\"text-decoration-style: double;\">",
+                BosenKind::Chain => "<span style=\"text-decoration-style: dotted;\">",
+                BosenKind::Dashed => "<span style=\"text-decoration-style: dashed;\">",
+                BosenKind::Wavy => "<span style=\"text-decoration-style: wavy;\">",
             }),
             Deco::Boten(b) => Cow::Borrowed(match b {
-                BotenKind::Sesame => "<div class=\"sesame\">",
-                BotenKind::Circle => "<div class=\"circle\">",
-                BotenKind::CircleFilled => "<div class=\"circle-filled\">",
-                BotenKind::DoubleCircle => "<div class=\"double-circle\">",
-                BotenKind::Hebinome => "<div class=\"hebinome\">",
-                BotenKind::Crossing => "<div class=\"crossing\">",
-                BotenKind::Triangle => "<div class=\"triangle\">",
-                BotenKind::TriangleFilled => "<div class=\"triangle-filled\">",
+                BotenKind::Sesame => "<span class=\"sesame\">",
+                BotenKind::Circle => "<span class=\"circle\">",
+                BotenKind::CircleFilled => "<span class=\"circle-filled\">",
+                BotenKind::DoubleCircle => "<span class=\"double-circle\">",
+                BotenKind::Hebinome => "<span class=\"hebinome\">",
+                BotenKind::Crossing => "<span class=\"crossing\">",
+                BotenKind::Triangle => "<span class=\"triangle\">",
+                BotenKind::TriangleFilled => "<span class=\"triangle-filled\">",
             }),
             Deco::Ruby(_) => Cow::Borrowed("<ruby>"),
-            Deco::Bold => Cow::Borrowed("<div class=\"bold\">"),
-            Deco::Italic => Cow::Borrowed("<div class=\"italic\">"),
+            Deco::Bold => Cow::Borrowed("<span class=\"bold\">"),
+            Deco::Italic => Cow::Borrowed("<span class=\"italic\">"),
+            Deco::Mama => Cow::Borrowed("<ruby>"),
+            Deco::Smaller(s) => Cow::Owned(format!(
+                "<span style=\"font-size: {}em;\" class=\"{}_smaller\">",
+                1.0 - 0.25 * (*s as f32),
+                s
+            )),
             Deco::Indent(i) => Cow::Owned(format!(
-                "<div class=\"indent\" style=\"padding-left: {}em;\">",
+                "<div class=\"indent\" style=\"padding-inline: {}em;\">",
                 i
             )),
             Deco::Hanging((f, s)) => Cow::Owned(format!(
@@ -75,20 +81,14 @@ pub fn into_xhtml<'s>(mapped: &MappedToken<'s>) -> Cow<'s, str> {
                 if *f == 0 {
                     Cow::Borrowed("")
                 } else {
-                    Cow::Owned(format!(" padding-left: {}em", f))
+                    Cow::Owned(format!(" padding-inline: {}em", f))
                 }
             )),
             Deco::Grounded => Cow::Borrowed("<div class=\"grounded\">"),
             Deco::HinV => Cow::Borrowed("<div class=\"hinv\">"),
             Deco::LowFlying(l) => Cow::Owned(format!(
-                "<div class=\"lowflying_{} grounded\" style=\"padding-left: {}em;\">",
+                "<div class=\"lowflying_{} grounded\" style=\"padding-inline: {}em;\">",
                 l, l,
-            )),
-            Deco::Mama => Cow::Borrowed("<ruby>"),
-            Deco::Smaller(s) => Cow::Owned(format!(
-                "<div style=\"font-size: {}em;\" class=\"{}_bigger\">",
-                1.0 - 0.25 * (*s as f32),
-                s
             )),
             Deco::VHCentre => Cow::Borrowed("<div class=\"vhcentre\">"),
         },
@@ -98,7 +98,13 @@ pub fn into_xhtml<'s>(mapped: &MappedToken<'s>) -> Cow<'s, str> {
             Deco::AHead => Cow::Borrowed("</h1>"),
             Deco::BHead => Cow::Borrowed("</h2>"),
             Deco::CHead => Cow::Borrowed("</h3>"),
-            _ => Cow::Borrowed("</div>"),
+            Deco::Indent(_)
+            | Deco::Hanging(_)
+            | Deco::VHCentre
+            | Deco::LowFlying(_)
+            | Deco::HinV
+            | Deco::Grounded => Cow::Borrowed("</div>"),
+            _ => Cow::Borrowed("</span>"),
         },
     }
 }

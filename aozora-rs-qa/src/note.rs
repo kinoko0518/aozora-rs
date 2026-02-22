@@ -16,15 +16,16 @@ fn analyse_file(path: &Path) -> Option<(usize, usize, String)> {
     let bytes = fs::read(path).ok()?;
 
     let read_original = encoding_rs::SHIFT_JIS.decode(&bytes).0;
-    let mut read = whole_gaiji_to_char(&read_original);
+    let read = whole_gaiji_to_char(&read_original);
 
     let mut success = 0;
     let mut fail = 0;
     let mut failed_notes = String::new();
 
-    // メタデータは不要なので捨てる
-    let _ = parse_meta(&mut read);
-    for token in tokenize(&mut LocatingSlice::new(&read)).ok()? {
+    // メタデータは不要なので捨てる。消費後の body を tokenize に渡す
+    let mut body = &read[..];
+    let _ = parse_meta(&mut body);
+    for token in tokenize(&mut LocatingSlice::new(body)).ok()? {
         match &token.kind {
             AozoraTokenKind::Note(c) => match c {
                 Note::Unknown(s) => {
