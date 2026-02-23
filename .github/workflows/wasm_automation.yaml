@@ -127,12 +127,12 @@ jobs:
         with:
           name: ${{ matrix.artifact-name }}
           path: |
-            ayame-app/src-tauri/target/release/bundle/**/*.deb
-            ayame-app/src-tauri/target/release/bundle/**/*.AppImage
-            ayame-app/src-tauri/target/release/bundle/**/*.dmg
-            ayame-app/src-tauri/target/release/bundle/**/*.msi
-            ayame-app/src-tauri/target/release/bundle/**/*.exe
-            ayame-app/src-tauri/target/release/bundle/**/*.nsis
+            target/release/bundle/**/*.deb
+            target/release/bundle/**/*.AppImage
+            target/release/bundle/**/*.dmg
+            target/release/bundle/**/*.msi
+            target/release/bundle/**/*.exe
+            target/release/bundle/**/*.nsis
 
   build-ayame-app-android:
     name: Build ayame-app (Android)
@@ -187,7 +187,7 @@ jobs:
           EOF
 
       - name: Build ayame-app Android
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@dev
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/29.0.14033849
@@ -268,25 +268,10 @@ jobs:
           shopt -s nullglob
           for dir in ayame-app-bundles/ayame-app-*/; do
             name=$(basename "$dir")
-            # Androidは個別にパッケージするのでスキップ
-            if [ "$name" = "ayame-app-android" ]; then
-              continue
-            fi
             cd "$dir"
             zip -r "../../${name}.zip" .
             cd ../..
           done
-
-      - name: Download ayame-app Android artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: ayame-app-android
-          path: ayame-app-android
-
-      - name: Package ayame-app Android
-        run: |
-          cd ayame-app-android
-          zip -r ../ayame-app-android.zip .
 
       - name: Build release body
         id: release_body
