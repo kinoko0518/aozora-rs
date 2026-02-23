@@ -173,6 +173,9 @@ jobs:
         working-directory: ayame-app
         run: npm ci
 
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --locked
+
       - name: Decode Android keystore
         if: env.ANDROID_KEYSTORE_BASE64 != ''
         env:
