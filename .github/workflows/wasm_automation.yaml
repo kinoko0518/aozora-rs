@@ -265,8 +265,13 @@ jobs:
 
       - name: Package ayame-app bundles
         run: |
+          shopt -s nullglob
           for dir in ayame-app-bundles/ayame-app-*/; do
             name=$(basename "$dir")
+            # Androidは個別にパッケージするのでスキップ
+            if [ "$name" = "ayame-app-android" ]; then
+              continue
+            fi
             cd "$dir"
             zip -r "../../${name}.zip" .
             cd ../..
