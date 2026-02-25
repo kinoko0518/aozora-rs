@@ -275,7 +275,6 @@ jobs:
           shopt -s nullglob globstar
           for file in ayame-app-bundles/ayame-app-android/**/*.apk ayame-app-bundles/ayame-app-android/**/*.aab; do
             base=$(basename "$file")
-            # Usually named like app-universal-release.apk or app-universal-release.aab
             if [[ "$base" == app-* ]]; then
               new_name="ayame-${base#app-}"
               if [[ "$file" == *.apk ]]; then
