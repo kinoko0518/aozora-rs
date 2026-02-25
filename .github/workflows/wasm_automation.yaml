@@ -134,12 +134,12 @@ jobs:
         with:
           name: ${{ matrix.artifact-name }}
           path: |
-            ayame-app/src-tauri/target/release/bundle/**/*.deb
-            ayame-app/src-tauri/target/release/bundle/**/*.AppImage
-            ayame-app/src-tauri/target/release/bundle/**/*.dmg
-            ayame-app/src-tauri/target/release/bundle/**/*.msi
-            ayame-app/src-tauri/target/release/bundle/**/*.exe
-            ayame-app/src-tauri/target/release/bundle/**/*.nsis
+            /Users/runner/work/aozora-rs/aozora-rs/target/release/bundle/**/*.deb
+            /Users/runner/work/aozora-rs/aozora-rs/target/release/bundle/**/*.AppImage
+            /Users/runner/work/aozora-rs/aozora-rs/target/release/bundle/**/*.dmg
+            /Users/runner/work/aozora-rs/aozora-rs/target/release/bundle/**/*.msi
+            /Users/runner/work/aozora-rs/aozora-rs/target/release/bundle/**/*.exe
+            /Users/runner/work/aozora-rs/aozora-rs/target/release/bundle/**/*.nsis
 
   build-ayame-app-android:
     name: Build ayame-app (Android)
@@ -210,8 +210,8 @@ jobs:
         with:
           name: ayame-app-android
           path: |
-            ayame-app/src-tauri/gen/android/app/build/outputs/**/*.apk
-            ayame-app/src-tauri/gen/android/app/build/outputs/**/*.aab
+            /home/runner/work/aozora-rs/aozora-rs/ayame-app/src-tauri/gen/android/app/build/outputs/**/*.apk
+            /home/runner/work/aozora-rs/aozora-rs/ayame-app/src-tauri/gen/android/app/build/outputs/**/*.aab
 
   build-and-upload:
     name: Build and Upload Release
@@ -256,16 +256,13 @@ jobs:
           pattern: ayame-cli-*
           path: ayame-cli-binaries
 
-      - name: Package ayame-cli binaries
+      - name: Prepare ayame-cli binaries
         run: |
-          cd ayame-cli-binaries/ayame-cli-linux-x86_64
-          chmod +x ayame
-          zip ../../ayame-cli-linux-x86_64.zip ayame
-          cd ../ayame-cli-macos-aarch64
-          chmod +x ayame
-          zip ../../ayame-cli-macos-aarch64.zip ayame
-          cd ../ayame-cli-windows-x86_64
-          zip ../../ayame-cli-windows-x86_64.zip ayame.exe
+          chmod +x ayame-cli-binaries/ayame-cli-linux-x86_64/ayame
+          mv ayame-cli-binaries/ayame-cli-linux-x86_64/ayame ./ayame-cli-linux-x86_64
+          chmod +x ayame-cli-binaries/ayame-cli-macos-aarch64/ayame
+          mv ayame-cli-binaries/ayame-cli-macos-aarch64/ayame ./ayame-cli-macos-aarch64
+          mv ayame-cli-binaries/ayame-cli-windows-x86_64/ayame.exe ./ayame-cli-windows-x86_64.exe
 
       - name: Download ayame-app artifacts
         uses: actions/download-artifact@v4
@@ -273,14 +270,23 @@ jobs:
           pattern: ayame-app-*
           path: ayame-app-bundles
 
-      - name: Package ayame-app bundles
+      - name: Prepare Android artifacts
         run: |
-          shopt -s nullglob
-          for dir in ayame-app-bundles/ayame-app-*/; do
-            name=$(basename "$dir")
-            cd "$dir"
-            zip -r "../../${name}.zip" .
-            cd ../..
+          shopt -s nullglob globstar
+          for file in ayame-app-bundles/ayame-app-android/**/*.apk ayame-app-bundles/ayame-app-android/**/*.aab; do
+            base=$(basename "$file")
+            # Usually named like app-universal-release.apk or app-universal-release.aab
+            if [[ "$base" == app-* ]]; then
+              new_name="ayame-${base#app-}"
+              if [[ "$file" == *.apk ]]; then
+                new_name="${new_name%.apk}.apk"
+              elif [[ "$file" == *.aab ]]; then
+                new_name="${new_name%.aab}.aab"
+              fi
+              mv "$file" "./$new_name"
+            else
+              mv "$file" "./ayame-android-$base"
+            fi
           done
 
       - name: Build release body
@@ -301,10 +307,14 @@ jobs:
           files: |
             aozora-rs-wasm/aozora-rs-wasm-pkg.zip
             qa-result.zip
-            ayame-cli-linux-x86_64.zip
-            ayame-cli-macos-aarch64.zip
-            ayame-cli-windows-x86_64.zip
-            ayame-app-linux-x86_64.zip
-            ayame-app-macos-aarch64.zip
-            ayame-app-windows-x86_64.zip
-            ayame-app-android.zip
+            ayame-cli-linux-x86_64
+            ayame-cli-macos-aarch64
+            ayame-cli-windows-x86_64.exe
+            ayame-app-bundles/**/*.deb
+            ayame-app-bundles/**/*.AppImage
+            ayame-app-bundles/**/*.dmg
+            ayame-app-bundles/**/*.msi
+            ayame-app-bundles/**/*.exe
+            ayame-app-bundles/**/*.nsis
+            ayame-*.apk
+            ayame-*.aab
