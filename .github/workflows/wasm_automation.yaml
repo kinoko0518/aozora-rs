@@ -180,15 +180,18 @@ jobs:
         working-directory: ayame-app
         run: npm ci
 
+      - name: Install cargo-binstall
+        uses: cargo-bins/cargo-binstall@main
+
       - name: Install Tauri CLI
-        run: cargo install tauri-cli --locked
+        run: cargo binstall tauri-cli -y
 
       - name: Decode Android keystore
         if: env.ANDROID_KEYSTORE_BASE64 != ''
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > ayame-app/src-tauri/gen/android/release.jks
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > ayame-app/src-tauri/gen/android/app/release.jks
           cat <<EOF > ayame-app/src-tauri/gen/android/keystore.properties
           storeFile=release.jks
           storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
