@@ -2,7 +2,7 @@ use std::io::Write as IoWrite;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
-use crate::{AnalysedData, MapCache};
+use crate::{AnalysedSummary, MapCache};
 
 use aozora_rs_gaiji::gaiji_to_char;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
@@ -45,7 +45,7 @@ fn analyse_file(path: &Path) -> Option<(usize, usize, String)> {
 pub async fn analyse_gaiji(
     into: &mut impl IoWrite,
     map: &MapCache,
-) -> Result<AnalysedData, Box<dyn std::error::Error>> {
+) -> Result<AnalysedSummary, Box<dyn std::error::Error>> {
     let start = Instant::now();
 
     let analysed = map
@@ -64,7 +64,7 @@ pub async fn analyse_gaiji(
             write!(into, "{}", v.2)?;
         }
     }
-    Ok(AnalysedData {
+    Ok(AnalysedSummary {
         success,
         fail,
         duration: start.elapsed(),

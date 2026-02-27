@@ -99,6 +99,7 @@ fn convert_file_inner(
     let setting = EpubSetting {
         language: "ja",
         is_rtl: vertical,
+        styles: vec![],
     };
 
     generate_epub(

@@ -1,9 +1,6 @@
 // 再エクスポート
 pub use aozora_rs_core::*;
-pub use aozora_rs_epub::{
-    AozoraZip, AozoraZipError, EpubSetting, from_aozora_zip, from_sjis_aozora_zip,
-    from_utf8_aozora_zip,
-};
+pub use aozora_rs_epub::{EpubSetting, from_aozora_zip};
 pub use aozora_rs_xhtml::{NovelResult, XHTMLResult, retokenized_to_xhtml};
 use winnow::{LocatingSlice, error::ContextError};
 

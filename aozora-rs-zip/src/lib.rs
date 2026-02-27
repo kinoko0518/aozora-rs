@@ -9,12 +9,32 @@ use thiserror::Error;
 use winnow::error::ContextError;
 use zip::result::ZipError;
 
-use crate::ImgExtension;
+pub enum ImgExtension {
+    Png,
+    Jpeg,
+    Gif,
+    Svg,
+}
 
-/// Zipファイルから読み込んだ、青空文庫書式の解析に必要なデータを保持する構造体です。
-pub struct AozoraZip {
-    pub txt: Vec<u8>,
-    pub images: HashMap<String, (ImgExtension, Vec<u8>)>,
+impl ImgExtension {
+    pub fn into_media_type(&self) -> &str {
+        match self {
+            Self::Png => "png",
+            Self::Jpeg => "jpeg",
+            Self::Gif => "gif",
+            Self::Svg => "svg+xml",
+        }
+    }
+
+    pub fn from_extension(from: &str) -> Option<Self> {
+        match from {
+            "jpg" | "jpeg" | "JPG" | "JPEG" => Some(Self::Jpeg),
+            "png" | "PNG" => Some(Self::Png),
+            "gif" | "GIF" => Some(Self::Gif),
+            "svg" | "SVG" => Some(Self::Svg),
+            _ => None,
+        }
+    }
 }
 
 /// AozoraZipからepubやXHTMLを生成するときに発生しうるエラーを列挙したエラー型です。
@@ -79,8 +99,52 @@ pub enum AozoraZipError {
     BrokenMetaData(miette::Report),
 }
 
+pub enum Encoding {
+    ShiftJIS,
+    Utf8,
+}
+
+impl Encoding {
+    fn bytes_to_string(&self, bytes: Vec<u8>) -> Result<String, FromUtf8Error> {
+        match self {
+            Self::ShiftJIS => {
+                let (cow, _, _) = encoding_rs::SHIFT_JIS.decode(&bytes);
+                Ok(cow.to_string())
+            }
+            Self::Utf8 => String::from_utf8(bytes),
+        }
+    }
+}
+
+/// Zipファイルから読み込んだ、青空文庫書式の解析に必要なデータを保持する構造体です。
+pub struct AozoraZip {
+    pub txt: String,
+    pub images: HashMap<String, (ImgExtension, Vec<u8>)>,
+}
+
+pub struct Dependencies {
+    pub images: HashMap<String, (ImgExtension, Vec<u8>)>,
+}
+
+impl Dependencies {
+    pub fn new() -> Self {
+        Dependencies {
+            images: HashMap::new(),
+        }
+    }
+}
+
 impl AozoraZip {
-    pub fn read_from_zip<'s>(zip: &[u8]) -> Result<Self, AozoraZipError> {
+    pub fn into_dependencies(self) -> (String, Dependencies) {
+        (
+            self.txt,
+            Dependencies {
+                images: self.images,
+            },
+        )
+    }
+
+    pub fn read_from_zip<'s>(zip: &[u8], encoding: &Encoding) -> Result<Self, AozoraZipError> {
         let mut zip =
             zip::ZipArchive::new(Cursor::new(zip)).map_err(|e| AozoraZipError::BrokenZip(e))?;
         let images = HashMap::new();
@@ -96,7 +160,9 @@ impl AozoraZip {
                         let mut buff: Vec<u8> = Vec::new();
                         c.read_to_end(&mut buff)
                             .map_err(|e| AozoraZipError::Io(e))?;
-                        buff
+                        encoding
+                            .bytes_to_string(buff)
+                            .map_err(|e| AozoraZipError::BrokenText(e))?
                     };
                     if txt.is_none() {
                         txt = Some(text);

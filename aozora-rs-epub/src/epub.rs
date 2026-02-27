@@ -15,14 +15,13 @@ use std::{
     io::{Seek, Write},
 };
 
-use aozora_rs_core::{AZResult, AZResultC, parse_meta, retokenize, scopenize, tokenize};
+use aozora_rs_core::{AZResult, AZResultC};
 use aozora_rs_xhtml::NovelResult;
+use aozora_rs_zip::{Dependencies, ImgExtension};
 use chrono::Local;
 use uuid::Uuid;
 
 use zip::{ZipWriter, write::SimpleFileOptions};
-
-use crate::{AozoraZip, AozoraZipError, ImgExtension};
 
 /// Epubの生成に関する設定を保持する構造体です。
 ///
@@ -30,6 +29,21 @@ use crate::{AozoraZip, AozoraZipError, ImgExtension};
 pub struct EpubSetting<'s> {
     pub language: &'s str,
     pub is_rtl: bool,
+    pub styles: Vec<&'s str>,
+}
+
+impl Default for EpubSetting<'_> {
+    fn default() -> Self {
+        Self {
+            language: "ja",
+            is_rtl: true,
+            styles: vec![
+                include_str!("../../ayame-core/assets/horizontal.css"),
+                include_str!("../../ayame-core/assets/prelude.css"),
+                include_str!("../../ayame-core/assets/miyabi.css"),
+            ],
+        }
+    }
 }
 
 /// epubの生成時に必要なデータをすべてまとめた構造体です。
@@ -40,7 +54,6 @@ pub struct EpubWriter<'s> {
     image: HashMap<String, (ImgExtension, Vec<u8>)>,
     setting: EpubSetting<'s>,
     lud: chrono::DateTime<Local>,
-    styles: Vec<&'s str>,
 }
 
 impl EpubWriter<'_> {
@@ -60,7 +73,8 @@ impl EpubWriter<'_> {
     }
 
     pub fn css(&self) -> impl Iterator<Item = String> {
-        self.styles
+        self.setting
+            .styles
             .iter()
             .enumerate()
             .map(|(num, _)| format!("style/style{:>04}.css", num))
@@ -80,7 +94,7 @@ impl EpubWriter<'_> {
         writer: &mut impl Write,
         base_path: &str,
     ) -> Result<(), std::io::Error> {
-        for (i, _) in self.styles.iter().enumerate() {
+        for (i, _) in self.setting.styles.iter().enumerate() {
             writeln!(
                 writer,
                 "\t<link rel=\"stylesheet\" type=\"text/css\" href=\"{}style{:>04}.css\" />",
@@ -91,62 +105,13 @@ impl EpubWriter<'_> {
     }
 }
 
-/// &strからNovelResultを生成します。
-fn str_to_novel_result<'s>(str: &'s str) -> Result<NovelResult<'s>, AozoraZipError> {
-    let mut body = str;
-    let meta = parse_meta(&mut body).map_err(|e| AozoraZipError::BrokenMetaData(e))?;
-    let tokenized = tokenize(&mut winnow::LocatingSlice::new(body))
-        .map_err(|e| AozoraZipError::TokenizeFailed(e))?;
-    let ((scopenized, flat), error) = scopenize(tokenized, body).into_tuple();
-    let retokenized = retokenize(flat, scopenized);
-    Ok(aozora_rs_xhtml::retokenized_to_xhtml(
-        retokenized,
-        meta,
-        error,
-    ))
-}
-
-pub fn from_utf8_aozora_zip<T>(
-    acc: &mut T,
-    zip: &[u8],
-    styles: Vec<&str>,
-    setting: EpubSetting,
-) -> Result<AZResult<()>, Box<dyn std::error::Error>>
-where
-    T: Write + Seek,
-{
-    let azz = AozoraZip::read_from_zip(zip)?;
-    let txt = String::from_utf8(azz.txt.clone()).map_err(|e| AozoraZipError::BrokenText(e))?;
-    let data = str_to_novel_result(&txt)?;
-    from_aozora_zip(acc, azz, styles, setting, data)
-}
-
-pub fn from_sjis_aozora_zip<T>(
-    acc: &mut T,
-    zip: &[u8],
-    styles: Vec<&str>,
-    setting: EpubSetting,
-) -> Result<AZResult<()>, Box<dyn std::error::Error>>
-where
-    T: Write + Seek,
-{
-    let azz = AozoraZip::read_from_zip(zip)?;
-    let txt = {
-        let (decoded, _, _) = encoding_rs::SHIFT_JIS.decode(&azz.txt);
-        decoded.into_owned()
-    };
-    let data = str_to_novel_result(&txt)?;
-    from_aozora_zip(acc, azz, styles, setting, data)
-}
-
 /// AozoraZipからEpubを生成します。
 ///
-/// accには書き込み先を、azzには元となるAozoraZipを、stylesには使用するCSSを文字列として、settingにはEpubSettingを指定してください。
+/// accには書き込み先を、azzには元となるAozoraZipを、settingにはEpubSettingを指定してください。
 /// 最後にNovelResultを渡すことで、Epubを生成します。
 pub fn from_aozora_zip<'s>(
     acc: impl Write + Seek,
-    azz: AozoraZip,
-    styles: Vec<&str>,
+    dependencies: Dependencies,
     setting: EpubSetting,
     novel_result: NovelResult<'s>,
 ) -> Result<AZResult<()>, Box<dyn std::error::Error>> {
@@ -154,13 +119,12 @@ pub fn from_aozora_zip<'s>(
     let options = SimpleFileOptions::default();
     let epub_writer = EpubWriter {
         nresult: novel_result,
-        image: azz.images,
+        image: dependencies.images,
         setting,
-        styles,
         lud: Local::now(),
     };
-
     let stored = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
+
     writer.start_file("mimetype", stored)?;
     writer.write_all(b"application/epub+zip")?;
 
@@ -181,7 +145,7 @@ pub fn from_aozora_zip<'s>(
         epub_writer.write_xhtml(&x, &mut writer)?;
     }
 
-    for (i, css) in epub_writer.styles.iter().enumerate() {
+    for (i, css) in epub_writer.setting.styles.iter().enumerate() {
         writer.start_file(format!("item/style/style{:>04}.css", i), options)?;
         writer.write_all(css.as_bytes())?;
     }

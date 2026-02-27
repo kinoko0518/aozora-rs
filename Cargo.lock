@@ -143,6 +143,7 @@ dependencies = [
  "aozora-rs-core",
  "aozora-rs-epub",
  "aozora-rs-xhtml",
+ "aozora-rs-zip",
  "winnow 0.7.14",
 ]
 
@@ -164,6 +165,7 @@ version = "0.1.0"
 dependencies = [
  "aozora-rs-core",
  "aozora-rs-xhtml",
+ "aozora-rs-zip",
  "chrono",
  "encoding_rs",
  "miette",
@@ -193,7 +195,10 @@ version = "0.1.0"
 dependencies = [
  "ansi-to-tui",
  "aozora-rs-core",
+ "aozora-rs-epub",
  "aozora-rs-gaiji",
+ "aozora-rs-xhtml",
+ "aozora-rs-zip",
  "crossterm",
  "encoding_rs",
  "futures",
@@ -212,6 +217,7 @@ name = "aozora-rs-wasm"
 version = "0.1.0"
 dependencies = [
  "aozora-rs",
+ "aozora-rs-zip",
  "miette",
  "wasm-bindgen",
 ]
@@ -224,6 +230,17 @@ dependencies = [
  "itertools 0.14.0",
  "miette",
  "winnow 0.7.14",
+]
+
+[[package]]
+name = "aozora-rs-zip"
+version = "0.1.0"
+dependencies = [
+ "encoding_rs",
+ "miette",
+ "thiserror 2.0.18",
+ "winnow 0.7.14",
+ "zip",
 ]
 
 [[package]]
@@ -432,6 +449,7 @@ name = "ayame-core"
 version = "0.1.0"
 dependencies = [
  "aozora-rs",
+ "aozora-rs-zip",
  "encoding_rs",
  "miette",
  "serde",

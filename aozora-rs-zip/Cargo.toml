@@ -1,0 +1,11 @@
+[package]
+name = "aozora-rs-zip"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+encoding_rs.workspace = true
+miette.workspace = true
+thiserror.workspace = true
+winnow.workspace = true
+zip.workspace = true

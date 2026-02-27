@@ -1,13 +1,13 @@
 use std::io::Cursor;
 
 use aozora_rs::{
-    AozoraZip, EpubSetting, NovelResult, XHTMLResult, from_aozora_zip, from_sjis_aozora_zip,
-    from_utf8_aozora_zip, parse_meta, retokenized_to_xhtml, str_to_retokenized,
+    EpubSetting, NovelResult, XHTMLResult, from_aozora_zip, parse_meta, retokenized_to_xhtml,
+    str_to_retokenized,
 };
+use aozora_rs_zip::{AozoraZip, Dependencies, Encoding as ZipEncoding};
 use encoding_rs::SHIFT_JIS;
 use miette::Diagnostic;
 use serde::Serialize;
-use std::collections::HashMap;
 use thiserror::Error;
 
 /// 入力テキストの文字エンコーディング
@@ -109,9 +109,13 @@ pub fn scan_metadata(
     encoding: &Encoding,
 ) -> Result<OwnedAozoraMeta, AyameError> {
     let text = if is_zip {
-        let azz =
-            AozoraZip::read_from_zip(data).map_err(|e| AyameError::ZipError(e.to_string()))?;
-        decode_bytes(&azz.txt, encoding)?
+        let zip_encoding = match encoding {
+            Encoding::ShiftJis => ZipEncoding::ShiftJIS,
+            Encoding::Utf8 => ZipEncoding::Utf8,
+        };
+        let azz = AozoraZip::read_from_zip(data, &zip_encoding)
+            .map_err(|e| AyameError::ZipError(e.to_string()))?;
+        azz.txt
     } else {
         decode_bytes(data, encoding)?
     };
@@ -131,9 +135,13 @@ pub fn generate_xhtml(
     encoding: &Encoding,
 ) -> Result<(XHTMLResult, Vec<miette::Report>), AyameError> {
     let text = if is_zip {
-        let azz =
-            AozoraZip::read_from_zip(data).map_err(|e| AyameError::ZipError(e.to_string()))?;
-        decode_bytes(&azz.txt, encoding)?
+        let zip_encoding = match encoding {
+            Encoding::ShiftJis => ZipEncoding::ShiftJIS,
+            Encoding::Utf8 => ZipEncoding::Utf8,
+        };
+        let azz = AozoraZip::read_from_zip(data, &zip_encoding)
+            .map_err(|e| AyameError::ZipError(e.to_string()))?;
+        azz.txt
     } else {
         decode_bytes(data, encoding)?
     };
@@ -153,19 +161,37 @@ pub fn generate_epub(
     let mut output = Cursor::new(Vec::new());
 
     if is_zip {
-        match encoding {
-            Encoding::ShiftJis => from_sjis_aozora_zip(&mut output, data, styles, setting),
-            Encoding::Utf8 => from_utf8_aozora_zip(&mut output, data, styles, setting),
-        }
-        .map_err(|e| AyameError::EpubError(e.to_string()))?;
+        let zip_encoding = match encoding {
+            Encoding::ShiftJis => ZipEncoding::ShiftJIS,
+            Encoding::Utf8 => ZipEncoding::Utf8,
+        };
+        let azz = AozoraZip::read_from_zip(data, &zip_encoding)
+            .map_err(|e| AyameError::ZipError(e.to_string()))?;
+        let (txt, dependencies) = azz.into_dependencies();
+
+        // Use text_to_novel_result to parse text and get NovelResult
+        let novel_result = text_to_novel_result(&txt)?;
+
+        let final_setting = EpubSetting {
+            language: setting.language,
+            is_rtl: setting.is_rtl,
+            styles,
+        };
+
+        from_aozora_zip(&mut output, dependencies, final_setting, novel_result)
+            .map_err(|e| AyameError::EpubError(e.to_string()))?;
     } else {
         let text = decode_bytes(data, encoding)?;
         let novel_result = text_to_novel_result(&text)?;
-        let azz = AozoraZip {
-            txt: data.to_vec(),
-            images: HashMap::new(),
+        let dependencies = Dependencies::new();
+
+        let final_setting = EpubSetting {
+            language: setting.language,
+            is_rtl: setting.is_rtl,
+            styles,
         };
-        from_aozora_zip(&mut output, azz, styles, setting, novel_result)
+
+        from_aozora_zip(&mut output, dependencies, final_setting, novel_result)
             .map_err(|e| AyameError::EpubError(e.to_string()))?;
     }
 

@@ -1,6 +1,7 @@
 mod gaiji;
 mod map_cache;
 mod note;
+mod speed;
 mod sync;
 
 pub const REPOSITORY: &str = "aozorabunko_text";
@@ -14,18 +15,19 @@ use std::{fs::File, time::Duration};
 pub use map_cache::{MapCache, update_map};
 pub use sync::{GitSyncProgress, sync_repository, sync_repository_simple};
 
+use crate::speed::{SpeedSummary, speed_analyse};
 use crate::{gaiji::analyse_gaiji, note::note_analyse};
 
-pub struct AnalysedData {
+pub struct AnalysedSummary {
     pub success: usize,
     pub fail: usize,
     pub duration: Duration,
 }
 
-impl AnalysedData {
+impl AnalysedSummary {
     fn fancy(&self) -> String {
         format!(
-            "**成功**: {}\n\t**失敗**: {}\n\t**成功率**: {}%\n\t**処理時間**: {:?}",
+            "{}件 | {}件 | {}% | {:?} |",
             self.success,
             self.fail,
             (self.success as f32) / ((self.success + self.fail) as f32) * 100.0,
@@ -49,35 +51,39 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("ファイルを作成しています……");
     let mut note_log = File::create("./aozora-rs-qa/result/invalid_note.txt")?;
     let mut gaiji_log = File::create("./aozora-rs-qa/result/invalid_gaiji.txt")?;
+    let mut speed_log = File::create("./aozora-rs-qa/result/speed_report.md")?;
     let mut summary = String::new();
 
     let analyse_duration = Instant::now();
     println!("解析を実行中です……");
-    let (note, gaiji) = tokio::join!(
+    let (note, gaiji, speed) = tokio::join!(
         note_analyse(&mut note_log, &map),
-        analyse_gaiji(&mut gaiji_log, &map)
+        analyse_gaiji(&mut gaiji_log, &map),
+        speed_analyse(&mut speed_log)
     );
     println!("解析が終了しました！（{:?}）", analyse_duration.elapsed());
 
     println!("調査報告書を作成中です……");
-    writeln!(summary, "# QA結果")?;
-    writeln!(summary, "\n## 注記解析結果")?;
     writeln!(
         summary,
-        "{}",
-        match note {
-            Ok(n) => n.fancy(),
-            Err(e) => e.to_string(),
-        }
+        "# QA結果\n| 解析種別 | 成功件数 | 失敗件数 | 成功率 | 処理時間 |\n| --- | --- | --- | --- | --- |"
     )?;
-    writeln!(summary, "\n## 外字解析結果")?;
+    write!(summary, "| 注記解析 | ")?;
+    writeln!(summary, "{}", note?.fancy())?;
+    write!(summary, "| 外字解析 | ")?;
+    writeln!(summary, "{}", gaiji?.fancy())?;
+    writeln!(
+        summary,
+        "\n# 速度レポート\n| タイトル | 処理時間 |\n| --- | --- |"
+    )?;
     writeln!(
         summary,
         "{}",
-        match gaiji {
-            Ok(n) => n.fancy(),
-            Err(e) => e.to_string(),
-        }
+        speed?
+            .iter()
+            .map(SpeedSummary::to_string)
+            .collect::<Vec<String>>()
+            .join("\n")
     )?;
 
     println!("{}", &summary);

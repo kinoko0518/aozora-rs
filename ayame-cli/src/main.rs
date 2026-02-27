@@ -190,6 +190,7 @@ fn handle_epub(
     let setting = EpubSetting {
         language: "ja",
         is_rtl: !horizontal,
+        styles: vec![],
     };
 
     let epub_bytes = generate_epub(

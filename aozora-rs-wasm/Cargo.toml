@@ -8,5 +8,6 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 aozora-rs = { workspace = true }
+aozora-rs-zip = { workspace = true }
 miette = { workspace = true }
 wasm-bindgen = { workspace = true }

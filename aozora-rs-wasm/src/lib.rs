@@ -1,6 +1,7 @@
 use aozora_rs::{
-    EpubSetting, from_sjis_aozora_zip, parse_meta, retokenized_to_xhtml, str_to_retokenized,
+    EpubSetting, from_aozora_zip, parse_meta, retokenized_to_xhtml, str_to_retokenized,
 };
+use aozora_rs_zip::{AozoraZip, Encoding as ZipEncoding};
 use std::io::Cursor;
 use wasm_bindgen::{JsError, prelude::wasm_bindgen};
 
@@ -85,15 +86,24 @@ pub fn parse_to_book_data(from: &str) -> Result<BookData, JsError> {
 #[wasm_bindgen]
 pub fn build_epub_bytes(from: &[u8], styles: Vec<String>) -> Result<Vec<u8>, JsError> {
     let mut acc = Cursor::new(Vec::new());
-    from_sjis_aozora_zip::<Cursor<Vec<u8>>>(
-        &mut acc,
-        from,
-        styles.iter().map(|s| s.as_str()).collect::<Vec<&str>>(),
-        EpubSetting {
-            language: "ja",
-            is_rtl: true,
-        },
-    )
-    .map_err(into_js_error)?;
+
+    let azz = AozoraZip::read_from_zip(from, &ZipEncoding::ShiftJIS).map_err(into_js_error)?;
+    let (body_string, dependencies) = azz.into_dependencies();
+    let mut body_slice = body_string.as_str();
+
+    let meta = parse_meta(&mut body_slice).map_err(|e| JsError::new(&e.to_string()))?;
+    let (retokenized, errors) = str_to_retokenized(body_slice)
+        .map_err(|e| JsError::new(&e.to_string()))?
+        .into_tuple();
+    let novel_result = retokenized_to_xhtml(retokenized, meta, errors);
+
+    let setting = EpubSetting {
+        language: "ja",
+        is_rtl: true,
+        styles: styles.iter().map(|s| s.as_str()).collect::<Vec<&str>>(),
+    };
+
+    from_aozora_zip(&mut acc, dependencies, setting, novel_result).map_err(into_js_error)?;
+
     Ok(acc.into_inner())
 }

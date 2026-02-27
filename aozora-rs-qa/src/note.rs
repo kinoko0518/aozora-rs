@@ -1,4 +1,4 @@
-use crate::{AnalysedData, MapCache};
+use crate::{AnalysedSummary, MapCache};
 use aozora_rs_core::tokenizer::Note;
 use aozora_rs_core::{AozoraTokenKind, parse_meta, tokenize};
 use aozora_rs_gaiji::whole_gaiji_to_char;
@@ -46,7 +46,7 @@ fn analyse_file(path: &Path) -> Option<(usize, usize, String)> {
 pub async fn note_analyse(
     into: &mut impl IoWrite,
     map: &MapCache,
-) -> Result<AnalysedData, Box<dyn std::error::Error>> {
+) -> Result<AnalysedSummary, Box<dyn std::error::Error>> {
     let start = Instant::now();
 
     let analysed = map
@@ -66,7 +66,7 @@ pub async fn note_analyse(
         }
     }
 
-    Ok(AnalysedData {
+    Ok(AnalysedSummary {
         success,
         fail,
         duration: start.elapsed(),
