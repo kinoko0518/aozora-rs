@@ -27,11 +27,16 @@ jobs:
       - name: Run QA
         run: cargo run --bin qa
 
+      - name: Zip QA results
+        run: |
+          cd aozora-rs-qa
+          zip -r qa-result.zip result
+
       - name: Upload QA result
         uses: actions/upload-artifact@v4
         with:
           name: qa-result
-          path: aozora-rs-qa/result/
+          path: aozora-rs-qa/qa-result.zip
 
   build-ayame-cli:
     name: Build ayame-cli (${{ matrix.os }})
@@ -237,11 +242,16 @@ jobs:
       - name: Build WASM
         run: wasm-pack build aozora-rs-wasm --target bundler
 
+      - name: Zip pkg directory
+        run: |
+          cd aozora-rs-wasm
+          zip -r aozora-rs-wasm-pkg.zip pkg
+
       - name: Upload WASM artifact
         uses: actions/upload-artifact@v4
         with:
           name: aozora-rs-wasm-pkg
-          path: aozora-rs-wasm/pkg/
+          path: aozora-rs-wasm/aozora-rs-wasm-pkg.zip
 
   build-and-upload:
     name: Upload Release
