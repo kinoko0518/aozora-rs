@@ -134,12 +134,12 @@ jobs:
         with:
           name: ${{ matrix.artifact-name }}
           path: |
-            /Users/runner/work/aozora-rs/aozora-rs/target/release/bundle/**/*.deb
-            /Users/runner/work/aozora-rs/aozora-rs/target/release/bundle/**/*.AppImage
-            /Users/runner/work/aozora-rs/aozora-rs/target/release/bundle/**/*.dmg
-            /Users/runner/work/aozora-rs/aozora-rs/target/release/bundle/**/*.msi
-            /Users/runner/work/aozora-rs/aozora-rs/target/release/bundle/**/*.exe
-            /Users/runner/work/aozora-rs/aozora-rs/target/release/bundle/**/*.nsis
+            D:/a/aozora-rs/aozora-rs/target/release/bundle/**/*.deb
+            D:/a/aozora-rs/aozora-rs/target/release/bundle/**/*.AppImage
+            D:/a/aozora-rs/aozora-rs/target/release/bundle/**/*.dmg
+            D:/a/aozora-rs/aozora-rs/target/release/bundle/**/*.msi
+            D:/a/aozora-rs/aozora-rs/target/release/bundle/**/*.exe
+            D:/a/aozora-rs/aozora-rs/target/release/bundle/**/*.nsis
 
   build-ayame-app-android:
     name: Build ayame-app (Android)
