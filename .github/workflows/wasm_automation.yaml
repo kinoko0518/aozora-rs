@@ -134,12 +134,12 @@ jobs:
         with:
           name: ${{ matrix.artifact-name }}
           path: |
-            ayame-app/src-tauri/target/release/bundle/**/*.deb
-            ayame-app/src-tauri/target/release/bundle/**/*.AppImage
-            ayame-app/src-tauri/target/release/bundle/**/*.dmg
-            ayame-app/src-tauri/target/release/bundle/**/*.msi
-            ayame-app/src-tauri/target/release/bundle/**/*.exe
-            ayame-app/src-tauri/target/release/bundle/**/*.nsis
+            target/release/bundle/**/*.deb
+            target/release/bundle/**/*.AppImage
+            target/release/bundle/**/*.dmg
+            target/release/bundle/**/*.msi
+            target/release/bundle/**/*.exe
+            target/release/bundle/**/*.nsis
 
   build-ayame-app-android:
     name: Build ayame-app (Android)
