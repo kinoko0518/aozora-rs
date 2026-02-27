@@ -39,15 +39,15 @@ fn special<'s>(input: &mut Input<'s>) -> Result<AozoraTokenKind<'s>, ContextErro
             delimited(
                 "［＃",
                 alt((
-                    command.map(|c| AozoraTokenKind::Note(c)),
+                    command.map(AozoraTokenKind::Note),
                     take_until(1.., "］").map(|s| AozoraTokenKind::Note(Note::Unknown(s))),
                 )),
                 "］",
             ),
         )
             .map(|(_, s)| s),
-        ruby.map(|r| AozoraTokenKind::Ruby(r)),
-        odoriji.map(|o| AozoraTokenKind::Odoriji(o)),
+        ruby.map(AozoraTokenKind::Ruby),
+        odoriji.map(AozoraTokenKind::Odoriji),
     ))
     .parse_next(input)
 }
@@ -80,7 +80,7 @@ pub fn tokenize<'s>(input: &mut Input<'s>) -> Result<Vec<Tokenized<'s>>, Context
             };
             Tokenized {
                 kind: k,
-                span: span,
+                span,
             }
         }),
     )

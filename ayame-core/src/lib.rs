@@ -183,7 +183,7 @@ pub fn generate_epub(
     } else {
         let text = decode_bytes(data, encoding)?;
         let novel_result = text_to_novel_result(&text)?;
-        let dependencies = Dependencies::new();
+        let dependencies = Dependencies::default();
 
         let final_setting = EpubSetting {
             language: setting.language,

@@ -142,8 +142,8 @@ fn multiline_ends<'s>(input: &mut Input<'s>) -> Result<MultiLineEnds, ContextErr
 
 pub fn multiline<'s>(input: &mut Input<'s>) -> Result<MultiLine, ContextError> {
     alt((
-        multiline_begins.map(|s| MultiLine::Begin(s)),
-        multiline_ends.map(|s| MultiLine::End(s)),
+        multiline_begins.map(MultiLine::Begin),
+        multiline_ends.map(MultiLine::End),
     ))
     .parse_next(input)
 }

@@ -142,7 +142,7 @@ pub fn from_aozora_zip<'s>(
 
     for (i, x) in epub_writer.nresult.xhtmls.xhtmls.iter().enumerate() {
         writer.start_file(format!("item/xhtml/sec{:>04}.xhtml", i), options)?;
-        epub_writer.write_xhtml(&x, &mut writer)?;
+        epub_writer.write_xhtml(x, &mut writer)?;
     }
 
     for (i, css) in epub_writer.setting.styles.iter().enumerate() {
@@ -150,15 +150,16 @@ pub fn from_aozora_zip<'s>(
         writer.write_all(css.as_bytes())?;
     }
 
-    let mut azresult = AZResultC::new();
+    let mut azresult = AZResultC::default();
     for d in epub_writer.nresult.xhtmls.dependency {
         if let Some(img) = epub_writer.image.get(&d) {
             writer.start_file(format!("item/image/{}", d), options)?;
             writer.write(&img.1)?;
         } else {
-            azresult.push(
-                miette::miette!("依存関係にあるファイルが見つかりませんでした：{}", d).into(),
-            );
+            azresult.push(miette::miette!(
+                "依存関係にあるファイルが見つかりませんでした：{}",
+                d
+            ));
         }
     }
 

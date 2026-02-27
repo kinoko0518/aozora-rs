@@ -57,9 +57,9 @@ impl EpubWriter<'_> {
         // styleを宣言
         writer.write_all("\t\t<!-- style -->\n".as_bytes())?;
         for (id, s) in self.css().enumerate() {
-            write!(
+            writeln!(
                 writer,
-                "\t\t<item id=\"style{:>04}\" href=\"{}\" media-type=\"text/css\"/>\n",
+                "\t\t<item id=\"style{:>04}\" href=\"{}\" media-type=\"text/css\"/>",
                 id, s
             )?;
         }
@@ -67,9 +67,9 @@ impl EpubWriter<'_> {
         // imageを宣言
         writer.write_all("\t\t<!-- image -->\n".as_bytes())?;
         for (id, (path, ext)) in self.images().enumerate() {
-            write!(
+            writeln!(
                 writer,
-                "\t\t<item id=\"image{:>04}\" href=\"{}\" media-type=\"image/{}\"/>\n",
+                "\t\t<item id=\"image{:>04}\" href=\"{}\" media-type=\"image/{}\"/>",
                 id,
                 path,
                 ext.into_media_type()
@@ -79,9 +79,9 @@ impl EpubWriter<'_> {
         // XHTMLを宣言
         writer.write_all("\t\t<!-- xhtml -->\n".as_bytes())?;
         for (id, xhtml) in self.xhtmls().enumerate() {
-            write!(
+            writeln!(
                 writer,
-                "\t\t<item id=\"sec{:>04}\" href=\"{}\" media-type=\"application/xhtml+xml\"/>\n",
+                "\t\t<item id=\"sec{:>04}\" href=\"{}\" media-type=\"application/xhtml+xml\"/>",
                 id, xhtml
             )?;
         }

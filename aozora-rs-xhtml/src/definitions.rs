@@ -9,11 +9,13 @@ pub struct CDepth {
     pub depth: [usize; 3],
 }
 
-impl CDepth {
-    pub fn new() -> Self {
+impl Default for CDepth {
+    fn default() -> Self {
         Self { depth: [0, 0, 0] }
     }
+}
 
+impl CDepth {
     pub fn increament_a(&mut self) {
         self.depth[0] += 1;
         self.depth[1] = 0;

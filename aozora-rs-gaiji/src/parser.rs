@@ -55,7 +55,7 @@ impl Unicode {
     fn hex_to_char(hex: u32) -> Option<char> {
         if hex <= 9 {
             char::from_u32(hex + (b'0' as u32))
-        } else if 10 <= hex && hex <= 15 {
+        } else if (10..=15).contains(&hex) {
             char::from_u32(hex - 10 + (b'A' as u32))
         } else {
             None
@@ -83,7 +83,7 @@ pub fn unicode(input: &mut &str) -> Result<Unicode, ContextError> {
 }
 
 pub fn digit1_wide_u32(input: &mut &str) -> Result<u32, ContextError> {
-    let digits_str = take_while(1.., |c: char| c.is_digit(10)).parse_next(input)?;
+    let digits_str = take_while(1.., |c: char| c.is_ascii_digit()).parse_next(input)?;
 
     let value = digits_str
         .chars()

@@ -3,11 +3,13 @@ pub struct AZResultC {
     errors: Vec<miette::Error>,
 }
 
-impl AZResultC {
-    pub fn new() -> Self {
+impl Default for AZResultC {
+    fn default() -> Self {
         Self { errors: Vec::new() }
     }
+}
 
+impl AZResultC {
     /// エラーを内部に蓄積します。
     pub fn push(&mut self, e: miette::Error) {
         self.errors.push(e);

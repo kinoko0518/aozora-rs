@@ -126,8 +126,8 @@ pub struct Dependencies {
     pub images: HashMap<String, (ImgExtension, Vec<u8>)>,
 }
 
-impl Dependencies {
-    pub fn new() -> Self {
+impl Default for Dependencies {
+    fn default() -> Self {
         Dependencies {
             images: HashMap::new(),
         }
@@ -145,32 +145,27 @@ impl AozoraZip {
     }
 
     pub fn read_from_zip<'s>(zip: &[u8], encoding: &Encoding) -> Result<Self, AozoraZipError> {
-        let mut zip =
-            zip::ZipArchive::new(Cursor::new(zip)).map_err(|e| AozoraZipError::BrokenZip(e))?;
+        let mut zip = zip::ZipArchive::new(Cursor::new(zip)).map_err(AozoraZipError::BrokenZip)?;
         let images = HashMap::new();
         let mut txt = None;
 
         let zip_len = zip.len();
         for c in 0..zip_len {
-            let c = zip.by_index(c).map_err(|e| AozoraZipError::BrokenZip(e));
+            let c = zip.by_index(c).map_err(AozoraZipError::BrokenZip);
             let mut c = c?;
-            match c.name().rsplit_once(".").map(|(_, r)| r).unwrap_or("") {
-                "txt" => {
-                    let text = {
-                        let mut buff: Vec<u8> = Vec::new();
-                        c.read_to_end(&mut buff)
-                            .map_err(|e| AozoraZipError::Io(e))?;
-                        encoding
-                            .bytes_to_string(buff)
-                            .map_err(|e| AozoraZipError::BrokenText(e))?
-                    };
-                    if txt.is_none() {
-                        txt = Some(text);
-                    } else {
-                        return Err(AozoraZipError::MultiTextFound);
-                    }
+            if c.name().rsplit_once(".").map(|(_, r)| r).unwrap_or("") == "txt" {
+                let text = {
+                    let mut buff: Vec<u8> = Vec::new();
+                    c.read_to_end(&mut buff).map_err(AozoraZipError::Io)?;
+                    encoding
+                        .bytes_to_string(buff)
+                        .map_err(AozoraZipError::BrokenText)?
+                };
+                if txt.is_none() {
+                    txt = Some(text);
+                } else {
+                    return Err(AozoraZipError::MultiTextFound);
                 }
-                _ => (),
             }
         }
         let nresult = if let Some(s) = txt {

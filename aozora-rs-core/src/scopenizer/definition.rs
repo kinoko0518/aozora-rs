@@ -6,15 +6,17 @@ use std::{
 
 pub struct Scopenized<'s>(pub HashMap<usize, Vec<ScopeKind<'s>>>);
 
-impl<'s> Scopenized<'s> {
-    pub fn new() -> Self {
+impl<'s> Default for Scopenized<'s> {
+    fn default() -> Self {
         Self(HashMap::new())
     }
+}
 
+impl<'s> Scopenized<'s> {
     pub fn push_s(&mut self, scope: ScopeKind<'s>) {
         self.0
             .entry(scope.span.start)
-            .or_insert_with(|| Vec::new())
+            .or_insert_with(Vec::new)
             .push(scope)
     }
 

@@ -26,8 +26,8 @@ impl SandwichedBegins {
         match self {
             Self::BoldBegin => Deco::Bold,
             Self::ItalicBegin => Deco::Italic,
-            Self::BosenBegin(b) => Deco::Bosen(b.clone()),
-            Self::BotenBegin(b) => Deco::Boten(b.clone()),
+            Self::BosenBegin(b) => Deco::Bosen(b),
+            Self::BotenBegin(b) => Deco::Boten(b),
             Self::AHeadBegin => Deco::AHead,
             Self::BHeadBegin => Deco::BHead,
             Self::CHeadBegin => Deco::CHead,
@@ -83,8 +83,8 @@ fn sandwiched_begin(input: &mut Input<'_>) -> Result<SandwichedBegins, ContextEr
         "小見出し".value(SandwichedBegins::CHeadBegin),
         "太字".value(SandwichedBegins::BoldBegin),
         "斜体".value(SandwichedBegins::ItalicBegin),
-        boten.map(|b| SandwichedBegins::BotenBegin(b)),
-        bosen.map(|b| SandwichedBegins::BosenBegin(b)),
+        boten.map(SandwichedBegins::BotenBegin),
+        bosen.map(SandwichedBegins::BosenBegin),
         (japanese_num, "段階小さな文字").map(|(s, _)| SandwichedBegins::SmallerBegin(s)),
         (japanese_num, "段階大きな文字").map(|(b, _)| SandwichedBegins::SmallerBegin(b)),
     ))
@@ -108,8 +108,8 @@ fn sandwiched_end(input: &mut Input<'_>) -> Result<SandwichedEnds, ContextError>
 
 pub fn sandwiched(input: &mut Input<'_>) -> Result<Sandwiched, ContextError> {
     alt((
-        sandwiched_begin.map(|b| Sandwiched::Begin(b)),
-        sandwiched_end.map(|e| Sandwiched::End(e)),
+        sandwiched_begin.map(Sandwiched::Begin),
+        sandwiched_end.map(Sandwiched::End),
     ))
     .parse_next(input)
 }

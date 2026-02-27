@@ -18,13 +18,15 @@ pub enum Retokenized<'s> {
 
 pub struct DecoQueue<'s>(HashMap<usize, Vec<Deco<'s>>>);
 
-impl<'s> DecoQueue<'s> {
-    pub fn new() -> Self {
+impl<'s> Default for DecoQueue<'s> {
+    fn default() -> Self {
         Self(HashMap::new())
     }
+}
 
+impl<'s> DecoQueue<'s> {
     pub fn push(&mut self, index: usize, deco: Deco<'s>) {
-        self.0.entry(index).or_insert_with(|| Vec::new()).push(deco)
+        self.0.entry(index).or_insert_with(Vec::new).push(deco)
     }
 
     pub fn pop(&mut self, index: usize) -> Option<Deco<'s>> {

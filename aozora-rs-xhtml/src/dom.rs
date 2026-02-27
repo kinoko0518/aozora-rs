@@ -19,7 +19,7 @@ pub fn into_mapped<'s>(retokenized: Vec<Retokenized<'s>>) -> Mapped<'s> {
     let mut buff = Vec::new();
 
     let mut iter = retokenized.into_iter().multipeek();
-    let mut cdepth = CDepth::new();
+    let mut cdepth = CDepth::default();
 
     let mut dependency = Vec::new();
 
@@ -77,7 +77,7 @@ pub fn into_mapped<'s>(retokenized: Vec<Retokenized<'s>>) -> Mapped<'s> {
         buff.push(MappedToken {
             // Figureなら依存関係を追加
             content: s,
-            chapter: chapter,
+            chapter,
         });
     }
 

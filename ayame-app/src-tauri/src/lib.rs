@@ -29,7 +29,7 @@ fn to_encoding(encoding: &str) -> Encoding {
 }
 
 fn is_zip(path: &Path) -> bool {
-    path.extension().map_or(false, |ext| ext == "zip")
+    path.extension().is_some_and(|ext| ext == "zip")
 }
 
 fn scan_file_inner(path: &str) -> Result<NovelMetadata> {

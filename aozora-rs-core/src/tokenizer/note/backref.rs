@@ -65,8 +65,8 @@ pub fn backref<'s>(input: &mut Input<'s>) -> Result<BackRef<'s>, ContextError> {
         (
             "に",
             alt((
-                bosen.map(|b| BackRefKind::Bosen(b)),
-                boten.map(|b| BackRefKind::Boten(b)),
+                bosen.map(BackRefKind::Bosen),
+                boten.map(BackRefKind::Boten),
             )),
         )
             .map(|(_, b)| b),

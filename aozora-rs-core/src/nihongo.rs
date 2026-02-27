@@ -19,7 +19,7 @@ fn fw_digit_to_hw(original: char) -> Option<char> {
     (('０' as u32)..=('９' as u32))
         .contains(&(original as u32))
         .then_some(original as u32 - '０' as u32 + '0' as u32)
-        .and_then(|u| from_u32(u))
+        .and_then(from_u32)
 }
 
 fn fw_digit(input: &mut Input) -> Result<usize, ContextError> {

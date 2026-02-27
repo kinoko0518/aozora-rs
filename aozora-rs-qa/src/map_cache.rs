@@ -35,7 +35,7 @@ impl MapCache {
             .filter_map(|e| e.ok())
             .filter(|entry| {
                 entry.file_type().is_file()
-                    && entry.path().extension().map_or(false, |ext| ext == "txt")
+                    && entry.path().extension().is_some_and(|ext| ext == "txt")
             })
             .map(|entry| entry.into_path().to_str().unwrap().to_string())
             .collect();

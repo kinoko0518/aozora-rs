@@ -27,8 +27,8 @@ fn analyse_file(path: &Path) -> Option<(usize, usize, String)> {
     let found = gaiji_notes
         .fold(
             || (0, 0, String::new()),
-            |mut acc, mut e: &str| {
-                if let Some(_) = gaiji_to_char(&mut e) {
+            |mut acc, e: &str| {
+                if gaiji_to_char(e).is_some() {
                     acc.0 += 1;
                 } else {
                     acc.1 += 1;

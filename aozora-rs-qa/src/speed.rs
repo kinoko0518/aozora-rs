@@ -91,7 +91,7 @@ fn analyse_per_work(s: String) -> Result<SpeedPerWork, Box<dyn std::error::Error
     std::fs::create_dir_all(epub_path_base)?;
     let _ = aozora_rs_epub::from_aozora_zip(
         File::create(format!("{}/{}.epub", epub_path_base, title_owned))?,
-        Dependencies::new(),
+        Dependencies::default(),
         EpubSetting::default(),
         xhtmlnized,
     )?;

@@ -26,18 +26,15 @@ fn analyse_file(path: &Path) -> Option<(usize, usize, String)> {
     let mut body = &read[..];
     let _ = parse_meta(&mut body);
     for token in tokenize(&mut LocatingSlice::new(body)).ok()? {
-        match &token.kind {
-            AozoraTokenKind::Note(c) => match c {
-                Note::Unknown(s) => {
-                    fail += 1;
-                    let _ = writeln!(failed_notes, "{}", s);
-                }
-                _ => {
-                    success += 1;
-                }
-            },
-            _ => {}
-        }
+        if let AozoraTokenKind::Note(c) = &token.kind { match c {
+            Note::Unknown(s) => {
+                fail += 1;
+                let _ = writeln!(failed_notes, "{}", s);
+            }
+            _ => {
+                success += 1;
+            }
+        } }
     }
 
     Some((success, fail, failed_notes))

@@ -13,7 +13,7 @@ pub fn retokenize<'s>(
 ) -> Vec<Retokenized<'s>> {
     flat.reverse();
     let mut retokenized: Vec<Retokenized> = Vec::new();
-    let mut queue: DecoQueue = DecoQueue::new();
+    let mut queue: DecoQueue = DecoQueue::default();
 
     // Cow文字列をスライスするヘルパー
     let slice_text = |t: &Cow<'s, str>, range: Range<usize>| -> Retokenized<'s> {

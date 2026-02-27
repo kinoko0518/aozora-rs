@@ -10,12 +10,11 @@ fn into_js_error<E: std::fmt::Display>(err: E) -> JsError {
 }
 
 fn reports_to_single_string(reports: Vec<miette::Report>) -> String {
-    let msg = reports
+    reports
         .iter()
         .map(|r| format!("{:?}", r))
         .collect::<Vec<_>>()
-        .join("\n");
-    msg
+        .join("\n")
 }
 
 #[wasm_bindgen]

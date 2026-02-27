@@ -44,9 +44,9 @@ pub fn single<'s>(input: &mut Input<'s>) -> Result<Single<'s>, ContextError> {
         "入る",
     )
         .map(|(caption, (path, size), _)| Figure {
-            path: path,
-            caption: caption,
-            size: size,
+            path,
+            caption,
+            size,
         });
     alt((
         alt(("改ページ", "改頁")).value(Single::PageBreak),

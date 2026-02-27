@@ -28,8 +28,8 @@ impl EpubWriter<'_> {
             let id = first.get_id();
             writeln!(
                 writer,
-                "\t\t\t<li><a epub:type=\"bodymatter\" href=\"{}#{}\">{}</a></li>",
-                filename, id, "本文"
+                "\t\t\t<li><a epub:type=\"bodymatter\" href=\"{}#{}\">本文</a></li>",
+                filename, id
             )?;
         }
 

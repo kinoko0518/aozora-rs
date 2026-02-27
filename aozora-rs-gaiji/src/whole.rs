@@ -46,14 +46,14 @@ pub fn whole_gaiji_to_char<'s>(input: &'s str) -> Cow<'s, str> {
         .unwrap();
     let top = result.pop();
     if let Some(s) = top {
-        if result.len() == 0 {
+        if result.is_empty() {
             s.to_cow()
         } else {
             Cow::Owned(
                 result
                     .into_iter()
                     .fold(s.to_cow().to_string(), |mut acc: String, r| {
-                        acc.extend(r.to_cow().to_string().chars());
+                        acc.push_str(&r.to_cow().to_string());
                         acc
                     }),
             )

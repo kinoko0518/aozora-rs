@@ -17,10 +17,10 @@ pub fn scopenize<'s>(
     // 行全体に影響する注記用
     let mut wholeline: Vec<(WholeLine, Span)> = Vec::new();
     // 最終出力用のベクタ
-    let mut scopes = Scopenized::new();
+    let mut scopes = Scopenized::default();
     let mut flatten: Vec<(FlatToken, Span)> = Vec::new();
     // エラー蓄積用
-    let mut azc = AZResultC::new();
+    let mut azc = AZResultC::default();
 
     let mut peekable = tokens.into_iter().peekable();
     while let Some(token) = peekable.next() {
@@ -96,7 +96,7 @@ pub fn scopenize<'s>(
                                 azc.push(
                                     CrossingNote {
                                         source_code: original.to_string(),
-                                        range: range,
+                                        range,
                                     }
                                     .into(),
                                 );
@@ -129,7 +129,7 @@ pub fn scopenize<'s>(
                                 azc.push(
                                     CrossingNote {
                                         source_code: original.to_string(),
-                                        range: range,
+                                        range,
                                     }
                                     .into(),
                                 );
@@ -170,7 +170,7 @@ pub fn scopenize<'s>(
             AozoraTokenKind::Br => {
                 flatten.push((FlatToken::Break(Break::BreakLine), token.span.clone()));
                 // インライン注記が閉じられていなければエラー
-                if inline_stack.len() != 0 {
+                if !inline_stack.is_empty() {
                     // inline_stackが空になるまですべて閉じて修復を試みる
                     while let Some(tag) = inline_stack.pop() {
                         scopes.push(tag.1.end..token.span.start, tag.0.into_deco());
