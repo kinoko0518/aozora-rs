@@ -23,7 +23,7 @@ fn fw_digit_to_hw(original: char) -> Option<char> {
 }
 
 fn fw_digit(input: &mut Input) -> Result<usize, ContextError> {
-    take_while(1.., |c| matches!(c, '０'..'９'))
+    take_while(1.., |c| matches!(c, '０'..='９'))
         .map(|s: &str| {
             s.chars()
                 .map(|c| fw_digit_to_hw(c).unwrap())
@@ -34,7 +34,7 @@ fn fw_digit(input: &mut Input) -> Result<usize, ContextError> {
 }
 
 fn hw_digit(input: &mut Input) -> Result<usize, ContextError> {
-    take_while(1.., |c| matches!(c, '0'..'9'))
+    take_while(1.., |c| matches!(c, '0'..='9'))
         .map(|s: &str| s.parse::<usize>().unwrap())
         .parse_next(input)
 }
