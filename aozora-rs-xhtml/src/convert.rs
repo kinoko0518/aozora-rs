@@ -43,9 +43,26 @@ pub fn into_xhtml<'s>(mapped: &MappedToken<'s>) -> Cow<'s, str> {
                 mapped.chapter.as_ref().unwrap().get_id()
             )),
             Deco::Bigger(b) => Cow::Owned(format!(
-                "<span style=\"font-size: {}em;\" class=\"{}_bigger\">",
-                1.0 + 0.25 * (*b as f32),
+                "<span style=\"font-size: {}small;\" class=\"dai{}\">",
+                if *b == 1 {
+                    ""
+                } else if *b == 2 {
+                    "x-"
+                } else {
+                    "xx-"
+                },
                 b
+            )),
+            Deco::Smaller(s) => Cow::Owned(format!(
+                "<span style=\"font-size: {}small;\" class=\"sho{}\">",
+                if *s == 1 {
+                    ""
+                } else if *s == 2 {
+                    "x-"
+                } else {
+                    "xx-"
+                },
+                s
             )),
             Deco::Bosen(b) => Cow::Borrowed(match b {
                 BosenKind::Plain => "<span style=\"text-decoration-style: solid;\">",
@@ -68,11 +85,6 @@ pub fn into_xhtml<'s>(mapped: &MappedToken<'s>) -> Cow<'s, str> {
             Deco::Bold => Cow::Borrowed("<span class=\"bold\">"),
             Deco::Italic => Cow::Borrowed("<span class=\"italic\">"),
             Deco::Mama => Cow::Borrowed("<ruby>"),
-            Deco::Smaller(s) => Cow::Owned(format!(
-                "<span style=\"font-size: {}em;\" class=\"{}_smaller\">",
-                1.0 - 0.25 * (*s as f32),
-                s
-            )),
             Deco::Indent(i) => Cow::Owned(format!(
                 "<div class=\"indent\" style=\"padding-inline: {}em;\">",
                 i

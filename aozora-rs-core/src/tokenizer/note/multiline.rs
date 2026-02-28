@@ -46,6 +46,10 @@ pub enum MultiLineBegins {
     Grounded(Grounded),
     /// 参照：https://www.aozora.gr.jp/annotation/layout_2.html#chiyose
     LowFlying(LowFlying),
+    /// 参照：https://www.aozora.gr.jp/annotation/etc.html#moji_size
+    Smaller(usize),
+    /// 参照：https://www.aozora.gr.jp/annotation/etc.html#moji_size
+    Bigger(usize),
 }
 
 impl SandwichedBegin<MultiLineEnds> for MultiLineBegins {
@@ -55,6 +59,8 @@ impl SandwichedBegin<MultiLineEnds> for MultiLineBegins {
             Self::Grounded(_) => matches!(rhs, MultiLineEnds::GroundedEnd),
             Self::HangingIndent(_) => matches!(rhs, MultiLineEnds::BlockIndentEnd),
             Self::LowFlying(_) => matches!(rhs, MultiLineEnds::LowFlyingEnd),
+            Self::Smaller(_) => matches!(rhs, MultiLineEnds::SmallEnd),
+            Self::Bigger(_) => matches!(rhs, MultiLineEnds::BigEnd),
         }
     }
 }
@@ -66,6 +72,8 @@ impl MultiLineBegins {
             Self::HangingIndent(h) => Deco::Hanging((h.fst_lvl, h.snd_lvl)),
             Self::Grounded(_) => Deco::Grounded,
             Self::LowFlying(l) => Deco::LowFlying(l.level),
+            Self::Smaller(s) => Deco::Smaller(s),
+            Self::Bigger(b) => Deco::Bigger(b),
         }
     }
 }
@@ -75,6 +83,8 @@ pub enum MultiLineEnds {
     BlockIndentEnd,
     GroundedEnd,
     LowFlyingEnd,
+    SmallEnd,
+    BigEnd,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -121,22 +131,41 @@ fn chiyose_block_begins<'s>(input: &mut Input<'s>) -> Result<MultiLineBegins, Co
         .parse_next(input)
 }
 
+fn smaller_block_begins<'s>(input: &mut Input<'s>) -> Result<MultiLineBegins, ContextError> {
+    ("ここから", japanese_num, "段階小さな文字")
+        .map(|(_, u, _)| MultiLineBegins::Smaller(u))
+        .parse_next(input)
+}
+
+fn bigger_block_begins<'s>(input: &mut Input<'s>) -> Result<MultiLineBegins, ContextError> {
+    ("ここから", japanese_num, "段階大きな文字")
+        .map(|(_, u, _)| MultiLineBegins::Bigger(u))
+        .parse_next(input)
+}
+
 fn multiline_begins<'s>(input: &mut Input<'s>) -> Result<MultiLineBegins, ContextError> {
-    alt((block_indent_begins, chitsuki_begins, chiyose_block_begins)).parse_next(input)
+    alt((
+        block_indent_begins,
+        chitsuki_begins,
+        chiyose_block_begins,
+        smaller_block_begins,
+        bigger_block_begins,
+    ))
+    .parse_next(input)
 }
 
 fn multiline_ends<'s>(input: &mut Input<'s>) -> Result<MultiLineEnds, ContextError> {
     delimited(
         "ここで",
-        alt(("字下げ", "字寄せ", "地付け")),
+        alt((
+            "字下げ".value(MultiLineEnds::BlockIndentEnd),
+            "字寄せ".value(MultiLineEnds::LowFlyingEnd),
+            "地付け".value(MultiLineEnds::GroundedEnd),
+            "小さな文字".value(MultiLineEnds::SmallEnd),
+            "大きな文字".value(MultiLineEnds::BigEnd),
+        )),
         alt(("終わり", "おわり")),
     )
-    .map(|l| match l {
-        "字下げ" => MultiLineEnds::BlockIndentEnd,
-        "字寄せ" => MultiLineEnds::LowFlyingEnd,
-        "地付け" => MultiLineEnds::GroundedEnd,
-        _ => unreachable!(),
-    })
     .parse_next(input)
 }
 
