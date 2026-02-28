@@ -6,7 +6,7 @@ use crate::dom::MappedToken;
 
 pub struct XHTMLContext {
     is_in_warichu: bool,
-    is_in_p: bool,
+    pub is_in_p: bool,
 }
 
 impl Default for XHTMLContext {
@@ -76,8 +76,12 @@ pub fn into_xhtml<'s>(
                 {
                     Cow::Borrowed("<br />")
                 } else {
-                    context.is_in_p = true;
-                    Cow::Borrowed("<p>")
+                    if let Some(_) = peek {
+                        context.is_in_p = true;
+                        Cow::Borrowed("<p>")
+                    } else {
+                        Cow::Borrowed("<br />")
+                    }
                 }
             }
             Break::PageBreak | Break::ColumnBreak => Cow::Borrowed(""),

@@ -42,6 +42,10 @@ fn from_retokenized<'s>(retokenized: Vec<Retokenized<'s>>) -> XHTMLResult {
             while let Some(token) = peekable.next() {
                 writeln!(acc, "{}", into_xhtml(token, peekable.peek(), &mut context)).unwrap();
             }
+            // pが閉じていなかったら閉じる
+            if context.is_in_p {
+                writeln!(acc, "</p>").unwrap();
+            }
             acc
         })
         .collect::<Vec<String>>();
