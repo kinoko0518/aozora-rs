@@ -87,7 +87,7 @@ pub fn scopenize<'s>(
                             );
                         }
                         while let Some(s) = inline_stack.pop() {
-                            let range = s.1.start..token.span.end;
+                            let range = s.1.end..token.span.start;
                             if s.0.do_match(&e) {
                                 scopes.push(range, s.0.into_deco());
                             } else {

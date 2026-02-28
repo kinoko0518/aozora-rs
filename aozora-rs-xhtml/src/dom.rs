@@ -25,12 +25,15 @@ pub fn into_mapped<'s>(retokenized: Vec<Retokenized<'s>>) -> Mapped<'s> {
 
     while let Some(s) = iter.next() {
         // 改ページ、または大見出しが来たらXHTMLを分割
-        if let Retokenized::Break(Break::PageBreak) | Retokenized::DecoBegin(Deco::AHead) = s {
+        if let Some(Retokenized::Break(Break::PageBreak))
+        | Some(Retokenized::DecoBegin(Deco::AHead)) = iter.peek()
+        {
             let taken = std::mem::take(&mut buff);
             if !taken.is_empty() {
                 xhtmls.push(taken);
             }
         }
+        iter.reset_peek();
         // (大|中|小)見出しならChapterを構築
         macro_rules! parse_chapter {
             ($deco_variant:path, $inc_method:ident) => {{

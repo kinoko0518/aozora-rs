@@ -4,6 +4,7 @@ use std::{
     collections::{HashMap, hash_map::Entry},
 };
 
+#[derive(Debug)]
 pub struct Scopenized<'s>(pub HashMap<usize, Vec<ScopeKind<'s>>>);
 
 impl<'s> Default for Scopenized<'s> {

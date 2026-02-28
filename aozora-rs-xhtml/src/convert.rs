@@ -4,9 +4,52 @@ use aozora_rs_core::{scopenizer::Break, *};
 
 use crate::dom::MappedToken;
 
-pub fn into_xhtml<'s>(mapped: &MappedToken<'s>) -> Cow<'s, str> {
+pub struct XHTMLContext {
+    is_in_warichu: bool,
+    is_in_p: bool,
+}
+
+impl Default for XHTMLContext {
+    fn default() -> Self {
+        Self {
+            is_in_warichu: false,
+            is_in_p: false,
+        }
+    }
+}
+
+/// 文字列を文字数が半分になるように分割
+fn split_string_half(s: &str) -> (&str, &str) {
+    let char_count = s.chars().count();
+
+    if char_count == 0 {
+        return ("", "");
+    }
+    let mid_char_idx = (char_count + 1) / 2;
+
+    match s.char_indices().nth(mid_char_idx) {
+        Some((byte_idx, _)) => s.split_at(byte_idx),
+        None => (s, ""),
+    }
+}
+
+pub fn into_xhtml<'s>(
+    mapped: &MappedToken<'s>,
+    peek: Option<&&MappedToken<'s>>,
+    context: &mut XHTMLContext,
+) -> Cow<'s, str> {
     match &mapped.content {
-        Retokenized::Text(t) => Cow::Owned(format!("<span>{}</span>", t.replace('\r', ""))),
+        Retokenized::Text(t) => {
+            if context.is_in_warichu {
+                let (before, after) = split_string_half(&t);
+                Cow::Owned(format!(
+                    "<span class=\"warichu-line\">{}</span>\n<span class=\"warichu-line\">{}</span>",
+                    before, after
+                ))
+            } else {
+                t.clone()
+            }
+        }
         Retokenized::Odoriji(o) => {
             Cow::Owned(format!("{}〵", if o.has_dakuten { "〴" } else { "〳" }))
         }
@@ -18,7 +61,25 @@ pub fn into_xhtml<'s>(mapped: &MappedToken<'s>) -> Cow<'s, str> {
                 .unwrap_or("".to_string())
         )),
         Retokenized::Break(b) => match b {
-            Break::BreakLine => Cow::Borrowed("<br />"),
+            Break::BreakLine => {
+                if context.is_in_p {
+                    if let Some(token) = peek
+                        && matches!(token.content, Retokenized::Break(Break::BreakLine))
+                    {
+                        context.is_in_p = false;
+                        Cow::Borrowed("</p>")
+                    } else {
+                        Cow::Borrowed("</p><p>")
+                    }
+                } else if let Some(token) = peek
+                    && matches!(token.content, Retokenized::Break(Break::BreakLine))
+                {
+                    Cow::Borrowed("<br />")
+                } else {
+                    context.is_in_p = true;
+                    Cow::Borrowed("<p>")
+                }
+            }
             Break::PageBreak | Break::ColumnBreak => Cow::Borrowed(""),
             Break::RectoBreak => Cow::Borrowed(
                 "<div style=\"page-break-before: right; break-before: right;\"></div>",
@@ -85,6 +146,10 @@ pub fn into_xhtml<'s>(mapped: &MappedToken<'s>) -> Cow<'s, str> {
             Deco::Bold => Cow::Borrowed("<span class=\"bold\">"),
             Deco::Italic => Cow::Borrowed("<span class=\"italic\">"),
             Deco::Mama => Cow::Borrowed("<ruby>"),
+            Deco::Warichu => {
+                context.is_in_warichu = true;
+                Cow::Borrowed("<span class=\"warichu\">")
+            }
             Deco::Indent(i) => Cow::Owned(format!(
                 "<div class=\"indent\" style=\"padding-inline: {}em;\">",
                 i
@@ -112,6 +177,10 @@ pub fn into_xhtml<'s>(mapped: &MappedToken<'s>) -> Cow<'s, str> {
             Deco::AHead => Cow::Borrowed("</h1>"),
             Deco::BHead => Cow::Borrowed("</h2>"),
             Deco::CHead => Cow::Borrowed("</h3>"),
+            Deco::Warichu => {
+                context.is_in_warichu = false;
+                Cow::Borrowed("</span>")
+            }
             Deco::Indent(_)
             | Deco::Hanging(_)
             | Deco::VHCentre

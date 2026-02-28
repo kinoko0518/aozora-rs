@@ -1,6 +1,6 @@
 @charset "utf-8";
 
-/* 
+/*
  * 構造的スタイル定義 (Prelude)
  * aozora-rs-xhtmlが出力するHTMLタグを正しく、意図通りに表示するためのスタイルセット。
  * 装飾的な「美しさ」ではなく、構造的な「正しさ」を担保することを目的とする。
@@ -105,6 +105,21 @@
 /* 表題や区切りなど、行の中央に配置すべき要素を表示するため */
 .vhcentre {
     text-align: center;
+}
+
+/* 割り注全体のコンテナ */
+.warichu {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    vertical-align: middle;
+    font-size: 0.7em;
+    margin: 0 0.1em;
+}
+
+/* 割り注の各行 */
+.warichu-line {
+    display: inline-block;
 }
 
 /* 親要素の幅を超えて画像がはみ出すのを防ぎ、画面内に収めるため */

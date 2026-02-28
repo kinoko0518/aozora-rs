@@ -1,6 +1,9 @@
-use crate::{convert::into_xhtml, dom::into_mapped};
+use crate::{
+    convert::{XHTMLContext, into_xhtml},
+    dom::into_mapped,
+};
 use aozora_rs_core::*;
-use itertools::Itertools;
+use std::fmt::Write;
 
 mod convert;
 mod definitions;
@@ -31,7 +34,16 @@ fn from_retokenized<'s>(retokenized: Vec<Retokenized<'s>>) -> XHTMLResult {
     let xhtmls = mapped
         .xhtmls
         .iter()
-        .map(|x| x.iter().map(|m| into_xhtml(m)).join("\n"))
+        .map(|x| {
+            let mut acc = String::new();
+            let mut context = XHTMLContext::default();
+            let mut peekable = x.iter().peekable();
+
+            while let Some(token) = peekable.next() {
+                writeln!(acc, "{}", into_xhtml(token, peekable.peek(), &mut context)).unwrap();
+            }
+            acc
+        })
         .collect::<Vec<String>>();
     let chapters = mapped
         .xhtmls

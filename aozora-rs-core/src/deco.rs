@@ -110,6 +110,7 @@ pub enum Deco<'s> {
     Smaller(usize),
     Bigger(usize),
     VHCentre,
+    Warichu,
 }
 
 impl std::fmt::Display for Deco<'_> {
@@ -135,6 +136,7 @@ impl std::fmt::Display for Deco<'_> {
                 Self::Smaller(s) => format!("{}段階小さな文字", s),
                 Self::Bigger(s) => format!("{}段階大きな文字", s),
                 Self::VHCentre => "ページの左右中央".to_string(),
+                Self::Warichu => "割注".to_string(),
             }
         )
     }
