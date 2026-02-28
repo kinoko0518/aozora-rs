@@ -18,6 +18,19 @@ pub enum Retokenized<'s> {
     DecoEnd(Deco<'s>),
 }
 
+impl Retokenized<'_> {
+    pub fn is_visible(&self) -> bool {
+        match self {
+            Self::Kunten(k) => !k.is_empty(),
+            Self::Okurigana(o) => !o.is_empty(),
+            Self::Break(_) => false,
+            Self::DecoBegin(_) => false,
+            Self::DecoEnd(_) => false,
+            _ => true,
+        }
+    }
+}
+
 pub struct DecoQueue<'s>(HashMap<usize, Vec<Deco<'s>>>);
 
 impl<'s> Default for DecoQueue<'s> {

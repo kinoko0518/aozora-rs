@@ -35,9 +35,11 @@ pub fn retokenize<'s>(
                     // Scopeの終了を処理
                     while let Some(d) = queue.pop(i) {
                         // ここまでのテキストをフラッシュ
-                        retokenized.push(slice_text(&text, last_flushed_pos..relative_pos));
-                        last_flushed_pos = relative_pos;
-                        flushed_at_current_pos = true;
+                        if last_flushed_pos != relative_pos {
+                            retokenized.push(slice_text(&text, last_flushed_pos..relative_pos));
+                            last_flushed_pos = relative_pos;
+                            flushed_at_current_pos = true;
+                        }
 
                         retokenized.push(Retokenized::DecoEnd(d));
                     }
@@ -45,7 +47,7 @@ pub fn retokenize<'s>(
                     // Scopeの開始を処理
                     while let Some(d) = deco.pop(i) {
                         // まだフラッシュしていなければ、ここまでのテキストをフラッシュ
-                        if !flushed_at_current_pos {
+                        if !flushed_at_current_pos && last_flushed_pos != relative_pos {
                             retokenized.push(slice_text(&text, last_flushed_pos..relative_pos));
                             last_flushed_pos = relative_pos;
                             flushed_at_current_pos = true;

@@ -34,19 +34,23 @@ fn from_retokenized<'s>(retokenized: Vec<Retokenized<'s>>) -> XHTMLResult {
     let xhtmls = mapped
         .xhtmls
         .iter()
-        .map(|x| {
+        .filter_map(|x| {
             let mut acc = String::new();
             let mut context = XHTMLContext::default();
             let mut peekable = x.iter().peekable();
+            let mut is_empty = true;
 
             while let Some(token) = peekable.next() {
+                if token.content.is_visible() {
+                    is_empty = false;
+                }
                 writeln!(acc, "{}", into_xhtml(token, peekable.peek(), &mut context)).unwrap();
             }
             // pが閉じていなかったら閉じる
             if context.is_in_p {
                 writeln!(acc, "</p>").unwrap();
             }
-            acc
+            if is_empty { None } else { Some(acc) }
         })
         .collect::<Vec<String>>();
     let chapters = mapped
