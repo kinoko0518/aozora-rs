@@ -27,6 +27,8 @@ pub fn into_xhtml<'s>(mapped: &MappedToken<'s>) -> Cow<'s, str> {
                 Cow::Borrowed("<div style=\"page-break-before: left; break-before: left;\"></div>")
             }
         },
+        Retokenized::Kunten(k) => Cow::Owned(format!("<sub class=\"kunten\">{}</sub>", k)),
+        Retokenized::Okurigana(o) => Cow::Owned(format!("<sup class=\"okurigana\">{}</sup>", o)),
         Retokenized::DecoBegin(b) => match &b {
             Deco::AHead => Cow::Owned(format!(
                 "<h1 class=\"a_head\" id=\"{}\">",

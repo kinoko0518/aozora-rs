@@ -64,5 +64,7 @@ pub enum FlatToken<'s> {
     Text(Cow<'s, str>),
     Break(Break),
     Odoriji(Odoriji),
+    Kunten(&'s str),
+    Okurigana(&'s str),
     Figure(Figure<'s>),
 }

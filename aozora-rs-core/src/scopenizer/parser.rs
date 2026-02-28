@@ -171,6 +171,7 @@ pub fn scopenize<'s>(
                 flatten.push((FlatToken::Break(Break::BreakLine), token.span.clone()));
                 // インライン注記が閉じられていなければエラー
                 if !inline_stack.is_empty() {
+                    let last = inline_stack.last().unwrap().clone();
                     // inline_stackが空になるまですべて閉じて修復を試みる
                     while let Some(tag) = inline_stack.pop() {
                         scopes.push(tag.1.end..token.span.start, tag.0.into_deco());
@@ -178,7 +179,7 @@ pub fn scopenize<'s>(
                     azc.push(
                         UnclosedInlineNote {
                             source_code: original.to_string(),
-                            unclosed_area: inline_stack.last().unwrap().1.start..token.span.end,
+                            unclosed_area: last.1.start..token.span.end,
                         }
                         .into(),
                     );

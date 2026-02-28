@@ -12,6 +12,8 @@ impl<'s> Single<'s> {
             Self::PageBreak => FlatToken::Break(Break::PageBreak),
             Self::RectoBreak => FlatToken::Break(Break::RectoBreak),
             Self::SpreadBreak => FlatToken::Break(Break::SpreadBreak),
+            Self::Kundoku(k) => FlatToken::Kunten(k),
+            Self::Okurigana(o) => FlatToken::Okurigana(o),
             Self::Figure(i) => FlatToken::Figure(i),
         }
     }

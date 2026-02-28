@@ -84,6 +84,8 @@ pub fn retokenize<'s>(
                     FlatToken::Break(b) => Retokenized::Break(b),
                     FlatToken::Figure(f) => Retokenized::Figure(f),
                     FlatToken::Odoriji(o) => Retokenized::Odoriji(o),
+                    FlatToken::Kunten(k) => Retokenized::Kunten(k),
+                    FlatToken::Okurigana(o) => Retokenized::Okurigana(o),
                 });
 
                 while let Some(d) = queue.pop(span.end) {

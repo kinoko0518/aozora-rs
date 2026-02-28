@@ -10,6 +10,8 @@ use crate::{scopenizer::Break, *};
 pub enum Retokenized<'s> {
     Text(Cow<'s, str>),
     Odoriji(Odoriji),
+    Kunten(&'s str),
+    Okurigana(&'s str),
     Break(Break),
     Figure(Figure<'s>),
     DecoBegin(Deco<'s>),

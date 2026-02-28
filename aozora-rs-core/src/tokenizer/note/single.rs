@@ -19,6 +19,10 @@ pub enum Single<'s> {
     ColumnBreak,
     /// 図に対応
     Figure(Figure<'s>),
+    /// 訓読文字に対応
+    Kundoku(&'s str),
+    /// 漢文の送り仮名に対応
+    Okurigana(&'s str),
 }
 
 fn figure_size(input: &mut Input) -> Result<(usize, usize), ContextError> {
@@ -53,6 +57,21 @@ pub fn single<'s>(input: &mut Input<'s>) -> Result<Single<'s>, ContextError> {
         "改丁".value(Single::RectoBreak),
         "改段".value(Single::ColumnBreak),
         "改見開き".value(Single::SpreadBreak),
+        // 訓読文字
+        "一レ".value(Single::Kundoku("一レ")),
+        "上レ".value(Single::Kundoku("一レ")),
+        "甲レ".value(Single::Kundoku("一レ")),
+        'レ'.value(Single::Kundoku("レ")),
+        '一'.value(Single::Kundoku("一")),
+        '二'.value(Single::Kundoku("二")),
+        '三'.value(Single::Kundoku("三")),
+        '上'.value(Single::Kundoku("上")),
+        '中'.value(Single::Kundoku("中")),
+        '下'.value(Single::Kundoku("下")),
+        '甲'.value(Single::Kundoku("上")),
+        '乙'.value(Single::Kundoku("中")),
+        '丙'.value(Single::Kundoku("丙")),
+        ('（', take_until(1.., '）'), '）').map(|(_, txt, _)| Single::Okurigana(txt)),
         figure.map(Single::Figure),
     ))
     .parse_next(input)
