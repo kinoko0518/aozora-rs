@@ -17,7 +17,7 @@
 }
 
 /* 点線による強調表現（鎖線）を表示するため */
-.bosen-chan {
+.bosen-chain {
     text-decoration-style: dotted;
 }
 

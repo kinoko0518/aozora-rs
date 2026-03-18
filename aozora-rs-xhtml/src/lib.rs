@@ -1,16 +1,11 @@
-use crate::{
-    convert::{XHTMLContext, into_xhtml},
-    dom::into_mapped,
-};
 use aozora_rs_core::*;
-use std::fmt::Write;
 
-mod convert;
 mod definitions;
-mod dom;
+mod xhtmlnize;
 
 pub use definitions::*;
-pub use dom::{Mapped, MappedToken};
+
+use crate::xhtmlnize::into_xhtml;
 
 pub struct NovelResult<'s> {
     pub xhtmls: XHTMLResult,
@@ -24,55 +19,13 @@ pub struct XHTMLResult {
     pub chapters: Vec<Chapter>,
 }
 
-fn from_retokenized<'s>(retokenized: Vec<Retokenized<'s>>) -> XHTMLResult {
-    let mapped = into_mapped(retokenized);
-    let dependency = mapped
-        .dependency
-        .iter()
-        .map(|s| s.to_string())
-        .collect::<Vec<String>>();
-    let xhtmls = mapped
-        .xhtmls
-        .iter()
-        .filter_map(|x| {
-            let mut acc = String::new();
-            let mut context = XHTMLContext::default();
-            let mut peekable = x.iter().peekable();
-            let mut is_empty = true;
-
-            while let Some(token) = peekable.next() {
-                if token.content.is_visible() {
-                    is_empty = false;
-                }
-                writeln!(acc, "{}", into_xhtml(token, peekable.peek(), &mut context)).unwrap();
-            }
-            // pが閉じていなかったら閉じる
-            if context.is_in_p {
-                writeln!(acc, "</p>").unwrap();
-            }
-            if is_empty { None } else { Some(acc) }
-        })
-        .collect::<Vec<String>>();
-    let chapters = mapped
-        .xhtmls
-        .into_iter()
-        .flatten()
-        .filter_map(|x| x.chapter)
-        .collect::<Vec<Chapter>>();
-    XHTMLResult {
-        xhtmls,
-        dependency,
-        chapters,
-    }
-}
-
 pub fn retokenized_to_xhtml<'s>(
     retokenized: Vec<Retokenized>,
     meta: AozoraMeta<'s>,
     errors: Vec<miette::Error>,
 ) -> NovelResult<'s> {
     NovelResult {
-        xhtmls: from_retokenized(retokenized),
+        xhtmls: into_xhtml(retokenized),
         meta,
         errors,
     }
