@@ -105,32 +105,32 @@ impl<'s> XHTMLTag<'s> {
     pub fn into_htmltag(self) -> Cow<'s, str> {
         let mut buff = String::from("<");
         buff.push_str(match self.kind {
-                XHTMLKind::Text(t) => {
-                    return t;
-                }
-                XHTMLKind::Br => "br",
-                XHTMLKind::DivBegin => "div",
-                XHTMLKind::DivEnd => "/div",
-                XHTMLKind::H1Begin => "h1",
-                XHTMLKind::H1End => "/h1",
-                XHTMLKind::H2Begin => "h2",
-                XHTMLKind::H2End => "/h2",
-                XHTMLKind::H3Begin => "h3",
-                XHTMLKind::H3End => "/h3",
-                XHTMLKind::Img => "img",
-                XHTMLKind::PBegin => "p",
-                XHTMLKind::PEnd => "/p",
-                XHTMLKind::RtBegin => "rt",
-                XHTMLKind::RtEnd => "/rt",
-                XHTMLKind::RubyBegin => "ruby",
-                XHTMLKind::RubyEnd => "/ruby",
-                XHTMLKind::SpanBegin => "span",
-                XHTMLKind::SpanEnd => "/span",
-                XHTMLKind::SubBegin => "sub",
-                XHTMLKind::SubEnd => "/sub",
-                XHTMLKind::SupBegin => "sup",
-                XHTMLKind::SupEnd => "/sup",
-            });
+            XHTMLKind::Text(t) => {
+                return t;
+            }
+            XHTMLKind::Br => "br",
+            XHTMLKind::DivBegin => "div",
+            XHTMLKind::DivEnd => "/div",
+            XHTMLKind::H1Begin => "h1",
+            XHTMLKind::H1End => "/h1",
+            XHTMLKind::H2Begin => "h2",
+            XHTMLKind::H2End => "/h2",
+            XHTMLKind::H3Begin => "h3",
+            XHTMLKind::H3End => "/h3",
+            XHTMLKind::Img => "img",
+            XHTMLKind::PBegin => "p",
+            XHTMLKind::PEnd => "/p",
+            XHTMLKind::RtBegin => "rt",
+            XHTMLKind::RtEnd => "/rt",
+            XHTMLKind::RubyBegin => "ruby",
+            XHTMLKind::RubyEnd => "/ruby",
+            XHTMLKind::SpanBegin => "span",
+            XHTMLKind::SpanEnd => "/span",
+            XHTMLKind::SubBegin => "sub",
+            XHTMLKind::SubEnd => "/sub",
+            XHTMLKind::SupBegin => "sup",
+            XHTMLKind::SupEnd => "/sup",
+        });
         for atr in &self.attributes {
             write!(buff, " ").unwrap();
             write!(buff, "{}", atr).unwrap();

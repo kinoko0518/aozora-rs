@@ -25,9 +25,10 @@ pub fn validate_xhtml<'s>(buff: Vec<XHTMLTag<'s>>) -> Vec<XHTMLTag<'s>> {
             buff.push(current);
             // 次がBrなら消費する
             if let Some(next) = peekable.peek()
-                && matches!(next.kind, XHTMLKind::Br) {
-                    peekable.next();
-                }
+                && matches!(next.kind, XHTMLKind::Br)
+            {
+                peekable.next();
+            }
             continue;
         }
 
@@ -84,15 +85,14 @@ pub fn validate_xhtml<'s>(buff: Vec<XHTMLTag<'s>>) -> Vec<XHTMLTag<'s>> {
             buff.push(current);
 
             // 次の要素がインライン要素でも Br でもない場合、直近の親が<p>なら閉じる
-            let next_is_inline_or_br = peekable.peek().is_some_and(|s| {
-                s.kind.is_inline() || matches!(s.kind, XHTMLKind::Br)
-            });
+            let next_is_inline_or_br = peekable
+                .peek()
+                .is_some_and(|s| s.kind.is_inline() || matches!(s.kind, XHTMLKind::Br));
 
-            if !next_is_inline_or_br
-                && let Some(ContainerKind::P) = stack.last() {
-                    buff.push(XHTMLTag::from_kind(XHTMLKind::PEnd));
-                    stack.pop();
-                }
+            if !next_is_inline_or_br && let Some(ContainerKind::P) = stack.last() {
+                buff.push(XHTMLTag::from_kind(XHTMLKind::PEnd));
+                stack.pop();
+            }
             continue;
         }
 

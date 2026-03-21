@@ -34,7 +34,6 @@ impl Retokenized<'_> {
 #[derive(Default)]
 pub struct DecoQueue<'s>(HashMap<usize, Vec<Deco<'s>>>);
 
-
 impl<'s> DecoQueue<'s> {
     pub fn push(&mut self, index: usize, deco: Deco<'s>) {
         self.0.entry(index).or_default().push(deco)

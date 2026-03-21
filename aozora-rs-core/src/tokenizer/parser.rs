@@ -78,10 +78,7 @@ pub fn tokenize<'s>(input: &mut Input<'s>) -> Result<Vec<Tokenized<'s>>, Context
             } else {
                 s
             };
-            Tokenized {
-                kind: k,
-                span,
-            }
+            Tokenized { kind: k, span }
         }),
     )
     .parse_next(input)?;

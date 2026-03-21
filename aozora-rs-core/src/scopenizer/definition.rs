@@ -4,17 +4,12 @@ use std::{
     collections::{HashMap, hash_map::Entry},
 };
 
-#[derive(Debug)]
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct Scopenized<'s>(pub HashMap<usize, Vec<ScopeKind<'s>>>);
-
 
 impl<'s> Scopenized<'s> {
     pub fn push_s(&mut self, scope: ScopeKind<'s>) {
-        self.0
-            .entry(scope.span.start)
-            .or_default()
-            .push(scope)
+        self.0.entry(scope.span.start).or_default().push(scope)
     }
 
     pub fn push(&mut self, index: Span, deco: Deco<'s>) {

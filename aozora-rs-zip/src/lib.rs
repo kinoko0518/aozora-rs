@@ -127,7 +127,6 @@ pub struct Dependencies {
     pub images: HashMap<String, (ImgExtension, Vec<u8>)>,
 }
 
-
 impl AozoraZip {
     pub fn into_dependencies(self) -> (String, Dependencies) {
         (

@@ -4,7 +4,6 @@ pub struct AZResultC {
     errors: Vec<miette::Error>,
 }
 
-
 impl AZResultC {
     /// エラーを内部に蓄積します。
     pub fn push(&mut self, e: miette::Error) {

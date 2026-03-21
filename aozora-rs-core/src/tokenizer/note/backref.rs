@@ -64,10 +64,7 @@ pub fn backref<'s>(input: &mut Input<'s>) -> Result<BackRef<'s>, ContextError> {
         alt(("は縦中横", "は横一列")).value(BackRefKind::HinV),
         (
             "に",
-            alt((
-                bosen.map(BackRefKind::Bosen),
-                boten.map(BackRefKind::Boten),
-            )),
+            alt((bosen.map(BackRefKind::Bosen), boten.map(BackRefKind::Boten))),
         )
             .map(|(_, b)| b),
         ("は", japanese_num, "段階小さな文字").map(|(_, size, _)| BackRefKind::Small(size)),
