@@ -208,7 +208,10 @@ pub fn into_xhtml<'s>(from: Vec<Retokenized<'s>>) -> XHTMLResult {
                 Deco::Indent(i) => {
                     buff.push(XHTMLTag {
                         kind: XHTMLKind::DivBegin,
-                        attributes: vec![Cow::Owned(format!("padding-inline-start: {}em;", i))],
+                        attributes: vec![Cow::Owned(format!(
+                            "class=\"padding-inline-start: {}em;\"",
+                            i
+                        ))],
                     });
                 }
                 Deco::Hanging((h, j)) => {
@@ -295,6 +298,12 @@ pub fn into_xhtml<'s>(from: Vec<Retokenized<'s>>) -> XHTMLResult {
                         ]
                         .into_iter(),
                     );
+                }
+                Deco::Indent(_) | Deco::Hanging(_) => {
+                    buff.push(XHTMLTag::from_kind(XHTMLKind::DivEnd));
+                }
+                Deco::Grounded | Deco::LowFlying(_) => {
+                    buff.push(XHTMLTag::from_kind(XHTMLKind::PEnd));
                 }
                 _ => {
                     buff.push(XHTMLTag::from_kind(XHTMLKind::SpanEnd));
