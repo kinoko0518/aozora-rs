@@ -122,17 +122,11 @@ pub struct AozoraZip {
     pub images: HashMap<String, (ImgExtension, Vec<u8>)>,
 }
 
+#[derive(Default)]
 pub struct Dependencies {
     pub images: HashMap<String, (ImgExtension, Vec<u8>)>,
 }
 
-impl Default for Dependencies {
-    fn default() -> Self {
-        Dependencies {
-            images: HashMap::new(),
-        }
-    }
-}
 
 impl AozoraZip {
     pub fn into_dependencies(self) -> (String, Dependencies) {

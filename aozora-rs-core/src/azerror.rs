@@ -1,13 +1,9 @@
 /// 非致命的エラーを蓄積する型、AZResultのコンストラクタです。
+#[derive(Default)]
 pub struct AZResultC {
     errors: Vec<miette::Error>,
 }
 
-impl Default for AZResultC {
-    fn default() -> Self {
-        Self { errors: Vec::new() }
-    }
-}
 
 impl AZResultC {
     /// エラーを内部に蓄積します。

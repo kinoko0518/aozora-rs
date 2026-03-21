@@ -1,6 +1,6 @@
 use aozora_rs::EpubSetting;
 use ayame_core::{
-    Encoding, WritingDirection, generate_browser_xhtml, generate_epub, generate_xhtml, layout_css,
+    Encoding, WritingDirection, generate_browser_xhtml, generate_epub, layout_css,
     resolve_builtin_css,
 };
 use clap::{Parser, Subcommand};

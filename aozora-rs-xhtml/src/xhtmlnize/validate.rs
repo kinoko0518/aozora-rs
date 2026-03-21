@@ -24,11 +24,10 @@ pub fn validate_xhtml<'s>(buff: Vec<XHTMLTag<'s>>) -> Vec<XHTMLTag<'s>> {
             stack.push(ContainerKind::Block);
             buff.push(current);
             // 次がBrなら消費する
-            if let Some(next) = peekable.peek() {
-                if matches!(next.kind, XHTMLKind::Br) {
+            if let Some(next) = peekable.peek()
+                && matches!(next.kind, XHTMLKind::Br) {
                     peekable.next();
                 }
-            }
             continue;
         }
 
@@ -52,10 +51,10 @@ pub fn validate_xhtml<'s>(buff: Vec<XHTMLTag<'s>>) -> Vec<XHTMLTag<'s>> {
 
         // [br]のルール
         if let XHTMLKind::Br = current.kind {
-            let next_is_inline = peekable.peek().map_or(false, |s| s.kind.is_inline());
+            let next_is_inline = peekable.peek().is_some_and(|s| s.kind.is_inline());
             let next_is_br = peekable
                 .peek()
-                .map_or(false, |s| matches!(s.kind, XHTMLKind::Br));
+                .is_some_and(|s| matches!(s.kind, XHTMLKind::Br));
 
             if stack.is_empty() {
                 if !next_is_inline || next_is_br {
@@ -85,16 +84,15 @@ pub fn validate_xhtml<'s>(buff: Vec<XHTMLTag<'s>>) -> Vec<XHTMLTag<'s>> {
             buff.push(current);
 
             // 次の要素がインライン要素でも Br でもない場合、直近の親が<p>なら閉じる
-            let next_is_inline_or_br = peekable.peek().map_or(false, |s| {
+            let next_is_inline_or_br = peekable.peek().is_some_and(|s| {
                 s.kind.is_inline() || matches!(s.kind, XHTMLKind::Br)
             });
 
-            if !next_is_inline_or_br {
-                if let Some(ContainerKind::P) = stack.last() {
+            if !next_is_inline_or_br
+                && let Some(ContainerKind::P) = stack.last() {
                     buff.push(XHTMLTag::from_kind(XHTMLKind::PEnd));
                     stack.pop();
                 }
-            }
             continue;
         }
 

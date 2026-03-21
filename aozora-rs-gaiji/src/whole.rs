@@ -53,7 +53,7 @@ pub fn whole_gaiji_to_char<'s>(input: &'s str) -> Cow<'s, str> {
                 result
                     .into_iter()
                     .fold(s.to_cow().to_string(), |mut acc: String, r| {
-                        acc.push_str(&r.to_cow().to_string());
+                        acc.push_str(r.to_cow().as_ref());
                         acc
                     }),
             )

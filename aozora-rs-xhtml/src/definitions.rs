@@ -5,15 +5,11 @@ pub fn get_xhtml_filename(id: usize) -> String {
 }
 
 #[derive(Clone)]
+#[derive(Default)]
 pub struct CDepth {
     pub depth: [usize; 3],
 }
 
-impl Default for CDepth {
-    fn default() -> Self {
-        Self { depth: [0, 0, 0] }
-    }
-}
 
 impl CDepth {
     pub fn increament_a(&mut self) {

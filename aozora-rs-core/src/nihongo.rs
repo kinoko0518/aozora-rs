@@ -34,7 +34,7 @@ fn fw_digit(input: &mut Input) -> Result<usize, ContextError> {
 }
 
 fn hw_digit(input: &mut Input) -> Result<usize, ContextError> {
-    take_while(1.., |c| matches!(c, '0'..='9'))
+    take_while(1.., |c| c.is_ascii_digit())
         .map(|s: &str| s.parse::<usize>().unwrap())
         .parse_next(input)
 }

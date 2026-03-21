@@ -330,7 +330,7 @@ pub fn into_xhtml<'s>(from: Vec<Retokenized<'s>>) -> XHTMLResult {
                         // 同行のインライン要素を消化しきる
                         buff.push_str(&s.into_htmltag());
                         while let Some(inline) = peekable.next_if(fixed_inline) {
-                            buff.push_str(&inline.into_htmltag().trim());
+                            buff.push_str(inline.into_htmltag().trim());
                         }
                         buff.push('\n');
                     } else {

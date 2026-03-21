@@ -104,8 +104,7 @@ impl<'s> XHTMLTag<'s> {
 
     pub fn into_htmltag(self) -> Cow<'s, str> {
         let mut buff = String::from("<");
-        buff.extend(
-            match self.kind {
+        buff.push_str(match self.kind {
                 XHTMLKind::Text(t) => {
                     return t;
                 }
@@ -131,9 +130,7 @@ impl<'s> XHTMLTag<'s> {
                 XHTMLKind::SubEnd => "/sub",
                 XHTMLKind::SupBegin => "sup",
                 XHTMLKind::SupEnd => "/sup",
-            }
-            .chars(),
-        );
+            });
         for atr in &self.attributes {
             write!(buff, " ").unwrap();
             write!(buff, "{}", atr).unwrap();
