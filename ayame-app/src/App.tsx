@@ -19,7 +19,8 @@ function App() {
         usePrelude: true,
         useMiyabi: true,
         customCssPaths: [],
-        encoding: 'sjis'
+        encoding: 'sjis',
+        format: 'epub'
     });
 
     const handleUpload = async () => {
@@ -59,12 +60,13 @@ function App() {
         if (!inputFilePath || !metadata) return;
 
         try {
+            const isXhtml = settings.format === 'xhtml';
             const outputPath = await save({
                 filters: [{
-                    name: 'EPUB Book',
-                    extensions: ['epub']
+                    name: isXhtml ? 'XHTML Document' : 'EPUB Book',
+                    extensions: [isXhtml ? 'xhtml' : 'epub']
                 }],
-                defaultPath: `${metadata.title}.epub`
+                defaultPath: `${metadata.title}.${isXhtml ? 'xhtml' : 'epub'}`
             });
 
             if (outputPath) {
@@ -81,7 +83,8 @@ function App() {
                 }
 
                 try {
-                    const epubData = await invoke<number[]>('convert_file', {
+                    const commandName = isXhtml ? 'convert_file_xhtml' : 'convert_file';
+                    const epubData = await invoke<number[]>(commandName, {
                         path: inputFilePath,
                         css: cssList,
                         vertical: settings.vertical,

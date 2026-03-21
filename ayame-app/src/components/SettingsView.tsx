@@ -56,6 +56,41 @@ export default function SettingsView({ settings, onUpdateSettings }: SettingsVie
                     </div>
                 </section>
 
+                {/* Output Format */}
+                <section className="card p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-surface text-primary">
+                                <FileCode size={20} />
+                            </div>
+                            <div>
+                                <h3 className="font-medium text-lg">出力フォーマット</h3>
+                                <p className="text-sm text-text-sub">生成するファイル形式を選択します</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex bg-background rounded-lg p-1 border border-border-main">
+                        <button
+                            onClick={() => handleToggle('format', 'epub')}
+                            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${settings.format === 'epub'
+                                ? 'bg-primary text-primary-fg shadow-md'
+                                : 'text-text-sub hover:text-text-main'
+                                }`}
+                        >
+                            EPUB
+                        </button>
+                        <button
+                            onClick={() => handleToggle('format', 'xhtml')}
+                            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${settings.format === 'xhtml'
+                                ? 'bg-primary text-primary-fg shadow-md'
+                                : 'text-text-sub hover:text-text-main'
+                                }`}
+                        >
+                            XHTML
+                        </button>
+                    </div>
+                </section>
+
                 {/* CSS Selection */}
                 <section className="card p-6 space-y-4">
                     <div className="flex items-center gap-3 mb-2">

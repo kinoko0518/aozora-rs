@@ -26,11 +26,12 @@ pub enum WritingDirection {
 
 /// 組み込みCSSの名前を解決して内容を返す
 ///
-/// 対応する名前: `"prelude"`, `"miyabi"`
+/// 対応する名前: `"prelude"`, `"miyabi"`, `"miyabix"`
 pub fn resolve_builtin_css(name: &str) -> Option<&'static str> {
     match name {
         "prelude" => Some(include_str!("../assets/prelude.css")),
         "miyabi" => Some(include_str!("../assets/miyabi.css")),
+        "miyabix" => Some(include_str!("../assets/miyabix.css")),
         _ => None,
     }
 }
@@ -126,6 +127,54 @@ pub fn scan_metadata(
         title: meta.title.to_string(),
         author: meta.author.to_string(),
     })
+}
+
+/// 入力バイト列からXHTMLを生成する
+pub fn generate_browser_xhtml(
+    data: &[u8],
+    is_zip: bool,
+    encoding: &Encoding,
+    css_contents: &[&str],
+) -> Result<(Vec<String>, Vec<miette::Report>), AyameError> {
+    let text = if is_zip {
+        let zip_encoding = match encoding {
+            Encoding::ShiftJis => ZipEncoding::ShiftJIS,
+            Encoding::Utf8 => ZipEncoding::Utf8,
+        };
+        let azz = AozoraZip::read_from_zip(data, &zip_encoding)
+            .map_err(|e| AyameError::ZipError(e.to_string()))?;
+        azz.txt
+    } else {
+        decode_bytes(data, encoding)?
+    };
+
+    let result = text_to_novel_result(&text)?;
+    let title = &result.meta.title;
+
+    let mut xhtmls = Vec::new();
+    let css_combined = css_contents.join("\n");
+    for body in result.xhtmls.xhtmls.into_iter() {
+        let html = format!(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
+             <!DOCTYPE html>\n\
+             <html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:epub=\"http://www.idpf.org/2007/ops\" xml:lang=\"ja\">\n\
+             <head>\n\
+             <meta charset=\"UTF-8\" />\n\
+             <title>{}</title>\n\
+             <style>\n{}\n</style>\n\
+             </head>\n\
+             <body>\n\
+             <div class=\"main\">\n\
+             {}\n\
+             </div>\n\
+             </body>\n\
+             </html>",
+            title, css_combined, body
+        );
+        xhtmls.push(html);
+    }
+
+    Ok((xhtmls, result.errors))
 }
 
 /// 入力バイト列からXHTMLを生成する

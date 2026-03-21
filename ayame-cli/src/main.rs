@@ -1,6 +1,7 @@
 use aozora_rs::EpubSetting;
 use ayame_core::{
-    Encoding, WritingDirection, generate_epub, generate_xhtml, layout_css, resolve_builtin_css,
+    Encoding, WritingDirection, generate_browser_xhtml, generate_epub, generate_xhtml, layout_css,
+    resolve_builtin_css,
 };
 use clap::{Parser, Subcommand};
 use miette::{IntoDiagnostic, Result, miette};
@@ -30,6 +31,22 @@ enum Commands {
         /// 入力ファイルがUTF-8でエンコードされている場合に指定（デフォルト: Shift-JIS）
         #[arg(long)]
         utf8: bool,
+
+        /// 横書きで生成（デフォルト: 縦書き）
+        #[arg(long)]
+        horizontal: bool,
+
+        /// preludeを適用しない
+        #[arg(long)]
+        no_prelude: bool,
+
+        /// miyabiを適用しない
+        #[arg(long)]
+        no_miyabi: bool,
+
+        /// 追加で適用するCSSファイルのパス（複数指定可）
+        #[arg(long)]
+        css: Vec<PathBuf>,
 
         /// 出力先ディレクトリ（デフォルト: カレントディレクトリ）
         #[arg(short, long)]
@@ -108,6 +125,7 @@ fn resolve_css(
     no_prelude: bool,
     no_miyabi: bool,
     extra_css: &[PathBuf],
+    is_xhtml: bool,
 ) -> Result<Vec<String>> {
     let mut css_contents = vec![layout_css(direction).to_string()];
 
@@ -115,7 +133,11 @@ fn resolve_css(
         css_contents.push(resolve_builtin_css("prelude").unwrap().to_string());
     }
     if !no_miyabi {
-        css_contents.push(resolve_builtin_css("miyabi").unwrap().to_string());
+        if is_xhtml {
+            css_contents.push(resolve_builtin_css("miyabix").unwrap().to_string());
+        } else {
+            css_contents.push(resolve_builtin_css("miyabi").unwrap().to_string());
+        }
     }
 
     for path in extra_css {
@@ -130,27 +152,46 @@ fn resolve_css(
     Ok(css_contents)
 }
 
-fn handle_xhtml(source: PathBuf, merge: bool, utf8: bool, output: Option<PathBuf>) -> Result<()> {
+fn handle_xhtml(
+    source: PathBuf,
+    merge: bool,
+    utf8: bool,
+    horizontal: bool,
+    no_prelude: bool,
+    no_miyabi: bool,
+    extra_css: Vec<PathBuf>,
+    output: Option<PathBuf>,
+) -> Result<()> {
     let output_dir = get_output_dir(output)?;
     let file_stem = get_file_stem(&source)?;
     let bytes = fs::read(&source).into_diagnostic()?;
 
-    let (xhtmls, errors) = generate_xhtml(&bytes, is_zip(&source), &to_encoding(utf8))
-        .map_err(|e| miette!("{}", e))?;
+    let direction = if horizontal {
+        WritingDirection::Horizontal
+    } else {
+        WritingDirection::Vertical
+    };
+
+    let css_contents = resolve_css(&direction, no_prelude, no_miyabi, &extra_css, true)?;
+    let css_refs: Vec<&str> = css_contents.iter().map(|s| s.as_str()).collect();
+
+    let (xhtmls, errors) =
+        generate_browser_xhtml(&bytes, is_zip(&source), &to_encoding(utf8), &css_refs)
+            .map_err(|e| miette!("{}", e))?;
 
     for error in &errors {
         eprintln!("警告: {:?}", error);
     }
 
     if merge {
-        let merged = xhtmls.xhtmls.join("\n<hr />\n");
+        let merged = xhtmls.join("\n<hr />\n");
         let output_path = output_dir.join(format!("{}.xhtml", file_stem));
         let mut file = fs::File::create(&output_path).into_diagnostic()?;
         file.write_all(merged.as_bytes()).into_diagnostic()?;
         println!("生成完了: {}", output_path.display());
     } else {
-        for (i, xhtml) in xhtmls.xhtmls.iter().enumerate() {
-            let filename = if xhtmls.xhtmls.len() == 1 {
+        for (i, xhtml) in xhtmls.iter().enumerate() {
+            let filename = if xhtmls.len() == 1 {
                 format!("{}.xhtml", file_stem)
             } else {
                 format!("{}_{:03}.xhtml", file_stem, i + 1)
@@ -184,7 +225,7 @@ fn handle_epub(
         WritingDirection::Vertical
     };
 
-    let css_contents = resolve_css(&direction, no_prelude, no_miyabi, &extra_css)?;
+    let css_contents = resolve_css(&direction, no_prelude, no_miyabi, &extra_css, false)?;
     let css_refs: Vec<&str> = css_contents.iter().map(|s| s.as_str()).collect();
 
     let setting = EpubSetting {
@@ -217,9 +258,15 @@ fn main() -> Result<()> {
             source,
             merge,
             utf8,
+            horizontal,
+            no_prelude,
+            no_miyabi,
+            css,
             output,
         } => {
-            handle_xhtml(source, merge, utf8, output)?;
+            handle_xhtml(
+                source, merge, utf8, horizontal, no_prelude, no_miyabi, css, output,
+            )?;
         }
         Commands::Epub {
             source,

@@ -5,7 +5,8 @@ use std::path::Path;
 use anyhow::{Context, Result};
 use aozora_rs::EpubSetting;
 use ayame_core::{
-    generate_epub, layout_css, resolve_builtin_css, scan_metadata, Encoding, WritingDirection,
+    generate_browser_xhtml, generate_epub, layout_css, resolve_builtin_css, scan_metadata,
+    Encoding, WritingDirection,
 };
 use serde::Serialize;
 
@@ -112,13 +113,78 @@ fn convert_file_inner(
     .map_err(|e| anyhow::anyhow!("EPUB変換に失敗しました: {}", e))
 }
 
+#[tauri::command]
+fn convert_file_xhtml(
+    path: String,
+    css: Vec<String>,
+    vertical: bool,
+    encoding: String,
+) -> Result<Vec<u8>, String> {
+    convert_file_xhtml_inner(&path, css, vertical, &encoding).map_err(|e| e.to_string())
+}
+
+fn convert_file_xhtml_inner(
+    path: &str,
+    css: Vec<String>,
+    vertical: bool,
+    encoding: &str,
+) -> Result<Vec<u8>> {
+    let path = Path::new(path);
+    let mut file = File::open(path).context("ファイルのオープンに失敗しました")?;
+    let mut buffer = Vec::new();
+    file.read_to_end(&mut buffer)
+        .context("ファイルの読み込みに失敗しました")?;
+
+    let direction = if vertical {
+        WritingDirection::Vertical
+    } else {
+        WritingDirection::Horizontal
+    };
+
+    let mut css_contents = vec![layout_css(&direction).to_string()];
+
+    for c in css {
+        let target_css = if c == "miyabi" {
+            "miyabix".to_string()
+        } else {
+            c
+        };
+        if let Some(builtin) = resolve_builtin_css(&target_css) {
+            css_contents.push(builtin.to_string());
+        } else {
+            let css_path = Path::new(&target_css);
+            if css_path.exists() {
+                match std::fs::read_to_string(css_path) {
+                    Ok(s) => css_contents.push(s),
+                    Err(e) => eprintln!("Failed to read CSS file {}: {}", target_css, e),
+                }
+            } else {
+                eprintln!("CSS file not found: {}", target_css);
+            }
+        }
+    }
+
+    let css_refs: Vec<&str> = css_contents.iter().map(|s| s.as_str()).collect();
+
+    let (xhtmls, _) =
+        generate_browser_xhtml(&buffer, is_zip(path), &to_encoding(encoding), &css_refs)
+            .map_err(|e| anyhow::anyhow!("XHTML変換に失敗しました: {}", e))?;
+
+    let merged = xhtmls.join("\n<hr />\n");
+    Ok(merged.into_bytes())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .invoke_handler(tauri::generate_handler![scan_file, convert_file])
+        .invoke_handler(tauri::generate_handler![
+            scan_file,
+            convert_file,
+            convert_file_xhtml
+        ])
         .run(tauri::generate_context!())
         .expect("Tauriアプリケーションの実行中にエラーが発生しました");
 }

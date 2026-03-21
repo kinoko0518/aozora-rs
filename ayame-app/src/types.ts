@@ -9,4 +9,5 @@ export interface AppSettings {
     useMiyabi: boolean;
     customCssPaths: string[];
     encoding: 'utf-8' | 'sjis';
+    format: 'epub' | 'xhtml';
 }
