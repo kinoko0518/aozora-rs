@@ -209,7 +209,7 @@ pub fn into_xhtml<'s>(from: Vec<Retokenized<'s>>) -> XHTMLResult {
                     buff.push(XHTMLTag {
                         kind: XHTMLKind::DivBegin,
                         attributes: vec![Cow::Owned(format!(
-                            "class=\"padding-inline-start: {}em;\"",
+                            "style=\"padding-inline-start: {}em;\"",
                             i
                         ))],
                     });
@@ -220,7 +220,7 @@ pub fn into_xhtml<'s>(from: Vec<Retokenized<'s>>) -> XHTMLResult {
                         attributes: vec![Cow::Owned(format!(
                             "style=\"padding-inline-start: {}em; text-indent: {}em;\"",
                             j,
-                            h - j
+                            (h as i32) - (j as i32)
                         ))],
                     });
                 }
@@ -299,6 +299,17 @@ pub fn into_xhtml<'s>(from: Vec<Retokenized<'s>>) -> XHTMLResult {
                         .into_iter(),
                     );
                 }
+                Deco::Mama => {
+                    buff.extend(
+                        [
+                            XHTMLTag::from_kind(XHTMLKind::RtBegin),
+                            XHTMLTag::from_kind(XHTMLKind::Text(Cow::Borrowed("ママ"))),
+                            XHTMLTag::from_kind(XHTMLKind::RtEnd),
+                            XHTMLTag::from_kind(XHTMLKind::RubyEnd),
+                        ]
+                        .into_iter(),
+                    );
+                }
                 Deco::Indent(_) | Deco::Hanging(_) => {
                     buff.push(XHTMLTag::from_kind(XHTMLKind::DivEnd));
                 }
@@ -333,13 +344,13 @@ pub fn into_xhtml<'s>(from: Vec<Retokenized<'s>>) -> XHTMLResult {
                     if !is_inline && is_block_end {
                         indent = indent.saturating_sub(1);
                     }
-                    buff.push_str(&"\t".repeat(indent));
+                    buff.extend(std::iter::repeat('\t').take(indent));
 
                     if is_inline {
                         // 同行のインライン要素を消化しきる
                         buff.push_str(&s.into_htmltag());
                         while let Some(inline) = peekable.next_if(fixed_inline) {
-                            buff.push_str(inline.into_htmltag().trim());
+                            buff.push_str(&inline.into_htmltag());
                         }
                         buff.push('\n');
                     } else {

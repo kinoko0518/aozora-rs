@@ -75,11 +75,12 @@ fn analyse_per_work(s: String) -> Result<SpeedPerWork, Box<dyn std::error::Error
     let tokenize_duration = tokenize_instant.elapsed();
 
     let scopenize_instant = Instant::now();
-    let ((deco, flat), errors) = scopenize(tokenized, s_slice).into_tuple();
+    let ((deco, flat), mut errors) = scopenize(tokenized, s_slice).into_tuple();
     let scopenized_duration = scopenize_instant.elapsed();
 
     let retokenize_instant = Instant::now();
-    let retokenized = retokenize(flat, deco);
+    let (retokenized, retokenized_errors) = retokenize(flat, deco).into_tuple();
+    errors.extend(retokenized_errors.into_iter());
     let retokenized_duration = retokenize_instant.elapsed();
 
     let xhtmlnize_instant = Instant::now();

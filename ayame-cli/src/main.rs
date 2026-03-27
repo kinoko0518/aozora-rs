@@ -162,6 +162,7 @@ fn handle_xhtml(
     extra_css: Vec<PathBuf>,
     output: Option<PathBuf>,
 ) -> Result<()> {
+    let timer = std::time::Instant::now();
     let output_dir = get_output_dir(output)?;
     let file_stem = get_file_stem(&source)?;
     let bytes = fs::read(&source).into_diagnostic()?;
@@ -188,7 +189,11 @@ fn handle_xhtml(
         let output_path = output_dir.join(format!("{}.xhtml", file_stem));
         let mut file = fs::File::create(&output_path).into_diagnostic()?;
         file.write_all(merged.as_bytes()).into_diagnostic()?;
-        println!("生成完了: {}", output_path.display());
+        println!(
+            "生成完了（{:?}）: {}",
+            timer.elapsed(),
+            output_path.display()
+        );
     } else {
         for (i, xhtml) in xhtmls.iter().enumerate() {
             let filename = if xhtmls.len() == 1 {
@@ -199,7 +204,11 @@ fn handle_xhtml(
             let output_path = output_dir.join(&filename);
             let mut file = fs::File::create(&output_path).into_diagnostic()?;
             file.write_all(xhtml.as_bytes()).into_diagnostic()?;
-            println!("生成完了: {}", output_path.display());
+            println!(
+                "生成完了（{:?}）: {}",
+                timer.elapsed(),
+                output_path.display()
+            );
         }
     }
 

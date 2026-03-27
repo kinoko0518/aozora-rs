@@ -91,8 +91,9 @@ impl std::fmt::Display for BosenKind {
 }
 
 /// 青空文庫書式で扱われる装飾のEnumです。
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum Deco<'s> {
+    #[default]
     Bold,
     Italic,
     Ruby(&'s str),

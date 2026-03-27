@@ -32,14 +32,14 @@ impl Retokenized<'_> {
 }
 
 #[derive(Default)]
-pub struct DecoQueue<'s>(HashMap<usize, Vec<Deco<'s>>>);
+pub struct IndexedStacks<T>(HashMap<usize, Vec<T>>);
 
-impl<'s> DecoQueue<'s> {
-    pub fn push(&mut self, index: usize, deco: Deco<'s>) {
+impl<T> IndexedStacks<T> {
+    pub fn push(&mut self, index: usize, deco: T) {
         self.0.entry(index).or_default().push(deco)
     }
 
-    pub fn pop(&mut self, index: usize) -> Option<Deco<'s>> {
+    pub fn pop(&mut self, index: usize) -> Option<T> {
         match self.0.entry(index) {
             Entry::Occupied(mut entry) => {
                 let vec = entry.get_mut();
@@ -52,4 +52,10 @@ impl<'s> DecoQueue<'s> {
             Entry::Vacant(_) => None,
         }
     }
+
+    pub fn into_iter(self) -> impl Iterator<Item = (usize, Vec<T>)> {
+        self.0.into_iter()
+    }
 }
+
+pub type DecoQueue<'s> = IndexedStacks<Deco<'s>>;

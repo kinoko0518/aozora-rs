@@ -1,100 +1,166 @@
-use std::borrow::Cow;
-use std::ops::Range;
+use std::cmp::Ordering;
 
-use crate::{
-    retokenizer::{DecoQueue, Retokenized},
-    scopenizer::{FlatToken, Scopenized},
-    *,
-};
+use miette::Diagnostic;
+use thiserror::Error;
+
+use crate::{AZResult, AZResultC, Deco, Retokenized, Scopenized, Span, scopenizer::FlatToken};
+
+#[derive(Default, Debug)]
+pub enum RetokenizeEvent<'s> {
+    FlatTBegin(FlatToken<'s>),
+    #[default]
+    FlatTEnd,
+    DecoBegin(Deco<'s>),
+    DecoEnd,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("不正な終了トークン")]
+#[diagnostic(
+    code(aozora_rs::closed_before_token_start),
+    help(
+        "いずれの開始トークンより前に終了トークンが出現しました。この問題はaozora.rsのバグである可能性があります。お手数ですが、GitHubでご一報ください。"
+    )
+)]
+struct InvalidEndOfToken;
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("不正なスコープ終端")]
+#[diagnostic(
+    code(aozora_rs::closed_before_scope_start),
+    help(
+        "いずれのスコープが開始されるより前に終端が出現しました。この問題はaozora.rsのバグである可能性があります。お手数ですが、GitHubでご一報ください。"
+    )
+)]
+struct InvalidEndOfScope;
+
+type Events<'s> = Vec<(usize, RetokenizeEvent<'s>)>;
+
+pub fn extract_events<'s>(
+    scopenized: Scopenized<'s>,
+    flattoken: Vec<(FlatToken<'s>, Span)>,
+) -> Events<'s> {
+    let mut events = Vec::new();
+    for s in scopenized.0.into_iter().map(|(_, i)| i) {
+        for s2 in s {
+            events.push((s2.span.start, RetokenizeEvent::DecoBegin(s2.deco)));
+            events.push((s2.span.end, RetokenizeEvent::DecoEnd));
+        }
+    }
+    for (token, scope) in flattoken {
+        events.push((scope.start, RetokenizeEvent::FlatTBegin(token)));
+        events.push((scope.end, RetokenizeEvent::FlatTEnd));
+    }
+    let mut vec = events
+        .into_iter()
+        .collect::<Vec<(usize, RetokenizeEvent)>>();
+
+    vec.sort_by(|a, b| {
+        let cmp = a.0.cmp(&b.0);
+        if let Ordering::Equal = cmp {
+            match (&a.1, &b.1) {
+                // 開始と終了が同じ場所にあった場合、開始が必ず先に来るようにする
+                (RetokenizeEvent::DecoBegin(_), RetokenizeEvent::DecoEnd) => Ordering::Greater,
+                (RetokenizeEvent::DecoEnd, RetokenizeEvent::DecoBegin(_)) => Ordering::Less,
+                (RetokenizeEvent::FlatTBegin(_), RetokenizeEvent::FlatTEnd) => Ordering::Greater,
+                (RetokenizeEvent::FlatTEnd, RetokenizeEvent::FlatTBegin(_)) => Ordering::Less,
+                _ => Ordering::Equal,
+            }
+        } else {
+            cmp
+        }
+    });
+
+    vec
+}
 
 pub fn retokenize<'s>(
-    mut flat: Vec<(FlatToken<'s>, Span)>,
-    mut deco: Scopenized<'s>,
-) -> Vec<Retokenized<'s>> {
-    flat.reverse();
+    flattoken: Vec<(FlatToken<'s>, Span)>,
+    scopenized: Scopenized<'s>,
+) -> AZResult<Vec<Retokenized<'s>>> {
+    // Retokenizerにおいて、考慮しなければならない状態を列挙する。
+    //
+    // 1.   トークンの開始地点より前から開始されている注記が存在している
+    // 2.   トークンの開始地点で開始される注記が存在している
+    // 3.   トークンの途中で開始される注記が存在している
+    // 4.   トークンとトークンの隙間で注記が開始されている。
+    //
+    // 5.   トークンの終了時点で終了されない注記が存在している
+    // 6.   トークンの途中で終了する注記が存在している
+    // 7.   トークンの開始地点で終了される注記が存在している
+    // 8.   トークンとトークンの隙間で注記が終了されている。
+    //
+    // Retokenizerは注記の影響範囲を開始タグ・終了タグに変換し、
+    // トークン列と注記の影響範囲の直積を再トークン列にフラット化する。
+    //
+    // 目的の達成のため、以下のアルゴリズムで目的を達成する。
+    //
+    // 1.   トークンの開始地点と終了地点、注記の開始地点と終了地点を抽出する。
+    // 2.   トークンの開始・終了、注記の開始・終了は同時には起こらないため、
+    //      トークンと注記それぞれについてBegin・End・Noneから成る直和に変換を行い、
+    //      (at, token_state, scope_state)のベクタに変換する。
+    // 3.   スコープ開始・終了を受け取ったとき、閉じられていないトークンを途中で切り、
+    //      開始・終了タグを積み、閉じられていないトークンを再開する。
+    // 4.   トークン開始を受け取ったとき、スタックに閉じられていないトークンとして積む。
+    // 5.   トークン終了を受け取ったとき、スタックの一番上のトークンを確定して積む。
+
+    let events = extract_events(scopenized, flattoken);
+
+    let mut eacc = AZResultC::default();
+
     let mut retokenized: Vec<Retokenized> = Vec::new();
-    let mut queue: DecoQueue = DecoQueue::default();
+    let mut peekable = events.into_iter().peekable();
 
-    // Cow文字列をスライスするヘルパー
-    let slice_text = |t: &Cow<'s, str>, range: Range<usize>| -> Retokenized<'s> {
-        Retokenized::Text(match t {
-            Cow::Borrowed(b) => Cow::Borrowed(&b[range]),
-            Cow::Owned(o) => Cow::Owned(o[range].to_string()),
-        })
-    };
+    let mut unclosed_token = (Option::None, 0);
+    let mut unclosed_decos: Vec<Deco<'s>> = Vec::new();
 
-    while let Some((token, span)) = flat.pop() {
-        match token {
-            FlatToken::Text(text) => {
-                let mut last_flushed_pos = 0;
-
-                for i in span.clone() {
-                    let relative_pos = i - span.start;
-                    let mut flushed_at_current_pos = false;
-
-                    // Scopeの終了を処理
-                    while let Some(d) = queue.pop(i) {
-                        // ここまでのテキストをフラッシュ
-                        if last_flushed_pos != relative_pos {
-                            retokenized.push(slice_text(&text, last_flushed_pos..relative_pos));
-                            last_flushed_pos = relative_pos;
-                            flushed_at_current_pos = true;
-                        }
-
-                        retokenized.push(Retokenized::DecoEnd(d));
-                    }
-
-                    // Scopeの開始を処理
-                    while let Some(d) = deco.pop(i) {
-                        // まだフラッシュしていなければ、ここまでのテキストをフラッシュ
-                        if !flushed_at_current_pos && last_flushed_pos != relative_pos {
-                            retokenized.push(slice_text(&text, last_flushed_pos..relative_pos));
-                            last_flushed_pos = relative_pos;
-                            flushed_at_current_pos = true;
-                        }
-
-                        retokenized.push(Retokenized::DecoBegin(d.deco.clone()));
-                        queue.push(d.span.end, d.deco);
-                    }
+    while let Some((i, e)) = peekable.next() {
+        match e {
+            RetokenizeEvent::FlatTBegin(f) => {
+                unclosed_token = (Some(f), i);
+            }
+            RetokenizeEvent::FlatTEnd => match unclosed_token.0 {
+                Some(t) => {
+                    retokenized.push(t.into());
+                    unclosed_token = (None, i)
                 }
-
-                // 残りのテキストをフラッシュ
-                let len = span.end - span.start;
-                if last_flushed_pos != len {
-                    retokenized.push(slice_text(&text, last_flushed_pos..len));
-                }
-                while let Some(d) = queue.pop(span.end) {
-                    // 終了タグを積む
-                    retokenized.push(Retokenized::DecoEnd(d));
+                None => eacc.push(InvalidEndOfToken.into()),
+            },
+            RetokenizeEvent::DecoBegin(d) => {
+                if let (Some(t), unclosed_until) = unclosed_token {
+                    let (confirmed, unclosed) = t.split_at(i - unclosed_until);
+                    retokenized.push(confirmed.into());
+                    retokenized.push(Retokenized::DecoBegin(d.clone()));
+                    unclosed_decos.push(d);
+                    unclosed_token = (unclosed, i);
+                } else {
+                    retokenized.push(Retokenized::DecoBegin(d.clone()));
+                    unclosed_decos.push(d);
                 }
             }
-            otherwise => {
-                for i in span.clone() {
-                    // Scopeの終了
-                    while let Some(d) = queue.pop(i) {
+            RetokenizeEvent::DecoEnd => {
+                let popped_deco = unclosed_decos.pop();
+
+                if let (Some(t), unclosed_until) = unclosed_token {
+                    if let Some(d) = popped_deco {
+                        let (confirmed, unclosed) = t.split_at(i - unclosed_until);
+                        retokenized.push(confirmed.into());
                         retokenized.push(Retokenized::DecoEnd(d));
+                        unclosed_token = (unclosed, i);
+                    } else {
+                        eacc.push(InvalidEndOfScope.into());
+                        unclosed_token = (Some(t), unclosed_until);
                     }
-                    // Scopeの開始
-                    while let Some(d) = deco.pop(i) {
-                        retokenized.push(Retokenized::DecoBegin(d.deco.clone()));
-                        queue.push(d.span.end, d.deco);
+                } else {
+                    if let Some(d) = popped_deco {
+                        retokenized.push(Retokenized::DecoEnd(d));
+                    } else {
+                        eacc.push(InvalidEndOfScope.into());
                     }
-                }
-
-                retokenized.push(match otherwise {
-                    FlatToken::Text(_) => unreachable!("Handled in the other branch"),
-                    FlatToken::Break(b) => Retokenized::Break(b),
-                    FlatToken::Figure(f) => Retokenized::Figure(f),
-                    FlatToken::Odoriji(o) => Retokenized::Odoriji(o),
-                    FlatToken::Kunten(k) => Retokenized::Kunten(k),
-                    FlatToken::Okurigana(o) => Retokenized::Okurigana(o),
-                });
-
-                while let Some(d) = queue.pop(span.end) {
-                    retokenized.push(Retokenized::DecoEnd(d));
                 }
             }
         }
     }
-    retokenized
+
+    eacc.finally(retokenized)
 }

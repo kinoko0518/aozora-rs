@@ -12,7 +12,8 @@ pub fn str_to_retokenized<'s>(
     str: &'s str,
 ) -> Result<AZResult<Vec<Retokenized<'s>>>, ContextError> {
     let tokenized = tokenize(&mut LocatingSlice::new(str))?;
-    let ((deco, flat), errors) = scopenize(tokenized, str).into_tuple();
-    let retokenized = retokenize(flat, deco);
+    let ((deco, flat), mut errors) = scopenize(tokenized, str).into_tuple();
+    let (retokenized, retokenize_errors) = retokenize(flat, deco).into_tuple();
+    errors.extend(retokenize_errors.into_iter());
     Ok(AZResultC::from(errors).finally(retokenized))
 }

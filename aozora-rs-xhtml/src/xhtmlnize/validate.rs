@@ -1,17 +1,9 @@
 use crate::xhtmlnize::definitions::{XHTMLKind, XHTMLTag};
 
 pub fn validate_xhtml<'s>(buff: Vec<XHTMLTag<'s>>) -> Vec<XHTMLTag<'s>> {
-    // XHTML正規化ルール
-    // - 見かけの改行の数は保持されなければならない
-    //  - 補足：<br>はコンテナ一つの開始・終了タグと等価
-    // - テキストやルビなどのインライン要素はいずれかのコンテナの中に存在していなければならない
-    // - インライン要素がいずれのコンテナにも含まれていない場合<p></p>で囲む
-    // - <div>、<h1>（以後、大局コンテナ）などの要素の中に<p>は存在できない
-
     let mut peekable = buff.into_iter().peekable();
     let mut buff = Vec::new();
 
-    // コンテナの種類を追跡するための列挙型を定義
     #[derive(PartialEq)]
     enum ContainerKind {
         Block,
@@ -21,11 +13,18 @@ pub fn validate_xhtml<'s>(buff: Vec<XHTMLTag<'s>>) -> Vec<XHTMLTag<'s>> {
 
     while let Some(current) = peekable.next() {
         if current.kind.is_block_begin() {
+            // 新しいブロックを開始する際、スタックのトップが<p>であれば先に閉じる
+            if let Some(ContainerKind::P) = stack.last() {
+                buff.push(XHTMLTag::from_kind(XHTMLKind::PEnd));
+                stack.pop();
+            }
+
             stack.push(ContainerKind::Block);
             buff.push(current);
             // 次がBrなら消費する
-            if let Some(next) = peekable.peek()
-                && matches!(next.kind, XHTMLKind::Br)
+            if peekable
+                .peek()
+                .is_some_and(|next| matches!(next.kind, XHTMLKind::Br))
             {
                 peekable.next();
             }
@@ -33,7 +32,13 @@ pub fn validate_xhtml<'s>(buff: Vec<XHTMLTag<'s>>) -> Vec<XHTMLTag<'s>> {
         }
 
         if current.kind.is_block_end() {
-            stack.pop();
+            // ブロックを終了する際、スタックのトップが<p>であれば先に閉じる
+            if let Some(ContainerKind::P) = stack.last() {
+                buff.push(XHTMLTag::from_kind(XHTMLKind::PEnd));
+                stack.pop();
+            }
+
+            stack.pop(); // Blockをポップ
             buff.push(current);
             continue;
         }
@@ -50,7 +55,6 @@ pub fn validate_xhtml<'s>(buff: Vec<XHTMLTag<'s>>) -> Vec<XHTMLTag<'s>> {
             continue;
         }
 
-        // [br]のルール
         if let XHTMLKind::Br = current.kind {
             let next_is_inline = peekable.peek().is_some_and(|s| s.kind.is_inline());
             let next_is_br = peekable
@@ -67,6 +71,7 @@ pub fn validate_xhtml<'s>(buff: Vec<XHTMLTag<'s>>) -> Vec<XHTMLTag<'s>> {
                     // 自身を<p>開始タグに変化させる
                     buff.push(XHTMLTag::from_kind(XHTMLKind::PBegin));
                     stack.push(ContainerKind::P);
+                    buff.push(current);
                 }
             } else {
                 // すでにコンテナ内にいる場合はそのまま追加

@@ -60,3 +60,45 @@ pub enum FlatToken<'s> {
     Okurigana(&'s str),
     Figure(Figure<'s>),
 }
+
+impl<'s> FlatToken<'s> {
+    /// トークンを指定されたインデックスで分割します。
+    ///
+    /// トークンがインデックスで分割不能な場合、または分割位置がトークンのバイト長より大きい場合は直積の二番目はNoneが返ります。
+    pub fn split_at(self, at: usize) -> (FlatToken<'s>, Option<FlatToken<'s>>) {
+        if let FlatToken::Text(t) = self {
+            if t.bytes().len() < at {
+                return (FlatToken::Text(t).into(), None);
+            }
+            match t {
+                Cow::Borrowed(b) => {
+                    return (
+                        FlatToken::Text(Cow::Borrowed(&b[0..at])),
+                        Some(FlatToken::Text(Cow::Borrowed(&b[at..b.len()]))),
+                    );
+                }
+                Cow::Owned(o) => {
+                    return (
+                        FlatToken::Text(Cow::Owned(o[0..at].to_string())),
+                        Some(FlatToken::Text(Cow::Owned(o[at..o.len()].to_string()))),
+                    );
+                }
+            }
+        } else {
+            return (self.into(), None);
+        }
+    }
+}
+
+impl<'s> Into<Retokenized<'s>> for FlatToken<'s> {
+    fn into(self) -> Retokenized<'s> {
+        match self {
+            FlatToken::Break(b) => Retokenized::Break(b),
+            FlatToken::Figure(f) => Retokenized::Figure(f),
+            FlatToken::Kunten(k) => Retokenized::Kunten(k),
+            FlatToken::Odoriji(o) => Retokenized::Odoriji(o),
+            FlatToken::Text(t) => Retokenized::Text(t),
+            FlatToken::Okurigana(o) => Retokenized::Okurigana(o),
+        }
+    }
+}
