@@ -1,15 +1,12 @@
-# 📖 文目プロジェクト
+# 🦀 aozora.rs
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/kinoko0518/aozora-rs)](https://github.com/kinoko0518/aozora-rs/releases/latest)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-文目プロジェクトは、青空文庫書式の周辺ソフトウェアの総合的な近代化を目指すプロジェクトです。
-
-用途に合わせて以下の3つの窓口をご用意しています。
+[今すぐ試す](https://kinoko0518.github.io/aozora-rs/index.html): WASM化されたaozora.rsを用いたリアルタイムプレビュー、青空文庫書式で記述された.zipや.txtのEPUBへの変換などをブラウザ上でお試しいただけます。
 
 * **📦 ライブラリ**: Rustクレート`aozora-rs`および、WASM向け`aozora-rs-wasm`
 * **🖥️ アプリケーション**: CLIツール`ayame-cli`およびGUIアプリ`文目`
-* **📚 ドキュメント**: プロジェクト公式ホームページ兼青空文庫書式ドキュメント、[あやめぐさ](https://kinoko0518.github.io/ayamegusa/)
 
 WASMバイナリ、各種アプリケーションの配布、各バージョンの品質保証レポートは[最新のリリース](https://github.com/kinoko0518/aozora-rs/releases/latest)をご覧ください。
 
@@ -113,12 +110,6 @@ ayame epub [OPTIONS] <SOURCE>
 ### 文目
 
 `ayame-cli` のGUI版です。CLIと同等の機能を、直感的なインターフェースでご利用いただけます。
-
-## 📖 ドキュメンテーション / あやめぐさ
-
-プロジェクトの詳細や青空文庫書式の仕様については、公式ドキュメントをご覧ください。
-
-👉 [あやめぐさ にアクセス](https://www.google.com/url?sa=E&source=gmail&q=https://kinoko0518.github.io/ayamegusa/)
 
 ## 📄 ライセンス
 
