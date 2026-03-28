@@ -1,12 +1,13 @@
 use aozora_rs::{
-    EpubSetting, from_aozora_zip, parse_meta, retokenized_to_xhtml, str_to_retokenized,
+    AozoraMeta, EpubSetting, from_aozora_zip, parse_meta, retokenized_to_xhtml, str_to_retokenized,
 };
 use aozora_rs_zip::{AozoraZip, Encoding as ZipEncoding};
 use std::io::Cursor;
-use wasm_bindgen::{JsError, prelude::wasm_bindgen};
+use wasm_bindgen::{JsError, JsValue, prelude::wasm_bindgen};
 
-fn into_js_error<E: std::fmt::Display>(err: E) -> JsError {
-    JsError::new(&format!("{}", err))
+#[wasm_bindgen(start)]
+pub fn init_panic_hook() {
+    console_error_panic_hook::set_once();
 }
 
 fn reports_to_single_string(reports: Vec<miette::Report>) -> String {
@@ -25,22 +26,39 @@ pub struct StandaloneXHTML {
     pub occured_error: String,
 }
 
-/// 青空文庫書式の冒頭、終端の特別な表記、たとえば一行目はタイトル、
-/// 二行目は著者といったルールを考慮せず、全文を純粋な青空文庫書式として解析、
-/// 単一の埋め込み用XHTMLとして1つのStringにまとめます。
-///
-/// ご自身のサイト自体を青空文庫書式で記述する用途に便利です。
 #[wasm_bindgen]
 pub fn generate_standalone_xhtml(from: &str, delimiter: &str) -> Result<StandaloneXHTML, JsError> {
-    let mut body = from;
-    let meta = parse_meta(&mut body).map_err(|e| JsError::new(&e.to_string()))?;
-    let (retokenized, errors) = str_to_retokenized(body)
-        .map_err(|e| JsError::new(&e.to_string()))?
-        .into_tuple();
+    let meta = AozoraMeta {
+        title: "",
+        author: "",
+    };
+
+    // パースエラー時はコンソールに出力して空の結果を返す
+    let parsed = match str_to_retokenized(from) {
+        Ok(p) => p,
+        Err(e) => {
+            web_sys::console::error_1(&JsValue::from_str(&e.to_string()));
+            return Ok(StandaloneXHTML {
+                result: String::new(),
+                occured_error: e.to_string(),
+            });
+        }
+    };
+
+    let (retokenized, errors) = parsed.into_tuple();
     let xhtml = retokenized_to_xhtml(retokenized, meta, errors);
+
+    let report = reports_to_single_string(xhtml.errors);
+
+    // 蓄積されたエラーをコンソールに出力
+    if !report.is_empty() {
+        let err_msg = report.clone();
+        web_sys::console::error_1(&JsValue::from_str(&err_msg));
+    }
+
     Ok(StandaloneXHTML {
         result: xhtml.xhtmls.xhtmls.join(delimiter),
-        occured_error: reports_to_single_string(xhtml.errors),
+        occured_error: report,
     })
 }
 
@@ -56,44 +74,99 @@ pub struct BookData {
     pub errors: String,
 }
 
-/// 青空文庫書式の冒頭、終端の特別な表記、たとえば一行目はタイトル、
-/// 二行目は著者といったルールを考慮し、メタデータとXHTMLのベクタの直積を返します。
-///
-/// 青空文庫書式で書かれた作品を解析し、独自の方法で表示したい場合に便利です。
-/// 注意点として、この方式では画像にはリンク切れが発生します。
-///
-/// 現在、XHTMLの画像タグ自体に画像を埋め込む方法を検討しています。詳細は以下のissueを参照してください。
-///
-/// https://github.com/kinoko0518/aozora-rs/issues/7
 #[wasm_bindgen]
 pub fn parse_to_book_data(from: &str) -> Result<BookData, JsError> {
     let mut body = from;
-    let meta = parse_meta(&mut body).map_err(|e| JsError::new(&e.to_string()))?;
-    let (retokenized, errors) = str_to_retokenized(body)
-        .map_err(|e| JsError::new(&e.to_string()))?
-        .into_tuple();
+
+    // メタデータ解析エラー時は空のメタデータをフォールバックとして続行
+    let meta = match parse_meta(&mut body) {
+        Ok(m) => m,
+        Err(e) => {
+            web_sys::console::error_1(&JsValue::from_str(&e.to_string()));
+            AozoraMeta {
+                title: "",
+                author: "",
+            }
+        }
+    };
+
+    let parsed = match str_to_retokenized(body) {
+        Ok(p) => p,
+        Err(e) => {
+            web_sys::console::error_1(&JsValue::from_str(&e.to_string()));
+            return Ok(BookData {
+                title: meta.title.to_string(),
+                author: meta.author.to_string(),
+                xhtmls: vec![],
+                errors: e.to_string(),
+            });
+        }
+    };
+
+    let (retokenized, errors) = parsed.into_tuple();
     let result = retokenized_to_xhtml(retokenized, meta, errors);
+
+    let report = reports_to_single_string(result.errors);
+
+    // 蓄積されたエラーをコンソールに出力
+    if !report.is_empty() {
+        let err_msg = report.clone();
+        web_sys::console::error_1(&JsValue::from_str(&err_msg));
+    }
+
     Ok(BookData {
         title: result.meta.title.to_string(),
         author: result.meta.author.to_string(),
         xhtmls: result.xhtmls.xhtmls,
-        errors: reports_to_single_string(result.errors),
+        errors: report,
     })
 }
 
-/// zipであることを期待するバイト列を受けとり、構築したepubのバイト列をオンメモリで構築して返します。
 #[wasm_bindgen]
-pub fn build_epub_bytes(from: &[u8], styles: Vec<String>) -> Result<Vec<u8>, JsError> {
+pub fn build_epub_bytes(
+    from: &[u8],
+    styles: Vec<String>,
+    encoding: &str,
+) -> Result<Vec<u8>, JsError> {
     let mut acc = Cursor::new(Vec::new());
 
-    let azz = AozoraZip::read_from_zip(from, &ZipEncoding::ShiftJIS).map_err(into_js_error)?;
+    let enc = match encoding {
+        "utf8" => ZipEncoding::Utf8,
+        _ => ZipEncoding::ShiftJIS,
+    };
+
+    // ZIP読み込みの致命的エラー
+    let azz = match AozoraZip::read_from_zip(from, &enc) {
+        Ok(a) => a,
+        Err(e) => {
+            web_sys::console::error_1(&JsValue::from_str(&e.to_string()));
+            return Ok(Vec::new()); // エラー時は空のバイト列でOkを返す
+        }
+    };
+
     let (body_string, dependencies) = azz.into_dependencies();
     let mut body_slice = body_string.as_str();
 
-    let meta = parse_meta(&mut body_slice).map_err(|e| JsError::new(&e.to_string()))?;
-    let (retokenized, errors) = str_to_retokenized(body_slice)
-        .map_err(|e| JsError::new(&e.to_string()))?
-        .into_tuple();
+    let meta = match parse_meta(&mut body_slice) {
+        Ok(m) => m,
+        Err(e) => {
+            web_sys::console::error_1(&JsValue::from_str(&e.to_string()));
+            AozoraMeta {
+                title: "",
+                author: "",
+            }
+        }
+    };
+
+    let parsed = match str_to_retokenized(body_slice) {
+        Ok(p) => p,
+        Err(e) => {
+            web_sys::console::error_1(&JsValue::from_str(&e.to_string()));
+            return Ok(Vec::new());
+        }
+    };
+
+    let (retokenized, errors) = parsed.into_tuple();
     let novel_result = retokenized_to_xhtml(retokenized, meta, errors);
 
     let setting = EpubSetting {
@@ -102,7 +175,10 @@ pub fn build_epub_bytes(from: &[u8], styles: Vec<String>) -> Result<Vec<u8>, JsE
         styles: styles.iter().map(|s| s.as_str()).collect::<Vec<&str>>(),
     };
 
-    from_aozora_zip(&mut acc, dependencies, setting, novel_result).map_err(into_js_error)?;
+    if let Err(e) = from_aozora_zip(&mut acc, dependencies, setting, novel_result) {
+        web_sys::console::error_1(&JsValue::from_str(&e.to_string()));
+        return Ok(Vec::new());
+    }
 
     Ok(acc.into_inner())
 }
