@@ -1,0 +1,156 @@
+@charset "utf-8";
+
+/*
+ * プレビュー用統合スタイル
+ * prelude.css + miyabix.css + horizontal.css を統合
+ */
+
+/* === horizontal === */
+body {
+    writing-mode: horizontal-tb;
+    -webkit-writing-mode: horizontal-tb;
+    margin: 0;
+    padding: 0;
+}
+
+/* === miyabix === */
+body {
+    font-family: "Shippori Mincho", serif;
+    font-weight: 400;
+    font-style: normal;
+    line-height: 2.5;
+    padding-inline: 2em;
+    padding-block: 1.5em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-align: justify;
+    hanging-punctuation: allow-end;
+    color: #e0dcd0;
+    background: transparent;
+}
+
+span {
+    line-height: 2.5;
+    font-feature-settings: "palt";
+    letter-spacing: 0.05em;
+}
+
+.title {
+    font-size: 1.6em;
+    text-align: center;
+    margin-bottom: 0.8em;
+    margin-top: 1em;
+    font-feature-settings: "palt";
+}
+
+.author {
+    font-size: 1.15em;
+    text-align: center;
+    margin-bottom: 2em;
+    font-feature-settings: "palt";
+}
+
+/* === prelude === */
+.bosen-solid {
+    text-decoration-style: solid;
+}
+
+.bosen-double {
+    text-decoration-style: double;
+}
+
+.bosen-chain {
+    text-decoration-style: dotted;
+}
+
+.bosen-dashed {
+    text-decoration-style: dashed;
+}
+
+.bosen-wavy {
+    text-decoration-style: wavy;
+}
+
+.sesame {
+    text-emphasis-style: filled sesame;
+    display: inline;
+}
+
+.circle {
+    text-emphasis-style: open circle;
+    display: inline;
+}
+
+.circle-filled {
+    text-emphasis-style: filled circle;
+    display: inline;
+}
+
+.double-circle {
+    text-emphasis-style: open double-circle;
+    display: inline;
+}
+
+.hebinome {
+    text-emphasis-style: filled double-circle;
+    display: inline;
+}
+
+.triangle {
+    text-emphasis-style: open triangle;
+    display: inline;
+}
+
+.triangle-filled {
+    text-emphasis-style: filled triangle;
+    display: inline;
+}
+
+.crossing {
+    text-emphasis-style: "×";
+    display: inline;
+}
+
+.bold {
+    font-weight: 700;
+}
+
+.italic {
+    font-style: italic;
+}
+
+.hinv {
+    text-combine-upright: all;
+    -webkit-text-combine: horizontal;
+    -ms-text-combine-horizontal: all;
+}
+
+.grounded {
+    text-align: right;
+}
+
+.vhcentre {
+    text-align: center;
+}
+
+.warichu {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    vertical-align: middle;
+    font-size: 0.7em;
+    margin: 0 0.1em;
+}
+
+.warichu-line {
+    display: inline-block;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+rt {
+    font-size: 0.5em;
+}

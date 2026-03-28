@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ja">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta
+            name="description"
+            content="aozora-rs デモ — 青空文庫書式のリアルタイムプレビューとEPUB/XHTML変換"
+        />
+        <title>aozora-rs デモ</title>
+        <link rel="stylesheet" href="ayame-demo/style.css" />
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
+            defer
+        ></script>
+    </head>
+
+    <body>
+        <div class="container">
+            <!-- Header -->
+            <header class="header">
+                <h1 class="header__title">aozora-rs</h1>
+                <p class="header__subtitle">
+                    青空文庫書式パーサ &amp; EPUB ジェネレータ
+                </p>
+            </header>
+
+            <!-- Real-time Preview -->
+            <section class="section" id="section-preview">
+                <h2 class="section__heading">リアルタイムプレビュー</h2>
+                <div class="editor-panel">
+                    <div class="editor-pane">
+                        <div class="pane-label">入力</div>
+                        <textarea id="editor-textarea" spellcheck="false">
+［＃２字下げ］有明［＃「有明」は中見出し］
+起伏の雪は
+あかるい桃の漿《しる》をそそがれ
+青ぞらにとけのこる月は
+やさしく天に咽喉《のど》を鳴らし
+もいちど散乱のひかりを呑む
+　　（波羅僧羯諦《ハラサムギヤテイ》　菩提《ボージユ》　薩婆訶《ソハカ》）
+［＃地付き］（一九二二、四、一三）</textarea
+                        >
+                    </div>
+                    <div class="editor-pane">
+                        <div class="pane-label">プレビュー</div>
+                        <iframe
+                            id="preview-frame"
+                            sandbox="allow-same-origin"
+                        ></iframe>
+                    </div>
+                </div>
+            </section>
+
+            <!-- File Converter -->
+            <section class="section" id="section-converter">
+                <h2 class="section__heading">ファイル変換</h2>
+                <div class="converter">
+                    <div class="converter__controls">
+                        <!-- Encoding Toggle -->
+                        <div class="toggle-group" id="encoding-toggle">
+                            <span
+                                class="toggle-group__label toggle-group__label--active"
+                                id="label-utf8"
+                                >UTF-8</span
+                            >
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="encoding-switch" />
+                                <span class="toggle-switch__track"></span>
+                            </label>
+                            <span class="toggle-group__label" id="label-sjis"
+                                >Shift_JIS</span
+                            >
+                        </div>
+
+                        <!-- File Upload -->
+                        <div class="upload-area">
+                            <label
+                                class="upload-btn"
+                                for="file-input"
+                                id="upload-label"
+                            >
+                                <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 16 16"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="1.5"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                >
+                                    <path d="M8 12V3" />
+                                    <path d="M4 7l4-4 4 4" />
+                                    <path d="M2 14h12" />
+                                </svg>
+                                ファイルを選択
+                            </label>
+                            <input
+                                type="file"
+                                id="file-input"
+                                accept=".zip,.txt"
+                            />
+                        </div>
+
+                        <span class="file-info" id="file-info"></span>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="converter__actions" id="converter-actions">
+                        <button
+                            class="action-btn action-btn--primary"
+                            id="btn-download"
+                        >
+                            <span class="spinner" id="spinner-download"></span>
+                            <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 16 16"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.5"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            >
+                                <path d="M8 3v9" />
+                                <path d="M4 8l4 4 4-4" />
+                                <path d="M2 14h12" />
+                            </svg>
+                            EPUBダウンロード
+                        </button>
+                        <button
+                            class="action-btn action-btn--secondary"
+                            id="btn-xhtml"
+                        >
+                            <span class="spinner" id="spinner-xhtml"></span>
+                            <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 16 16"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.5"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            >
+                                <path d="M4 5l-3 3 3 3" />
+                                <path d="M12 5l3 3-3 3" />
+                                <path d="M10 2L6 14" />
+                            </svg>
+                            HTMLで読む
+                        </button>
+                    </div>
+
+                    <div class="status-bar" id="status-bar"></div>
+                </div>
+            </section>
+
+            <!-- Footer -->
+            <footer class="footer">
+                <p>
+                    Powered by
+                    <a
+                        href="https://github.com/kinoko0518/aozora-rs"
+                        target="_blank"
+                        rel="noopener"
+                        >aozora-rs</a
+                    >
+                </p>
+            </footer>
+        </div>
+
+        <script type="module" src="./ayame-demo/app.js"></script>
+    </body>
+</html>

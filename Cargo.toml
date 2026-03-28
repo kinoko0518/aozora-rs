@@ -4,8 +4,9 @@ members = [
     "aozora-rs-gaiji", "aozora-rs-xhtml",
     "aozora-rs-epub", "aozora-rs",
     "aozora-rs-wasm", "ayame-cli",
-    "ayame-core", "ayame-app/src-tauri"
-, "aozora-rs-zip"]
+    "ayame-core", "ayame-app/src-tauri",
+    "aozora-rs-zip"
+]
 resolver = "3"
 
 [workspace.dependencies]
@@ -25,7 +26,8 @@ miette = { version = "7.6.0", features = ["fancy"] }
 winnow = "0.7.14"
 thiserror = "2.0.18"
 itertools = "0.14.0"
-chrono = "0.4.43"
+time = { version = "0.3", features = ["wasm-bindgen"] }
+chrono = { version = "0.4", features = ["wasmbind"] }
 uuid = { version = "1.20.0", features = ["v5", "fast-rng", "macro-diagnostics", "js"] }
 zip = { version = "2.2.0", default-features = false, features = ["deflate", "time"] }
 wasm-bindgen = "0.2.108"

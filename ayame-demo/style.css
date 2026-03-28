@@ -1,0 +1,520 @@
+@charset "utf-8";
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Shippori+Mincho:wght@400;500;600;700&display=swap");
+
+/* === Design Tokens === */
+:root {
+    --bg-deep: hsl(230, 20%, 8%);
+    --bg-surface: hsl(230, 18%, 12%);
+    --bg-card: hsl(230, 16%, 15%);
+    --bg-hover: hsl(230, 14%, 18%);
+
+    --border-subtle: hsla(230, 20%, 40%, 0.2);
+    --border-accent: hsla(260, 60%, 60%, 0.3);
+
+    --text-primary: hsl(40, 20%, 88%);
+    --text-secondary: hsl(40, 10%, 60%);
+    --text-muted: hsl(40, 5%, 42%);
+
+    --accent: hsl(260, 55%, 62%);
+    --accent-glow: hsla(260, 55%, 62%, 0.15);
+    --accent-hover: hsl(260, 60%, 70%);
+
+    --success: hsl(160, 50%, 50%);
+    --warning: hsl(40, 80%, 55%);
+
+    --glass-bg: hsla(230, 18%, 14%, 0.7);
+    --glass-blur: 16px;
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+
+    --shadow-card: 0 4px 24px hsla(230, 40%, 4%, 0.5);
+    --shadow-glow: 0 0 40px hsla(260, 55%, 50%, 0.08);
+
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-smooth: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* === Reset & Base === */
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: "Inter", "Shippori Mincho", sans-serif;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* === Background Decoration === */
+body::before {
+    content: "";
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background:
+        radial-gradient(
+            ellipse at 20% 20%,
+            hsla(260, 60%, 30%, 0.08) 0%,
+            transparent 50%
+        ),
+        radial-gradient(
+            ellipse at 80% 80%,
+            hsla(200, 50%, 25%, 0.06) 0%,
+            transparent 50%
+        ),
+        radial-gradient(
+            ellipse at 50% 50%,
+            hsla(300, 40%, 20%, 0.04) 0%,
+            transparent 70%
+        );
+    pointer-events: none;
+    z-index: 0;
+    animation: bgDrift 30s ease-in-out infinite alternate;
+}
+
+@keyframes bgDrift {
+    0% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+
+    100% {
+        transform: translate(-2%, -1%) rotate(1deg);
+    }
+}
+
+/* === Layout === */
+.container {
+    position: relative;
+    z-index: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+/* === Header === */
+.header {
+    text-align: center;
+    padding: 3rem 0 2rem;
+}
+
+.header__title {
+    font-family: "Shippori Mincho", serif;
+    font-size: 2.5rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    background: linear-gradient(
+        135deg,
+        var(--text-primary) 0%,
+        var(--accent-hover) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+}
+
+.header__subtitle {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    font-weight: 300;
+    letter-spacing: 0.05em;
+}
+
+/* === Section === */
+.section {
+    margin-bottom: 3rem;
+}
+
+.section__heading {
+    font-family: "Shippori Mincho", serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1.2rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+    letter-spacing: 0.08em;
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+}
+
+.section__heading::before {
+    content: "";
+    display: inline-block;
+    width: 3px;
+    height: 1.1em;
+    background: var(--accent);
+    border-radius: 2px;
+}
+
+/* === Editor Panel (Real-time Preview) === */
+.editor-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border-subtle);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-card), var(--shadow-glow);
+    min-height: 800px;
+}
+
+.editor-pane {
+    background: var(--bg-card);
+    display: flex;
+    flex-direction: column;
+}
+
+.pane-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    padding: 0.8rem 1.2rem;
+    border-bottom: 1px solid var(--border-subtle);
+    user-select: none;
+}
+
+#editor-textarea {
+    flex: 1;
+    width: 100%;
+    resize: none;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-family: "Shippori Mincho", serif;
+    font-size: 0.95rem;
+    line-height: 2;
+    padding: 1.2rem;
+    tab-size: 4;
+}
+
+#editor-textarea::placeholder {
+    color: var(--text-muted);
+}
+
+#preview-frame {
+    flex: 1;
+    width: 100%;
+    border: none;
+    background: transparent;
+}
+
+/* === Converter Section === */
+.converter {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card), var(--shadow-glow);
+    overflow: hidden;
+}
+
+.converter__controls {
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+/* === Toggle Switch === */
+.toggle-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.toggle-group__label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    user-select: none;
+    cursor: pointer;
+    transition: color var(--transition-fast);
+}
+
+.toggle-group__label--active {
+    color: var(--accent-hover);
+}
+
+.toggle-switch {
+    position: relative;
+    width: 44px;
+    height: 24px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-switch__track {
+    position: absolute;
+    inset: 0;
+    background: var(--bg-hover);
+    border-radius: 12px;
+    border: 1px solid var(--border-subtle);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.toggle-switch__track::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    background: var(--accent);
+    border-radius: 50%;
+    transition: transform var(--transition-smooth);
+    box-shadow: 0 1px 4px hsla(260, 50%, 30%, 0.3);
+}
+
+.toggle-switch input:checked + .toggle-switch__track::after {
+    transform: translateX(20px);
+}
+
+/* === Upload Button === */
+.upload-area {
+    position: relative;
+}
+
+.upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.6rem 1.2rem;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--border-accent);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    letter-spacing: 0.02em;
+}
+
+.upload-btn:hover {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px hsla(260, 55%, 50%, 0.15);
+}
+
+.upload-btn:active {
+    transform: translateY(0);
+}
+
+#file-input {
+    display: none;
+}
+
+.file-info {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    padding: 0 0.5rem;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* === Action Buttons === */
+.converter__actions {
+    padding: 1.5rem;
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: all var(--transition-smooth);
+}
+
+.converter__actions--visible {
+    opacity: 1;
+    max-height: 120px;
+    padding-top: 1.5em;
+}
+
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.7rem 1.5rem;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    letter-spacing: 0.02em;
+}
+
+.action-btn--primary {
+    background: linear-gradient(
+        135deg,
+        var(--accent) 0%,
+        hsl(280, 50%, 55%) 100%
+    );
+    color: #fff;
+    box-shadow: 0 2px 12px hsla(260, 55%, 50%, 0.25);
+}
+
+.action-btn--primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px hsla(260, 55%, 50%, 0.35);
+}
+
+.action-btn--primary:active {
+    transform: translateY(0);
+}
+
+.action-btn--secondary {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--border-accent);
+    color: var(--text-primary);
+}
+
+.action-btn--secondary:hover {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+    transform: translateY(-2px);
+}
+
+.action-btn--secondary:active {
+    transform: translateY(0);
+}
+
+/* === Loading Spinner === */
+.spinner {
+    display: none;
+    width: 16px;
+    height: 16px;
+    border: 2px solid hsla(0, 0%, 100%, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+.spinner--active {
+    display: inline-block;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* === Status Messages === */
+.status-bar {
+    padding: 0 1.5rem 1rem;
+    font-size: 0.8rem;
+    min-height: 1.6em;
+    transition: all var(--transition-fast);
+}
+
+.status-bar--error {
+    color: hsl(0, 70%, 65%);
+}
+
+.status-bar--success {
+    color: var(--success);
+}
+
+.status-bar--info {
+    color: var(--text-secondary);
+}
+
+/* === Footer === */
+.footer {
+    text-align: center;
+    padding: 2rem 0 1rem;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+}
+
+.footer a {
+    color: var(--accent);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+.footer a:hover {
+    color: var(--accent-hover);
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+
+    .header {
+        padding: 2rem 0 1.5rem;
+    }
+
+    .header__title {
+        font-size: 1.8rem;
+    }
+
+    .editor-panel {
+        grid-template-columns: 1fr;
+        min-height: auto;
+    }
+
+    .editor-pane {
+        min-height: 300px;
+    }
+
+    .converter__controls {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+/* === Scrollbar === */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: hsla(230, 20%, 40%, 0.3);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: hsla(230, 20%, 40%, 0.5);
+}
