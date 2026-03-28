@@ -36,7 +36,7 @@ pub fn scopenize<'s>(
                         // 前方参照に失敗した場合一個peekableを消費して無視
                         BackRefResult::BackRefFailed => {
                             peekable.next();
-                            azc.push(
+                            azc.acc_err(
                                 BackRefFailed {
                                     source_code: original.to_string(),
                                     failed_note: scope,
@@ -50,17 +50,16 @@ pub fn scopenize<'s>(
                 flatten.push((FlatToken::Text(t.clone()), token.span));
             }
             AozoraTokenKind::RubyDelimiter => {
-                // ルビ区切りが出たら次のトークンがテキスト、次の次のトークンが《ルビ》であることを期待します。
+                // ルビ区切りが出たら次のトークンがテキスト、次の次のトークンがルビであることを期待する
                 if let (Some(t), Some(r)) = (peekable.next(), peekable.next())
                     && let (AozoraTokenKind::Text(text), AozoraTokenKind::Ruby(ruby)) =
                         (t.kind, r.kind)
                 {
-                    flatten.push((FlatToken::Text(text), token.span));
-                    let scope = t.span;
-                    scopes.push(scope, Deco::Ruby(ruby));
+                    flatten.push((FlatToken::Text(text), t.span.clone()));
+                    scopes.push(t.span, Deco::Ruby(ruby));
                 } else {
                     // 修復は難しいので無視
-                    azc.push(
+                    azc.acc_err(
                         InvalidRubyDelimiterUsage {
                             source_code: original.to_string(),
                             failed_note: token.span,
@@ -76,9 +75,8 @@ pub fn scopenize<'s>(
                     }
                     Sandwiched::End(e) => {
                         if inline_stack.is_empty() {
-                            // 何もないものを閉じようとするのは
-                            // 単に無視すれば続行可能
-                            azc.push(
+                            // 何もないものを閉じようとするのは単に無視すれば続行可能
+                            azc.acc_err(
                                 IsolatedEndNote {
                                     source_code: original.to_string(),
                                     range: token.span.clone(),
@@ -93,7 +91,7 @@ pub fn scopenize<'s>(
                             } else {
                                 // 交差タグは本来HTMLではエラーであるためエラーを蓄積する
                                 // ブラウザ側が自動修復を試みるのでaozora-rs側では特に処理を行わない
-                                azc.push(
+                                azc.acc_err(
                                     CrossingNote {
                                         source_code: original.to_string(),
                                         range,
@@ -110,9 +108,8 @@ pub fn scopenize<'s>(
                     }
                     MultiLine::End(e) => {
                         if stack.is_empty() {
-                            // 何もないものを閉じようとするのは
-                            // 単に無視すれば続行可能
-                            azc.push(
+                            // 何もないものを閉じようとするのは単に無視すれば続行可能
+                            azc.acc_err(
                                 IsolatedEndNote {
                                     source_code: original.to_string(),
                                     range: token.span.clone(),
@@ -126,7 +123,7 @@ pub fn scopenize<'s>(
                                 scopes.push(range, kind.into_deco());
                             } else {
                                 // Sandwichedと同様の対応
-                                azc.push(
+                                azc.acc_err(
                                     CrossingNote {
                                         source_code: original.to_string(),
                                         range,
@@ -141,9 +138,8 @@ pub fn scopenize<'s>(
                     flatten.push((s.into_flat_token(), token.span));
                 }
                 Note::BackRef(_) => {
-                    // 前方参照型の注記はTextのアームで処理されるため、
-                    // ここに到達した時点で不正です。
-                    azc.push(
+                    // 前方参照型の注記はTextのアームで処理されるため、ここに到達した時点で不正
+                    azc.acc_err(
                         BackRefFailed {
                             source_code: original.to_string(),
                             failed_note: token.span,
@@ -154,12 +150,12 @@ pub fn scopenize<'s>(
                 Note::WholeLine(w) => {
                     wholeline.push((w, token.span.clone()));
                 }
-                Note::Unknown(_) => (), // 不明な注記は一旦無視します。
+                Note::Unknown(_) => (), // 不明な注記は一旦無視
             },
-            // ルビも前方参照型なのでTextのアームで処理されていることを期待します。
-            // このアームに到達した時点で不正です。
+            // ルビも前方参照型なのでTextのアームで処理されていることを期待するため
+            // このアームに到達した時点で不正
             AozoraTokenKind::Ruby(_) => {
-                azc.push(
+                azc.acc_err(
                     BackRefFailed {
                         source_code: original.to_string(),
                         failed_note: token.span,
@@ -176,7 +172,7 @@ pub fn scopenize<'s>(
                     while let Some(tag) = inline_stack.pop() {
                         scopes.push(tag.1.end..token.span.start, tag.0.into_deco());
                     }
-                    azc.push(
+                    azc.acc_err(
                         UnclosedInlineNote {
                             source_code: original.to_string(),
                             unclosed_area: last.1.start..token.span.end,

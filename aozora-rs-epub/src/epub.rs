@@ -156,7 +156,7 @@ pub fn from_aozora_zip<'s>(
             writer.start_file(format!("item/image/{}", d), options)?;
             writer.write(&img.1)?;
         } else {
-            azresult.push(miette::miette!(
+            azresult.acc_err(miette::miette!(
                 "依存関係にあるファイルが見つかりませんでした：{}",
                 d
             ));

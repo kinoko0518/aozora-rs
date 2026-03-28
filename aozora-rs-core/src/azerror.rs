@@ -6,7 +6,7 @@ pub struct AZResultC {
 
 impl AZResultC {
     /// エラーを内部に蓄積します。
-    pub fn push(&mut self, e: miette::Error) {
+    pub fn acc_err(&mut self, e: miette::Error) {
         self.errors.push(e);
     }
 

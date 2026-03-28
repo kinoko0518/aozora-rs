@@ -124,7 +124,7 @@ pub fn retokenize<'s>(
                     retokenized.push(t.into());
                     unclosed_token = (None, i)
                 }
-                None => eacc.push(InvalidEndOfToken.into()),
+                None => eacc.acc_err(InvalidEndOfToken.into()),
             },
             RetokenizeEvent::DecoBegin(d) => {
                 if let (Some(t), unclosed_until) = unclosed_token {
@@ -148,14 +148,14 @@ pub fn retokenize<'s>(
                         retokenized.push(Retokenized::DecoEnd(d));
                         unclosed_token = (unclosed, i);
                     } else {
-                        eacc.push(InvalidEndOfScope.into());
+                        eacc.acc_err(InvalidEndOfScope.into());
                         unclosed_token = (Some(t), unclosed_until);
                     }
                 } else {
                     if let Some(d) = popped_deco {
                         retokenized.push(Retokenized::DecoEnd(d));
                     } else {
-                        eacc.push(InvalidEndOfScope.into());
+                        eacc.acc_err(InvalidEndOfScope.into());
                     }
                 }
             }
