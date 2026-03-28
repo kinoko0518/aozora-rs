@@ -1,0 +1,30 @@
+/* tslint:disable */
+/* eslint-disable */
+export const memory: WebAssembly.Memory;
+export const get_ayame_css: (a: number, b: number) => [number, number];
+export const __wbg_standalonexhtml_free: (a: number, b: number) => void;
+export const __wbg_get_standalonexhtml_result: (a: number) => [number, number];
+export const __wbg_get_standalonexhtml_occured_error: (a: number) => [number, number];
+export const generate_standalone_xhtml: (a: number, b: number, c: number, d: number) => [number, number, number];
+export const __wbg_bookdata_free: (a: number, b: number) => void;
+export const __wbg_get_bookdata_title: (a: number) => [number, number];
+export const __wbg_set_bookdata_title: (a: number, b: number, c: number) => void;
+export const __wbg_get_bookdata_author: (a: number) => [number, number];
+export const __wbg_set_bookdata_author: (a: number, b: number, c: number) => void;
+export const __wbg_get_bookdata_xhtmls: (a: number) => [number, number];
+export const __wbg_set_bookdata_xhtmls: (a: number, b: number, c: number) => void;
+export const __wbg_get_bookdata_errors: (a: number) => [number, number];
+export const __wbg_set_bookdata_errors: (a: number, b: number, c: number) => void;
+export const parse_to_book_data: (a: number, b: number) => [number, number, number];
+export const build_epub_bytes: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
+export const init_panic_hook: () => void;
+export const __wbg_set_standalonexhtml_result: (a: number, b: number, c: number) => void;
+export const __wbg_set_standalonexhtml_occured_error: (a: number, b: number, c: number) => void;
+export const __wbindgen_malloc: (a: number, b: number) => number;
+export const __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
+export const __wbindgen_free: (a: number, b: number, c: number) => void;
+export const __wbindgen_externrefs: WebAssembly.Table;
+export const __externref_table_alloc: () => number;
+export const __externref_table_dealloc: (a: number) => void;
+export const __externref_drop_slice: (a: number, b: number) => void;
+export const __wbindgen_start: () => void;
