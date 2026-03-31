@@ -1,4 +1,4 @@
-use rkyv::{Archive, Deserialize, Serialize, archived_root};
+use rkyv::{Archive, Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::Write,
@@ -7,10 +7,8 @@ use std::{
 };
 use walkdir::WalkDir;
 
-// MapCacheProgress と crate::REPOSITORY の依存を削除
-
 #[derive(Archive, Deserialize, Serialize, Debug, PartialEq)]
-#[archive_attr(derive(Debug))]
+#[rkyv(derive(Debug))]
 pub struct MapCache {
     id: String,
     pub paths: Vec<String>,
@@ -37,7 +35,7 @@ impl MapCache {
                 entry.file_type().is_file()
                     && entry.path().extension().is_some_and(|ext| ext == "txt")
             })
-            .map(|entry| entry.into_path().to_str().unwrap().to_string())
+            .map(|entry| entry.into_path().to_string_lossy().to_string())
             .collect();
         Ok(MapCache { id, paths: result })
     }
@@ -65,9 +63,7 @@ pub fn update_map(
     // キャッシュの検証または新規生成
     // (mapデータ, 保存が必要かどうかのフラグ) を返す
     let (map, needs_save) = if let Some(data) = cache_raw {
-        // rkyvによるゼロコピーデシリアライズの準備
-        let archive_undeserialized = unsafe { archived_root::<MapCache>(&data) };
-        let archive: MapCache = archive_undeserialized.deserialize(&mut rkyv::Infallible)?;
+        let archive = rkyv::from_bytes::<MapCache, rkyv::rancor::Error>(&data)?;
 
         // 最新かどうかチェック
         if !archive.is_latest(repository_root)? {
@@ -85,7 +81,8 @@ pub fn update_map(
     // 変更があった場合のみディスクに書き込む
     if needs_save {
         let mut file = File::create(&cache_path)?;
-        file.write_all(rkyv::to_bytes::<_, 256>(&map)?.as_slice())?;
+        let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&map)?;
+        file.write_all(&bytes)?;
     }
 
     Ok(map)

@@ -6,25 +6,14 @@ edition = "2024"
 [dependencies]
 bimap = { workspace = true }
 rkyv = { workspace = true }
-pdfium-render = { workspace = true, optional = true }
-reqwest = { workspace = true, optional = true }
-flate2 = { workspace = true, optional = true }
-tar = { workspace = true, optional = true }
 winnow = { workspace = true }
 encoding_rs = { workspace = true }
 
-[features]
-extract = ["dep:pdfium-render", "dep:reqwest", "dep:flate2", "dep:tar"]
-
-[[bin]]
-name = "extract"
-path = "src/bin/extract/main.rs"
-required-features = ["extract"]
-
-[[bin]]
-name = "gen_menkuten"
-path = "src/bin/gen_menkuten.rs"
-
-[[bin]]
-name = "verify_jis"
-path = "src/bin/verify_jis.rs"
+[build-dependencies]
+pdfium-render = { workspace = true }
+reqwest = { workspace = true }
+flate2 = { workspace = true }
+tar = { workspace = true }
+tokio = { workspace = true }
+rkyv = { workspace = true }
+winnow = { workspace = true }

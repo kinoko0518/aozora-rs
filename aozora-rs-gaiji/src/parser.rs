@@ -100,11 +100,11 @@ pub fn parse_tag<'s>(
     let end = alt((
         (
             opt(("、", unicode)),
-            opt((white0, "、", white0, shift_jis)),
+            opt(("、", shift_jis)),
             opt(page_and_line),
             peek(alt(("］", eof))),
         )
-            .map(|(uni, shift, _, _)| Some((uni.map(|(_, u)| u), shift.map(|(_, _, _, s)| s)))),
+            .map(|(uni, shift, _, _)| Some((uni.map(|(_, u)| u), shift.map(|(_, s)| s)))),
         eof.value(TagMaybe::None),
     ));
 

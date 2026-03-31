@@ -8,7 +8,7 @@
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
-use rkyv::{AlignedVec, Deserialize, Infallible, check_archived_root};
+use rkyv::util::AlignedVec;
 
 pub type MenkutenKey = (u8, u8, u8);
 pub type MenkutenToUnicodeMap = HashMap<MenkutenKey, String>;
@@ -18,12 +18,12 @@ pub type MenkutenToUnicodeMap = HashMap<MenkutenKey, String>;
 /// menkuten_to_unicode.map ファイルが存在しない場合は空のマップを返します。
 /// `cargo run -p aozora-rs-gaiji --bin gen_menkuten` を実行してテーブルを生成してください。
 pub static MENKUTEN_TO_UNICODE: LazyLock<MenkutenToUnicodeMap> = LazyLock::new(|| {
-    let bytes = include_bytes!("../menkuten_to_unicode.map");
-    let mut aligned = AlignedVec::with_capacity(bytes.len());
+    let bytes = include_bytes!(concat!(env!("OUT_DIR"), "/menkuten_to_unicode.map"));
+    let mut aligned = AlignedVec::<16>::with_capacity(bytes.len());
     aligned.extend_from_slice(bytes);
-    let archived = check_archived_root::<MenkutenToUnicodeMap>(&aligned)
-        .expect("menkuten_to_unicode.map data is corrupted");
-    archived.deserialize(&mut Infallible).unwrap()
+
+    rkyv::from_bytes::<MenkutenToUnicodeMap, rkyv::rancor::Error>(&aligned)
+        .expect("menkuten_to_unicode.map data is corrupted")
 });
 
 pub fn menkuten_to_unicode(plane: u8, row: u8, cell: u8) -> Option<&'static str> {
