@@ -5,19 +5,20 @@ members = [
     "aozora-rs-epub", "aozora-rs",
     "aozora-rs-wasm", "ayame-cli",
     "ayame-core", "ayame-app/src-tauri",
-    "aozora-rs-zip"
+    "aozora-rs-zip", "aozora-rs-gaiji/gaiji-chuki-parser"
 ]
 resolver = "3"
 
 [workspace.dependencies]
-aozora-rs = { version = "0.1.0", path = "./aozora-rs" }
-aozora-rs-core = { version = "0.1.0", path = "./aozora-rs-core" }
-aozora-rs-gaiji = { version = "0.1.0", path = "./aozora-rs-gaiji" }
-aozora-rs-xhtml = { version = "0.1.0", path = "./aozora-rs-xhtml" }
-aozora-rs-epub = { version = "0.1.0", path = "./aozora-rs-epub" }
-aozora-rs-wasm = { version = "0.1.0", path = "./aozora-rs-wasm" }
-aozora-rs-zip = { version = "0.1.0", path = "./aozora-rs-zip" }
-ayame-core = { version = "0.1.0", path = "./ayame-core" }
+aozora-rs = { path = "./aozora-rs" }
+aozora-rs-core = { path = "./aozora-rs-core" }
+aozora-rs-gaiji = { path = "./aozora-rs-gaiji" }
+aozora-rs-xhtml = { path = "./aozora-rs-xhtml" }
+aozora-rs-epub = { path = "./aozora-rs-epub" }
+aozora-rs-wasm = { path = "./aozora-rs-wasm" }
+aozora-rs-zip = { path = "./aozora-rs-zip" }
+ayame-core = { path = "./ayame-core" }
+gaiji-chuki-parser = { path = "./aozora-rs-gaiji/gaiji-chuki-parser" }
 
 serde = { version = "1", features = ["derive"] }
 

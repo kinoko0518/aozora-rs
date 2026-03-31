@@ -1,3 +1,5 @@
+use gaiji_chuki_parser::Menkuten;
+use gaiji_chuki_parser::unicode;
 use rkyv::rancor::Error;
 use rkyv::to_bytes;
 use rkyv::util::AlignedVec;
@@ -9,9 +11,7 @@ use std::{collections::HashMap, hash::DefaultHasher, path::Path};
 use winnow::{Parser, ascii::*, combinator::*, error::ContextError, token::any};
 
 use crate::ignore_rest_of_line;
-use crate::parse_single_utf8;
 
-pub type Menkuten = (u8, u8, u8);
 pub type MenkutenTable = HashMap<Menkuten, String>;
 
 /// 1E-F0C5のような文字列にマッチし、面句点として数字を分解する
@@ -30,8 +30,8 @@ fn parse_single_menkuten(input: &mut &str) -> Result<Menkuten, ContextError> {
 }
 
 fn parse_line<'s>(input: &mut &'s str) -> Result<Option<(Menkuten, String)>, ContextError> {
-    let data_line = (parse_single_menkuten, space1, parse_single_utf8)
-        .map(|(menkuten, _, utf8)| Some((menkuten, utf8)));
+    let data_line =
+        (parse_single_menkuten, space1, unicode).map(|(menkuten, _, utf8)| Some((menkuten, utf8)));
 
     let comment_or_empty = ignore_rest_of_line.map(|_| None);
 

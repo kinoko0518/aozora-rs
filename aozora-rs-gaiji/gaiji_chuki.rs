@@ -7,32 +7,27 @@ use std::{
 };
 
 use flate2::read::GzDecoder;
+use gaiji_chuki_parser::{GaijiChuki, parse_tag};
 use pdfium_render::prelude::{Pdfium, PdfiumError};
 use rkyv::{rancor::Error, to_bytes};
 use tar::Archive;
 use winnow::{Parser, ascii::*, combinator::*, error::ContextError, token::take_until};
 
-use crate::{
-    ignore_rest_of_line,
-    menkuten::{Menkuten, MenkutenTable},
-    parse_single_utf8,
-};
+use crate::{ignore_rest_of_line, menkuten::MenkutenTable};
 
 struct GaijiChukiLine<'s> {
-    value: &'s str,
-    sjis_code: Option<Menkuten>,
-    unicode: Option<String>,
     key: &'s str,
+    value: GaijiChuki<'s>,
 }
 
 impl GaijiChukiLine<'_> {
     fn try_string(self, menkuten: &MenkutenTable) -> String {
-        if let Some(uni) = self.unicode {
+        if let Some(uni) = self.value.unicode {
             return uni;
-        } else if let Some(sjis) = self.sjis_code.and_then(|code| menkuten.get(&code)) {
+        } else if let Some(sjis) = self.value.sjis.and_then(|code| menkuten.get(&code)) {
             sjis.to_owned()
         } else {
-            self.value.to_string()
+            self.key.to_string()
         }
     }
 }
@@ -78,46 +73,11 @@ pub async fn satisfy_pdfium(out_dir: &Path) -> Result<Pdfium, Box<dyn std::error
     Ok(pdfium)
 }
 
-fn parse_single_sjis<'s>(input: &mut &'s str) -> Result<Menkuten, ContextError> {
-    (
-        opt(("第 ", digit1, "水準 ")),
-        digit1,
-        '-',
-        digit1,
-        '-',
-        digit1,
-    )
-        .map(|(_, one, _, two, _, three): (_, &str, _, &str, _, &str)| (one, two, three))
-        .map(|(one, two, three)| {
-            (
-                one.parse::<u8>().unwrap(),
-                two.parse::<u8>().unwrap(),
-                three.parse::<u8>().unwrap(),
-            )
-        })
-        .parse_next(input)
-}
-
-fn gaiji_chuki_line_inside<'s>(
-    input: &mut &'s str,
-) -> Result<(&'s str, Option<String>, Option<Menkuten>), ContextError> {
-    (
-        take_until(1.., '、'),
-        opt(('、', parse_single_utf8)),
-        opt(('、', parse_single_sjis)),
-        opt("、ページ数-行数"),
-    )
-        .map(|(key, utf8, sjis, _)| (key, utf8.map(|(_, u)| u), sjis.map(|(_, s)| s)))
-        .parse_next(input)
-}
-
 fn gaiji_chuki_line<'s>(input: &mut &'s str) -> Result<GaijiChukiLine<'s>, ContextError> {
-    (take_until(1.., ' '), " ※［", gaiji_chuki_line_inside, "］")
+    (take_until(1.., ' '), " ※［＃", parse_tag, "］")
         .map(|(value, _, gcl, _)| GaijiChukiLine {
-            value,
-            sjis_code: gcl.2,
-            unicode: gcl.1,
-            key: gcl.0,
+            key: value,
+            value: gcl,
         })
         .parse_next(input)
 }
@@ -142,6 +102,7 @@ fn collect_all_gaiji_chuki_line<'s>(
         .fold(
             HashMap::new(),
             |mut acc: HashMap<String, String>, gcl: GaijiChukiLine| {
+                println!("{}: {:?}", gcl.key, gcl.value);
                 acc.insert(gcl.key.to_string(), gcl.try_string(menkuten));
                 acc
             },

@@ -27,8 +27,8 @@ fn analyse_file(path: &Path) -> Option<(usize, usize, HashMap<String, usize>)> {
     let found = gaiji_notes
         .fold(
             || (0, 0, HashMap::new()),
-            |mut acc, e: &str| {
-                if gaiji_to_char(e).is_some() {
+            |mut acc, mut e: &str| {
+                if gaiji_to_char(&mut e).is_some() {
                     acc.0 += 1;
                 } else {
                     acc.1 += 1;
@@ -67,7 +67,7 @@ pub async fn analyse_gaiji(
             },
         );
 
-    // HashMap を Vec に変換し、失敗回数の降順でソート
+    // HashMapをVecに変換し、失敗回数の降順でソート
     let mut sorted_notes: Vec<_> = merged_notes.into_iter().collect();
     sorted_notes.sort_unstable_by(|a, b| b.1.cmp(&a.1));
 
@@ -81,4 +81,14 @@ pub async fn analyse_gaiji(
         fail,
         duration: start.elapsed(),
     })
+}
+
+mod test {
+    #[test]
+    fn ninojiten() {
+        assert_eq!(
+            aozora_rs_gaiji::GAIJI_TO_CHAR.contains_key("「廴＋囘」"),
+            true
+        );
+    }
 }

@@ -171,6 +171,7 @@ dependencies = [
  "bimap",
  "encoding_rs",
  "flate2",
+ "gaiji-chuki-parser",
  "pdfium-render",
  "reqwest 0.11.27",
  "rkyv",
@@ -1668,6 +1669,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c31b6d751ae2c7f11320402d34e41349dd1016f8d5d45e48c4312bc8625af50c"
 dependencies = [
  "byteorder",
+]
+
+[[package]]
+name = "gaiji-chuki-parser"
+version = "0.1.0"
+dependencies = [
+ "winnow 0.7.15",
 ]
 
 [[package]]

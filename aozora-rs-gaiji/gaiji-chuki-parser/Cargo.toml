@@ -1,0 +1,7 @@
+[package]
+name = "gaiji-chuki-parser"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+winnow = { workspace = true }
