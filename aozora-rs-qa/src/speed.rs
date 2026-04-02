@@ -27,7 +27,7 @@ pub struct SpeedPerWork {
 impl SpeedPerWork {
     pub fn fancy(&self) -> String {
         format!(
-            "## {} - {}\n| 実行項目 | 処理時間 |\n| --- | --- |\n| 全体処理時間 | {:?} | メタデータ解析 | {:?} |\n| トークン化 | {:?} |\n| スコープ化 | {:?} |\n| 再トークン化 | {:?} |\n| XHTML生成 | {:?} |\n| epub生成 | {:?} |",
+            "## {} - {}\n| 実行項目 | 処理時間 |\n| --- | --- |\n| 全体処理時間 | {:?} |\n| メタデータ解析 | {:?} |\n| トークン化 | {:?} |\n| スコープ化 | {:?} |\n| 再トークン化 | {:?} |\n| XHTML生成 | {:?} |\n| epub生成 | {:?} |",
             self.title,
             self.author,
             self.total(),

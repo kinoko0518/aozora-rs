@@ -3,14 +3,14 @@ use std::{borrow::Cow, collections::HashMap};
 use winnow::{
     Parser,
     ascii::{digit1, hex_digit1, space0},
-    combinator::{alt, opt, repeat},
+    combinator::{alt, eof, opt, repeat, repeat_till},
     error::ContextError,
-    token::take_until,
+    token::any,
 };
 
 pub type Menkuten = (u8, u8, u8);
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct GaijiChuki<'s> {
     pub tag: &'s str,
     pub sjis: Option<Menkuten>,
@@ -73,9 +73,10 @@ pub fn unicode(input: &mut &str) -> Result<String, ContextError> {
         .parse_next(input)
 }
 
-pub fn parse_tag<'s>(input: &mut &'s str) -> Result<GaijiChuki<'s>, ContextError> {
+fn tag_limiter<'s>(
+    input: &mut &'s str,
+) -> Result<(Option<String>, Option<Menkuten>), ContextError> {
     (
-        take_until(1.., '、'),
         opt(('、', unicode)),
         opt(('、', shift_jis)),
         opt(alt((
@@ -90,12 +91,30 @@ pub fn parse_tag<'s>(input: &mut &'s str) -> Result<GaijiChuki<'s>, ContextError
                 .void(),
         ))),
     )
-        .map(|(tag, unicode, sjis, _)| -> GaijiChuki {
-            GaijiChuki {
-                tag,
-                sjis: sjis.map(|(_, sjis)| sjis),
-                unicode: unicode.map(|(_, unicode)| unicode),
-            }
+        .map(|(unicode, sjis, _)| {
+            (
+                unicode.map(|(_, unicode)| unicode),
+                sjis.map(|(_, sjis)| sjis),
+            )
         })
+        .parse_next(input)
+}
+
+pub fn parse_tag<'s>(input: &mut &'s str) -> Result<GaijiChuki<'s>, ContextError> {
+    (
+        opt("「※」は"),
+        repeat_till(
+            1..,
+            any.void(),
+            alt((
+                winnow::combinator::peek(tag_limiter.take().verify(|s: &str| !s.is_empty())).void(),
+                eof.void(),
+            )),
+        )
+        .map(|_: ((), _)| ())
+        .take(),
+        tag_limiter,
+    )
+        .map(|(_, tag, (unicode, sjis))| -> GaijiChuki { GaijiChuki { tag, sjis, unicode } })
         .parse_next(input)
 }

@@ -1,3 +1,5 @@
+#[cfg(test)]
+mod test;
 mod whole;
 
 use std::borrow::Cow;

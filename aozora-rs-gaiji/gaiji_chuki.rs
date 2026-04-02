@@ -74,9 +74,9 @@ pub async fn satisfy_pdfium(out_dir: &Path) -> Result<Pdfium, Box<dyn std::error
 }
 
 fn gaiji_chuki_line<'s>(input: &mut &'s str) -> Result<GaijiChukiLine<'s>, ContextError> {
-    (take_until(1.., ' '), " ※［＃", parse_tag, "］")
-        .map(|(value, _, gcl, _)| GaijiChukiLine {
-            key: value,
+    (take_until(0.., "※"), "※［＃", parse_tag, "］")
+        .map(|(value, _, gcl, _): (&str, _, _, _)| GaijiChukiLine {
+            key: value.trim(),
             value: gcl,
         })
         .parse_next(input)
@@ -91,19 +91,23 @@ fn collect_all_gaiji_chuki_line<'s>(
         .into_iter()
         .filter_map(|mut line| {
             (
-                opt((opt("★ "), digit1, "． ")),
+                space0,
+                opt("★"),
+                space0,
+                opt((digit1, alt(("．　", "．", "． ")), space0)),
                 gaiji_chuki_line,
                 ignore_rest_of_line,
             )
-                .map(|(_, gcl, _)| gcl)
+                .map(|(_, _, _, _, gcl, _)| gcl)
                 .parse_next(&mut line)
                 .ok()
         })
         .fold(
             HashMap::new(),
             |mut acc: HashMap<String, String>, gcl: GaijiChukiLine| {
-                println!("{}: {:?}", gcl.key, gcl.value);
-                acc.insert(gcl.key.to_string(), gcl.try_string(menkuten));
+                let key = gcl.value.tag.replace(' ', "").replace('\u{3000}', "");
+                let value = gcl.try_string(menkuten);
+                acc.insert(key, value);
                 acc
             },
         )

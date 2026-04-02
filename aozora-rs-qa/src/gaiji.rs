@@ -5,7 +5,7 @@ use std::time::Instant;
 
 use crate::{AnalysedSummary, MapCache};
 
-use aozora_rs_gaiji::gaiji_to_char;
+use aozora_rs_gaiji::{GAIJI_TO_CHAR, MENKUTEN_TO_UNICODE, parse_tag};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use winnow::{
     Parser,
@@ -28,12 +28,19 @@ fn analyse_file(path: &Path) -> Option<(usize, usize, HashMap<String, usize>)> {
         .fold(
             || (0, 0, HashMap::new()),
             |mut acc, mut e: &str| {
-                if gaiji_to_char(&mut e).is_some() {
+                let tag = match parse_tag(&mut e) {
+                    Ok(o) => o,
+                    Err(_) => {
+                        return acc;
+                    }
+                };
+                let key = tag.tag.to_string();
+                if tag.to_cow(&GAIJI_TO_CHAR, &MENKUTEN_TO_UNICODE).is_some() {
                     acc.0 += 1;
                 } else {
                     acc.1 += 1;
                     // 解析に失敗した文字列をキーにしてカウントアップ
-                    *acc.2.entry(e.to_string()).or_insert(0) += 1;
+                    *acc.2.entry(key).or_insert(0) += 1;
                 }
                 acc
             },
@@ -81,14 +88,4 @@ pub async fn analyse_gaiji(
         fail,
         duration: start.elapsed(),
     })
-}
-
-mod test {
-    #[test]
-    fn ninojiten() {
-        assert_eq!(
-            aozora_rs_gaiji::GAIJI_TO_CHAR.contains_key("「廴＋囘」"),
-            true
-        );
-    }
 }
