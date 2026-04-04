@@ -1,248 +1,131 @@
-use std::io::Cursor;
+use std::io::{Seek, Write};
 
 use aozora_rs::{
-    EpubSetting, NovelResult, XHTMLResult, from_aozora_zip, parse_meta, retokenized_to_xhtml,
+    AZResult, AZResultC, AozoraMeta, EpubSetting, NovelResult, parse_meta, retokenized_to_xhtml,
     str_to_retokenized,
 };
-use aozora_rs_zip::{AozoraZip, Dependencies, Encoding as ZipEncoding};
-use encoding_rs::SHIFT_JIS;
-use miette::Diagnostic;
-use serde::Serialize;
-use thiserror::Error;
+pub use aozora_rs_zip::Encoding;
+use aozora_rs_zip::{AozoraZip, Dependencies};
 
-/// 入力テキストの文字エンコーディング
-pub enum Encoding {
-    Utf8,
-    ShiftJis,
-}
-
-/// EPUB生成時の書字方向
+#[derive(Default, Clone, Copy)]
 pub enum WritingDirection {
-    /// 縦書き（右→左）
+    #[default]
     Vertical,
-    /// 横書き
     Horizontal,
 }
 
-/// 組み込みCSSの名前を解決して内容を返す
-///
-/// 対応する名前: `"prelude"`, `"miyabi"`, `"miyabix"`
-pub fn resolve_builtin_css(name: &str) -> Option<&'static str> {
-    match name {
-        "prelude" => Some(include_str!("../assets/prelude.css")),
-        "miyabi" => Some(include_str!("../assets/miyabi.css")),
-        "miyabix" => Some(include_str!("../assets/miyabix.css")),
-        _ => None,
-    }
+pub struct PotentialCSS {
+    pub use_prelude: bool,
+    pub use_miyabi: bool,
+    pub direction: WritingDirection,
 }
 
-/// WritingDirectionに対応するレイアウトCSSを返す
-pub fn layout_css(direction: &WritingDirection) -> &'static str {
-    match direction {
-        WritingDirection::Vertical => include_str!("../assets/vertical.css"),
-        WritingDirection::Horizontal => include_str!("../assets/horizontal.css"),
-    }
-}
-
-/// 所有権付きの青空文庫メタデータ
-#[derive(Debug, Clone, Serialize)]
-pub struct OwnedAozoraMeta {
-    pub title: String,
-    pub author: String,
-}
-
-#[derive(Debug, Error, Diagnostic)]
-pub enum AyameError {
-    #[error("Shift-JISデコード中にエラーが発生しました")]
-    #[diagnostic(help("ファイルのエンコーディングを確認してください。"))]
-    ShiftJisDecodeError,
-
-    #[error("UTF-8として読み取れませんでした")]
-    #[diagnostic(help("Shift-JISファイルの場合はsjisオプションを指定してください。"))]
-    Utf8DecodeError,
-
-    #[error("メタデータの解析に失敗しました: {0}")]
-    MetadataError(String),
-
-    #[error("トークン化に失敗しました: {0}")]
-    TokenizeError(String),
-
-    #[error("Zipファイルの処理中にエラーが発生しました: {0}")]
-    ZipError(String),
-
-    #[error("EPUB変換に失敗しました: {0}")]
-    EpubError(String),
-
-    #[error("サポートされていないファイル形式です: .{0}")]
-    UnsupportedFormat(String),
-}
-
-/// バイト列を指定エンコーディングでテキストにデコードする
-pub fn decode_bytes(bytes: &[u8], encoding: &Encoding) -> Result<String, AyameError> {
-    match encoding {
-        Encoding::ShiftJis => {
-            let (decoded, _, had_errors) = SHIFT_JIS.decode(bytes);
-            if had_errors {
-                return Err(AyameError::ShiftJisDecodeError);
-            }
-            Ok(decoded.replace("\r\n", "\n"))
+impl PotentialCSS {
+    fn miyabi_not_specified_yet<'a>(&self, css: &mut Vec<&'a str>, miyabi: &'a str) {
+        if self.use_prelude {
+            css.push(include_str!("../assets/prelude.css"));
         }
-        Encoding::Utf8 => {
-            String::from_utf8(bytes.to_vec()).map_err(|_| AyameError::Utf8DecodeError)
+        if self.use_miyabi {
+            css.push(miyabi);
+        }
+        css.push(match self.direction {
+            WritingDirection::Vertical => include_str!("../assets/vertical.css"),
+            WritingDirection::Horizontal => include_str!("../assets/horizontal.css"),
+        });
+    }
+    fn for_xhtml(&self, css: &mut Vec<&str>) {
+        self.miyabi_not_specified_yet(css, include_str!("../assets/miyabix.css"));
+    }
+    fn for_epub(&self, css: &mut Vec<&str>) {
+        self.miyabi_not_specified_yet(css, include_str!("../assets/miyabi.css"));
+    }
+    pub fn to_epub_setting<'a>(&'a self, language: &'a str) -> EpubSetting<'a> {
+        let mut css = Vec::new();
+        self.for_epub(&mut css);
+        EpubSetting {
+            language,
+            is_rtl: match self.direction {
+                WritingDirection::Vertical => true,
+                WritingDirection::Horizontal => false,
+            },
+            styles: css,
         }
     }
 }
 
 /// テキストからNovelResultを生成する
-pub fn text_to_novel_result<'s>(text: &'s str) -> Result<NovelResult<'s>, AyameError> {
+pub fn text_to_novel_result<'s>(
+    text: &'s str,
+) -> Result<NovelResult<'s>, Box<dyn std::error::Error>> {
     let mut body = text;
-    let meta = parse_meta(&mut body).map_err(|e| AyameError::MetadataError(e.to_string()))?;
-    let az_result =
-        str_to_retokenized(body).map_err(|e| AyameError::TokenizeError(e.to_string()))?;
+    let meta = parse_meta(&mut body)?;
+    let az_result = str_to_retokenized(body).map_err(|_| "".to_string())?;
     let (retokenized, errors) = az_result.into_tuple();
     Ok(retokenized_to_xhtml(retokenized, meta, errors))
 }
 
-/// 入力バイト列（txt or zip）からメタデータのみを取得する
-pub fn scan_metadata(
-    data: &[u8],
-    is_zip: bool,
-    encoding: &Encoding,
-) -> Result<OwnedAozoraMeta, AyameError> {
-    let text = if is_zip {
-        let zip_encoding = match encoding {
-            Encoding::ShiftJis => ZipEncoding::ShiftJIS,
-            Encoding::Utf8 => ZipEncoding::Utf8,
-        };
-        let azz = AozoraZip::read_from_zip(data, &zip_encoding)
-            .map_err(|e| AyameError::ZipError(e.to_string()))?;
-        azz.txt
-    } else {
-        decode_bytes(data, encoding)?
-    };
-
-    let mut s = text.as_str();
-    let meta = parse_meta(&mut s).map_err(|e| AyameError::MetadataError(e.to_string()))?;
-    Ok(OwnedAozoraMeta {
-        title: meta.title.to_string(),
-        author: meta.author.to_string(),
-    })
+pub enum AozoraHyle {
+    Txt((Vec<u8>, Encoding)),
+    Zip((Vec<u8>, Encoding)),
 }
 
-/// 入力バイト列からXHTMLを生成する
-pub fn generate_browser_xhtml(
-    data: &[u8],
-    is_zip: bool,
-    encoding: &Encoding,
-    css_contents: &[&str],
-) -> Result<(Vec<String>, Vec<miette::Report>), AyameError> {
-    let text = if is_zip {
-        let zip_encoding = match encoding {
-            Encoding::ShiftJis => ZipEncoding::ShiftJIS,
-            Encoding::Utf8 => ZipEncoding::Utf8,
+#[derive(Clone)]
+pub struct AbstractAozoraZip {
+    pub text: String,
+    pub dependencies: Dependencies,
+}
+
+impl TryInto<AbstractAozoraZip> for AozoraHyle {
+    type Error = Box<dyn std::error::Error>;
+
+    fn try_into(self) -> Result<AbstractAozoraZip, Self::Error> {
+        let (text, dependencies): (String, Dependencies) = match self {
+            Self::Txt((data, encoding)) => {
+                let txt = encoding.bytes_to_string(data)?;
+                (txt, Dependencies::default())
+            }
+            Self::Zip((zip, encoding)) => {
+                let azz = AozoraZip::read_from_zip(&zip, &encoding)?;
+                (azz.txt, Dependencies { images: azz.images })
+            }
         };
-        let azz = AozoraZip::read_from_zip(data, &zip_encoding)
-            .map_err(|e| AyameError::ZipError(e.to_string()))?;
-        azz.txt
-    } else {
-        decode_bytes(data, encoding)?
-    };
+        Ok(AbstractAozoraZip { text, dependencies })
+    }
+}
 
-    let result = text_to_novel_result(&text)?;
-    let title = &result.meta.title;
-
-    let mut xhtmls = Vec::new();
-    let css_combined = css_contents.join("\n");
-    for body in result.xhtmls.xhtmls.into_iter() {
-        let html = format!(
-            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
-             <!DOCTYPE html>\n\
-             <html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:epub=\"http://www.idpf.org/2007/ops\" xml:lang=\"ja\">\n\
-             <head>\n\
-             <meta charset=\"UTF-8\" />\n\
-             <title>{}</title>\n\
-             <style>\n{}\n</style>\n\
-             </head>\n\
-             <body>\n\
-             <div class=\"main\">\n\
-             {}\n\
-             </div>\n\
-             </body>\n\
-             </html>",
-            title, css_combined, body
-        );
-        xhtmls.push(html);
+impl AbstractAozoraZip {
+    pub fn generate_epub(
+        self,
+        acc: impl Seek + Write,
+        potential: PotentialCSS,
+        language: &str,
+    ) -> Result<AZResult<()>, Box<dyn std::error::Error>> {
+        let novel_result = text_to_novel_result(&self.text)?;
+        aozora_rs_epub::from_aozora_zip(
+            acc,
+            self.dependencies,
+            potential.to_epub_setting(language),
+            novel_result,
+        )
     }
 
-    Ok((xhtmls, result.errors))
-}
-
-/// 入力バイト列からXHTMLを生成する
-pub fn generate_xhtml(
-    data: &[u8],
-    is_zip: bool,
-    encoding: &Encoding,
-) -> Result<(XHTMLResult, Vec<miette::Report>), AyameError> {
-    let text = if is_zip {
-        let zip_encoding = match encoding {
-            Encoding::ShiftJis => ZipEncoding::ShiftJIS,
-            Encoding::Utf8 => ZipEncoding::Utf8,
-        };
-        let azz = AozoraZip::read_from_zip(data, &zip_encoding)
-            .map_err(|e| AyameError::ZipError(e.to_string()))?;
-        azz.txt
-    } else {
-        decode_bytes(data, encoding)?
-    };
-
-    let result = text_to_novel_result(&text)?;
-    Ok((result.xhtmls, result.errors))
-}
-
-/// 入力バイト列からEPUBバイト列を生成する
-pub fn generate_epub(
-    data: &[u8],
-    is_zip: bool,
-    encoding: &Encoding,
-    styles: Vec<&str>,
-    setting: EpubSetting,
-) -> Result<Vec<u8>, AyameError> {
-    let mut output = Cursor::new(Vec::new());
-
-    if is_zip {
-        let zip_encoding = match encoding {
-            Encoding::ShiftJis => ZipEncoding::ShiftJIS,
-            Encoding::Utf8 => ZipEncoding::Utf8,
-        };
-        let azz = AozoraZip::read_from_zip(data, &zip_encoding)
-            .map_err(|e| AyameError::ZipError(e.to_string()))?;
-        let (txt, dependencies) = azz.into_dependencies();
-
-        // Use text_to_novel_result to parse text and get NovelResult
-        let novel_result = text_to_novel_result(&txt)?;
-
-        let final_setting = EpubSetting {
-            language: setting.language,
-            is_rtl: setting.is_rtl,
-            styles,
-        };
-
-        from_aozora_zip(&mut output, dependencies, final_setting, novel_result)
-            .map_err(|e| AyameError::EpubError(e.to_string()))?;
-    } else {
-        let text = decode_bytes(data, encoding)?;
-        let novel_result = text_to_novel_result(&text)?;
-        let dependencies = Dependencies::default();
-
-        let final_setting = EpubSetting {
-            language: setting.language,
-            is_rtl: setting.is_rtl,
-            styles,
-        };
-
-        from_aozora_zip(&mut output, dependencies, final_setting, novel_result)
-            .map_err(|e| AyameError::EpubError(e.to_string()))?;
+    pub fn generate_browser_xhtml(
+        self,
+        potential: PotentialCSS,
+        mut css: Vec<&str>,
+    ) -> Result<AZResult<String>, Box<dyn std::error::Error>> {
+        let novel_result = text_to_novel_result(&self.text)?;
+        let (xhtmls, meta, errors) = (novel_result.xhtmls, novel_result.meta, novel_result.errors);
+        potential.for_xhtml(&mut css);
+        Ok(AZResultC::from(errors).finally(
+            include_str!("../assets/base.xhtml")
+                .replace("［＃タイトル］", meta.title)
+                .replace("［＃スタイル］", &css.join("\n"))
+                .replace("［＃本文］", &xhtmls.xhtmls.join("\n<hr>\n")),
+        ))
     }
 
-    Ok(output.into_inner())
+    pub fn scan_meta<'a>(&'a self) -> Result<AozoraMeta<'a>, miette::Report> {
+        parse_meta(&mut self.text.as_str())
+    }
 }

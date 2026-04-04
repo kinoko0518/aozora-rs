@@ -1,12 +1,9 @@
-use aozora_rs::EpubSetting;
 use ayame_core::{
-    Encoding, WritingDirection, generate_browser_xhtml, generate_epub, layout_css,
-    resolve_builtin_css,
+    AbstractAozoraZip, AozoraHyle, Encoding, PotentialCSS, WritingDirection,
 };
 use clap::{Parser, Subcommand};
 use miette::{IntoDiagnostic, Result, miette};
 use std::fs;
-use std::io::Write;
 use std::path::{Path, PathBuf};
 
 #[derive(Parser)]
@@ -19,14 +16,10 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// 青空文庫書式のファイルからXHTMLを生成
+    /// 青空文庫书式のファイルからXHTMLを生成
     Xhtml {
         /// 入力ファイル（.txt または .zip）
         source: PathBuf,
-
-        /// 複数XHTMLを<hr>区切りで1つに結合
-        #[arg(long)]
-        merge: bool,
 
         /// 入力ファイルがUTF-8でエンコードされている場合に指定（デフォルト: Shift-JIS）
         #[arg(long)]
@@ -107,7 +100,7 @@ fn to_encoding(utf8: bool) -> Encoding {
     if utf8 {
         Encoding::Utf8
     } else {
-        Encoding::ShiftJis
+        Encoding::ShiftJIS
     }
 }
 
@@ -119,27 +112,8 @@ fn is_zip(source: &Path) -> bool {
         .unwrap_or(false)
 }
 
-/// CSSコンテンツリストを構築する
-fn resolve_css(
-    direction: &WritingDirection,
-    no_prelude: bool,
-    no_miyabi: bool,
-    extra_css: &[PathBuf],
-    is_xhtml: bool,
-) -> Result<Vec<String>> {
-    let mut css_contents = vec![layout_css(direction).to_string()];
-
-    if !no_prelude {
-        css_contents.push(resolve_builtin_css("prelude").unwrap().to_string());
-    }
-    if !no_miyabi {
-        if is_xhtml {
-            css_contents.push(resolve_builtin_css("miyabix").unwrap().to_string());
-        } else {
-            css_contents.push(resolve_builtin_css("miyabi").unwrap().to_string());
-        }
-    }
-
+fn read_extra_css(extra_css: &[PathBuf]) -> Result<Vec<String>> {
+    let mut css_contents = Vec::new();
     for path in extra_css {
         if path.exists() {
             let content = fs::read_to_string(path).into_diagnostic()?;
@@ -148,13 +122,11 @@ fn resolve_css(
             return Err(miette!("CSSファイルが見つかりません: {}", path.display()));
         }
     }
-
     Ok(css_contents)
 }
 
 fn handle_xhtml(
     source: PathBuf,
-    merge: bool,
     utf8: bool,
     horizontal: bool,
     no_prelude: bool,
@@ -167,50 +139,44 @@ fn handle_xhtml(
     let file_stem = get_file_stem(&source)?;
     let bytes = fs::read(&source).into_diagnostic()?;
 
-    let direction = if horizontal {
-        WritingDirection::Horizontal
-    } else {
-        WritingDirection::Vertical
+    let potential = PotentialCSS {
+        use_prelude: !no_prelude,
+        use_miyabi: !no_miyabi,
+        direction: if horizontal {
+            WritingDirection::Horizontal
+        } else {
+            WritingDirection::Vertical
+        },
     };
 
-    let css_contents = resolve_css(&direction, no_prelude, no_miyabi, &extra_css, true)?;
-    let css_refs: Vec<&str> = css_contents.iter().map(|s| s.as_str()).collect();
+    let extra_css_contents = read_extra_css(&extra_css)?;
+    let extra_css_refs: Vec<&str> = extra_css_contents.iter().map(|s| s.as_str()).collect();
 
-    let (xhtmls, errors) =
-        generate_browser_xhtml(&bytes, is_zip(&source), &to_encoding(utf8), &css_refs)
-            .map_err(|e| miette!("{}", e))?;
+    let hyle = if is_zip(&source) {
+        AozoraHyle::Zip((bytes, to_encoding(utf8)))
+    } else {
+        AozoraHyle::Txt((bytes, to_encoding(utf8)))
+    };
+    let abstract_zip: AbstractAozoraZip = hyle.try_into().map_err(|e| miette!("{}", e))?;
+
+    let az_result = abstract_zip
+        .generate_browser_xhtml(potential, extra_css_refs)
+        .map_err(|e| miette!("{}", e))?;
+
+    let (xhtml, errors) = az_result.into_tuple();
 
     for error in &errors {
         eprintln!("警告: {:?}", error);
     }
 
-    if merge {
-        let merged = xhtmls.join("\n<hr />\n");
-        let output_path = output_dir.join(format!("{}.xhtml", file_stem));
-        let mut file = fs::File::create(&output_path).into_diagnostic()?;
-        file.write_all(merged.as_bytes()).into_diagnostic()?;
-        println!(
-            "生成完了（{:?}）: {}",
-            timer.elapsed(),
-            output_path.display()
-        );
-    } else {
-        for (i, xhtml) in xhtmls.iter().enumerate() {
-            let filename = if xhtmls.len() == 1 {
-                format!("{}.xhtml", file_stem)
-            } else {
-                format!("{}_{:03}.xhtml", file_stem, i + 1)
-            };
-            let output_path = output_dir.join(&filename);
-            let mut file = fs::File::create(&output_path).into_diagnostic()?;
-            file.write_all(xhtml.as_bytes()).into_diagnostic()?;
-            println!(
-                "生成完了（{:?}）: {}",
-                timer.elapsed(),
-                output_path.display()
-            );
-        }
-    }
+    let output_path = output_dir.join(format!("{}.xhtml", file_stem));
+    fs::write(&output_path, xhtml).into_diagnostic()?;
+    
+    println!(
+        "生成完了（{:?}）: {}",
+        timer.elapsed(),
+        output_path.display()
+    );
 
     Ok(())
 }
@@ -221,40 +187,49 @@ fn handle_epub(
     horizontal: bool,
     no_prelude: bool,
     no_miyabi: bool,
-    extra_css: Vec<PathBuf>,
+    _extra_css: Vec<PathBuf>,
     output: Option<PathBuf>,
 ) -> Result<()> {
+    let timer = std::time::Instant::now();
     let output_dir = get_output_dir(output)?;
     let file_stem = get_file_stem(&source)?;
     let bytes = fs::read(&source).into_diagnostic()?;
 
-    let direction = if horizontal {
-        WritingDirection::Horizontal
+    let potential = PotentialCSS {
+        use_prelude: !no_prelude,
+        use_miyabi: !no_miyabi,
+        direction: if horizontal {
+            WritingDirection::Horizontal
+        } else {
+            WritingDirection::Vertical
+        },
+    };
+
+    let hyle = if is_zip(&source) {
+        AozoraHyle::Zip((bytes, to_encoding(utf8)))
     } else {
-        WritingDirection::Vertical
+        AozoraHyle::Txt((bytes, to_encoding(utf8)))
     };
-
-    let css_contents = resolve_css(&direction, no_prelude, no_miyabi, &extra_css, false)?;
-    let css_refs: Vec<&str> = css_contents.iter().map(|s| s.as_str()).collect();
-
-    let setting = EpubSetting {
-        language: "ja",
-        is_rtl: !horizontal,
-        styles: vec![],
-    };
-
-    let epub_bytes = generate_epub(
-        &bytes,
-        is_zip(&source),
-        &to_encoding(utf8),
-        css_refs,
-        setting,
-    )
-    .map_err(|e| miette!("{}", e))?;
+    let abstract_zip: AbstractAozoraZip = hyle.try_into().map_err(|e| miette!("{}", e))?;
 
     let output_path = output_dir.join(format!("{}.epub", file_stem));
-    fs::write(&output_path, epub_bytes).into_diagnostic()?;
-    println!("生成完了: {}", output_path.display());
+    let mut file = fs::File::create(&output_path).into_diagnostic()?;
+
+    let az_result = abstract_zip
+        .generate_epub(&mut file, potential, "ja")
+        .map_err(|e| miette!("{}", e))?;
+
+    let ((), errors) = az_result.into_tuple();
+
+    for error in &errors {
+        eprintln!("警告: {:?}", error);
+    }
+
+    println!(
+        "生成完了（{:?}）: {}",
+        timer.elapsed(),
+        output_path.display()
+    );
 
     Ok(())
 }
@@ -265,7 +240,6 @@ fn main() -> Result<()> {
     match cli.command {
         Commands::Xhtml {
             source,
-            merge,
             utf8,
             horizontal,
             no_prelude,
@@ -274,7 +248,7 @@ fn main() -> Result<()> {
             output,
         } => {
             handle_xhtml(
-                source, merge, utf8, horizontal, no_prelude, no_miyabi, css, output,
+                source, utf8, horizontal, no_prelude, no_miyabi, css, output,
             )?;
         }
         Commands::Epub {

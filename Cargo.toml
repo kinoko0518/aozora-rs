@@ -4,9 +4,9 @@ members = [
     "aozora-rs-gaiji", "aozora-rs-xhtml",
     "aozora-rs-epub", "aozora-rs",
     "aozora-rs-wasm", "ayame-cli",
-    "ayame-core", "ayame-app/src-tauri",
+    "ayame-core", "ayame-app",
     "aozora-rs-zip", "aozora-rs-gaiji/gaiji-chuki-parser"
-]
+, "ayame-app"]
 resolver = "3"
 
 [workspace.dependencies]

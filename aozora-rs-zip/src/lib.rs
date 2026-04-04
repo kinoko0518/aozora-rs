@@ -9,6 +9,7 @@ use thiserror::Error;
 use winnow::error::ContextError;
 use zip::result::ZipError;
 
+#[derive(Debug, Clone, Copy)]
 pub enum ImgExtension {
     Png,
     Jpeg,
@@ -99,13 +100,14 @@ pub enum AozoraZipError {
     BrokenMetaData(miette::Report),
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum Encoding {
     ShiftJIS,
     Utf8,
 }
 
 impl Encoding {
-    fn bytes_to_string(&self, bytes: Vec<u8>) -> Result<String, FromUtf8Error> {
+    pub fn bytes_to_string(&self, bytes: Vec<u8>) -> Result<String, FromUtf8Error> {
         match self {
             Self::ShiftJIS => {
                 let (cow, _, _) = encoding_rs::SHIFT_JIS.decode(&bytes);
@@ -122,7 +124,7 @@ pub struct AozoraZip {
     pub images: HashMap<String, (ImgExtension, Vec<u8>)>,
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Dependencies {
     pub images: HashMap<String, (ImgExtension, Vec<u8>)>,
 }
