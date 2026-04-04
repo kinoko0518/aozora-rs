@@ -1,0 +1,11 @@
+[package]
+name = "ayame-app"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+gpui = "0.2.2"
+gpui-component = "0.5.1"
+rfd = "0.17.2"
+ayame-core = { workspace = true }
+aozora-rs-zip = { workspace = true }
