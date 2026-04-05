@@ -1,0 +1,80 @@
+name: CI and Pages Deploy
+
+on: [push]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  qa:
+    name: Run QA
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Create result directory
+        run: mkdir -p ./aozora-rs-qa/result
+
+      - name: Run QA
+        run: cargo run --bin qa
+
+      - name: Zip QA results
+        run: |
+          cd aozora-rs-qa
+          zip -r qa-result.zip result
+
+      - name: Upload QA result
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-result
+          path: aozora-rs-qa/qa-result.zip
+
+  deploy-pages:
+    name: Deploy ayame-demo to GitHub Pages
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install wasm-pack
+        uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: "latest"
+
+      - name: Build WASM for demo
+        run: |
+          cd aozora-rs-wasm
+          wasm-pack build --target web --out-dir ../ayame-demo/pkg
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "./ayame-demo"
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

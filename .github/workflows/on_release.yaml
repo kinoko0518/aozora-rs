@@ -8,36 +8,6 @@ permissions:
   contents: write
 
 jobs:
-  qa:
-    name: Run QA
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2
-
-      - name: Create result directory
-        run: mkdir -p ./aozora-rs-qa/result
-
-      - name: Run QA
-        run: cargo run --bin qa
-
-      - name: Zip QA results
-        run: |
-          cd aozora-rs-qa
-          zip -r qa-result.zip result
-
-      - name: Upload QA result
-        uses: actions/upload-artifact@v4
-        with:
-          name: qa-result
-          path: aozora-rs-qa/qa-result.zip
-
   build-ayame-cli:
     name: Build ayame-cli (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -165,7 +135,7 @@ jobs:
   build-and-upload:
     name: Upload Release
     runs-on: ubuntu-latest
-    needs: [qa, build-wasm, build-ayame-cli, build-ayame-app]
+    needs: [build-wasm, build-ayame-cli, build-ayame-app]
     if: startsWith(github.ref, 'refs/tags/')
 
     steps:
@@ -179,6 +149,5 @@ jobs:
         with:
           files: |
             release-artifacts/aozora-rs-wasm-pkg/*
-            release-artifacts/qa-result/*
             release-artifacts/ayame-cli-*/*
             release-artifacts/ayame-app-*/*
