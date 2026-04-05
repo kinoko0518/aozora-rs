@@ -3,114 +3,126 @@
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/kinoko0518/aozora-rs)](https://github.com/kinoko0518/aozora-rs/releases/latest)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-[今すぐ試す](https://kinoko0518.github.io/aozora-rs/index.html): WASM化されたaozora.rsを用いたリアルタイムプレビュー、青空文庫書式で記述された.zipや.txtのEPUBへの変換などをブラウザ上でお試しいただけます。
+Rust実装の青空文庫書式パーサーです。組み込みが容易・ネイティブ動作なAozoraEpub3を目指して開発しています。GUI、CLI、Web版を公開しており、Web版は[こちらのリンク](https://kinoko0518.github.io/aozora-rs/)から今すぐ試せます！ライブラリとしてはRustクレートとしてはもちろん、WASMパッケージとしてもご利用いただけます。低レベルAPIはaozora-rsを、高レベルAPIはayame-coreをご利用ください。
 
-* **📦 ライブラリ**: Rustクレート`aozora-rs`および、WASM向け`aozora-rs-wasm`
-* **🖥️ アプリケーション**: CLIツール`ayame-cli`およびGUIアプリ`文目`
+## GUI版
 
-WASMバイナリ、各種アプリケーションの配布、各バージョンの品質保証レポートは[最新のリリース](https://github.com/kinoko0518/aozora-rs/releases/latest)をご覧ください。
+<img src="./samples/gui.png" width="800px">
 
-> [!WARNING]
-> 文目プロジェクトの各プログラムが発生させた損害について、開発者は一切の責任を負うことができません。
-> また、まだしばらくは頻繫に破壊的な変更が行われることが予想されます。
-> 簡潔に言えば、まだ実用レベルまで枯れていないという段階です。
+## インストール
 
-## 📂 プロジェクト構成
+**cargoからインストール**
 
-```
-文目プロジェクト
-├── ライブラリ
-│   ├── aozora-rs
-│   ├── aozora-rs-wasm
-│   ├── aozora-rs-core
-│   ├── aozora-rs-gaiji
-│   ├── aozora-rs-xhtml
-│   ├── aozora-rs-epub
-│   └── aozora-rs-qa
-├── アプリケーション
-│   ├── ayame-core
-│   ├── ayame-cli
-│   └── 文目
-└── ドキュメント
-    └── あやめぐさ
+```bash
+cargo install --git https://github.com/kinoko0518/aozora-rs ayame-app
 ```
 
-## 📥 インストール方法
+**コンパイル済みバイナリをダウンロード**
 
-### アプリケーションとしての利用
+<div align="center">
+    <a href="https://github.com/kinoko0518/aozora-rs/releases/latest/download/ayame-app-windows-x86_64.exe">
+        <picture>
+            <source media="(prefers-color-scheme: dark)" srcset="./samples/windows-in-dark.svg">
+            <source media="(prefers-color-scheme: light)" srcset="./samples/windows-in-light.svg">
+            <img alt="Windows" src="./samples/windows-in-light.svg">
+        </picture>
+    </a>&nbsp;&nbsp;
+    <a href="https://github.com/kinoko0518/aozora-rs/releases/latest/download/ayame-app-linux-x86_64">
+        <picture>
+            <source media="(prefers-color-scheme: dark)" srcset="./samples/linux-in-dark.svg">
+            <source media="(prefers-color-scheme: light)" srcset="./samples/linux-in-light.svg">
+            <img alt="Linux" src="./samples/linux-in-light.svg">
+        </picture>
+    </a>&nbsp;&nbsp;
+    <a href="https://github.com/kinoko0518/aozora-rs/releases/latest/download/ayame-app-macos-aarch64">
+        <picture>
+            <source media="(prefers-color-scheme: dark)" srcset="./samples/mac-in-dark.svg">
+            <source media="(prefers-color-scheme: light)" srcset="./samples/mac-in-light.svg">
+            <img alt="macOS" src="./samples/mac-in-light.svg">
+        </picture>
+    </a>
+</div>
 
-[最新のリリース](https://www.google.com/url?sa=E&source=gmail&q=https://github.com/kinoko0518/aozora-rs/releases/latest)からOSに合わせたバイナリ（ayame-cli または 文目）をダウンロードしてください。
-Rust環境がある場合は、リポジトリから直接ビルドしてインストールすることも可能です。
+## CLI版
+
+<img src="./samples/cli.png" width="800px">
+
+### インストール
+
+**cargoからインストール**
 
 ```bash
 cargo install --git https://github.com/kinoko0518/aozora-rs ayame-cli
 ```
 
-### ライブラリとしての利用
+**コンパイル済みバイナリをダウンロード**
 
-Rustプロジェクトで利用する場合は、`Cargo.toml` に以下を追加してください。
+<div align="center">
+    <a href="https://github.com/kinoko0518/aozora-rs/releases/latest/download/ayame-cli-windows-x86_64.exe">
+        <picture>
+            <source media="(prefers-color-scheme: dark)" srcset="./samples/windows-in-dark.svg">
+            <source media="(prefers-color-scheme: light)" srcset="./samples/windows-in-light.svg">
+            <img alt="Windows" src="./samples/windows-in-light.svg">
+        </picture>
+    </a>&nbsp;&nbsp;
+    <a href="https://github.com/kinoko0518/aozora-rs/releases/latest/download/ayame-cli-linux-x86_64">
+        <picture>
+            <source media="(prefers-color-scheme: dark)" srcset="./samples/linux-in-dark.svg">
+            <source media="(prefers-color-scheme: light)" srcset="./samples/linux-in-light.svg">
+            <img alt="Linux" src="./samples/linux-in-light.svg">
+        </picture>
+    </a>&nbsp;&nbsp;
+    <a href="https://github.com/kinoko0518/aozora-rs/releases/latest/download/ayame-cli-macos-aarch64">
+        <picture>
+            <source media="(prefers-color-scheme: dark)" srcset="./samples/mac-in-dark.svg">
+            <source media="(prefers-color-scheme: light)" srcset="./samples/mac-in-light.svg">
+            <img alt="macOS" src="./samples/mac-in-light.svg">
+        </picture>
+    </a>
+</div>
 
-```toml
-[dependencies]
-aozora-rs = { git = "https://github.com/kinoko0518/aozora-rs" }
+### 使い方
+
+```bash
+ayame <COMMAND> <SOURCE> [OPTIONS]
 ```
+`<SOURCE>`には.zip、または.txtファイルのパスを受け付けます。
 
-## 🦀 ライブラリ / aozora.rs
-
-`aozora.rs` は既存のソリューションと比較して高い移植性、ネイティブ動作、軽量さを目指しており、コア部分（`aozora-rs-core`）においてはゼロコピー、純粋関数、Best Effortを実現しています。
-
-パースは **トークン化 → 注記影響範囲決定 → 再トークン化** の順番で進行し、各段階は純粋関数を用いて変換されるため、任意の段階でご利用いただけます。
-再トークン化された表現の直和（Retokenized）は中間表現として振る舞います。
-
-* **外字の処理**: `aozora-rs-gaiji`
-* **XHTMLの構築**: `aozora-rs-xhtml`
-* **EPUBの構築**: `aozora-rs-epub`
-
-ファサードクレートとして`aozora-rs`と`aozora-rs-wasm`を提供しており、品質保証レポートの自動生成は`aozora-rs-qa`が行います。
-
-## ✨ アプリケーション / ayame-cli & 文目
-
-### ayame-cli
-
-青空文庫書式のテキストファイル（`.txt`）またはZIPファイル（`.zip`）からXHTML/EPUBを生成するCLIツールです。
-
-```
-ayame <COMMAND>
-```
-
-#### `xhtml` — XHTMLを生成
-
-```
-ayame xhtml [OPTIONS] <SOURCE>
-```
-
-| 引数 / オプション | 説明 |
+| `<Command>` | 出力フォーマット |
 | --- | --- |
-| `<SOURCE>` | 入力ファイル（`.txt` または `.zip`） |
-| `--utf8` | 入力がUTF-8の場合に指定（デフォルト: Shift-JIS） |
-| `--merge` | 複数のXHTMLを `<hr>` 区切りで1ファイルに結合 |
-| `-o`, `--output <DIR>` | 出力先ディレクトリ（デフォルト: カレントディレクトリ） |
+| epub | EPUB 3 |
+| xhtml | XHTML |
 
-#### `epub` — EPUBを生成
-
-```
-ayame epub [OPTIONS] <SOURCE>
-```
-
-| 引数 / オプション | 説明 |
+| `[OPTIONS]` | 効果 |
 | --- | --- |
-| `<SOURCE>` | 入力ファイル（`.txt` または `.zip`） |
-| `--utf8` | 入力がUTF-8の場合に指定（デフォルト: Shift-JIS） |
-| `--horizontal` | 横書きで生成（デフォルト: 縦書き） |
-| `--no-prelude` | 組み込みCSS `prelude` を適用しない（デフォルト: 適用） |
-| `--no-miyabi` | 組み込みCSS `miyabi` を適用しない（デフォルト: 適用） |
-| `--css <FILE>` | 追加で適用するCSSファイルのパス（複数指定可） |
-| `-o`, `--output <DIR>` | 出力先ディレクトリ（デフォルト: カレントディレクトリ） |
+| --utf8 | UTF-8としてファイルを解釈します。特に指定しない限りはShift-JISです。 |
+| --horizontal | 横書きになります。特に指定しない限りは縦書きです。 | 
+| --no-prelude | 要素を正しく表示するための組み込みCSSを無効化します。 |
+| --no-miyabi | 美しく表示するための組み込みCSSを無効化します。 |
+| --css <FILE_PATH> | 追加のカスタムCSSを適用します。複数回使用できます。 |
+| -o, --output <DIR_PATH> | 出力先のディレクトリを指定します。 |
 
-### 文目
+## ライブラリ利用
 
-`ayame-cli` のGUI版です。CLIと同等の機能を、直感的なインターフェースでご利用いただけます。
+> ![WARNING]
+> クレートとしてのaozora-rsは近日中のAPIの整理が予定されています。
 
-## 📄 ライセンス
+**aozora-rs**
+```bash
+cargo add aozora-rs --git https://github.com/kinoko0518/aozora-rs/
+```
 
-本プロジェクトは [Apache License 2.0](https://www.google.com/search?q=LICENSE) のもとで公開されています。
+**ayame-rs**
+```bash
+cargo add ayame-core --git https://github.com/kinoko0518/aozora-rs/
+```
+
+**WASM**
+
+[こちら](https://github.com/kinoko0518/aozora-rs/releases/latest/download/aozora-rs-wasm-pkg.zip)から最新のビルドをダウンロードしてください。
+
+## 利用について
+本プロジェクトは[Apache License 2.0]("./LICENCE")を採用しています。使用報告などは特に必要ありませんが、作者の[Twitter](https://x.com/6osciola/)までご一報いただけると喜びます。
+
+## Star履歴
+[![Star History Chart](https://api.star-history.com/svg?repos=kinoko0518/aozora-rs&type=date&legend=top-left)](https://www.star-history.com/?spm=a2c6h.12873639.article-detail.7.7b9d7fabjNxTRk#kinoko0518/aozora-rs&type=date&legend=top-left)
