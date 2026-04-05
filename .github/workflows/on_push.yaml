@@ -29,7 +29,7 @@ jobs:
 
       - name: Zip QA results
         run: |
-          cd aozora-rs-qa
+          cd aozora-rs/aozora-rs-qa
           zip -r qa-result.zip result
 
       - name: Upload QA result
@@ -64,8 +64,8 @@ jobs:
 
       - name: Build WASM for demo
         run: |
-          cd aozora-rs-wasm
-          wasm-pack build --target web --out-dir ../ayame/ayame-demo/pkg
+          cd aozora-rs/aozora-rs-wasm
+          wasm-pack build --target web --out-dir ../../ayame/ayame-demo/pkg
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

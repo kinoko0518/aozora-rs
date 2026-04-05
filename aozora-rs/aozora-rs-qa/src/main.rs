@@ -13,7 +13,7 @@ use std::time::Instant;
 use std::{fs::File, time::Duration};
 
 pub use map_cache::{MapCache, update_map};
-pub use sync::{GitSyncProgress, sync_repository, sync_repository_simple};
+pub use sync::sync_repository;
 
 use crate::speed::{SpeedSummary, speed_analyse};
 use crate::{gaiji::analyse_gaiji, note::note_analyse};
@@ -38,20 +38,21 @@ impl AnalysedSummary {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let base_path = PathBuf::from("./aozora-rs-qa");
-    let az_base_path = PathBuf::from(format!("./aozora-rs-qa/{}", REPOSITORY));
+    let manifest = env!("CARGO_MANIFEST_DIR");
+    let base_path = PathBuf::from(manifest);
+    let az_base_path = PathBuf::from(format!("{}/{}", manifest, REPOSITORY));
 
     println!("aozora.rs品質保証プログラムへようこそ！");
     println!("最新の青空文庫へ同期しています……");
-    sync::sync_repository_simple(&base_path)?;
+    sync::sync_repository(&base_path)?;
 
     println!("マップを更新しています……");
     let map = map_cache::update_map(&base_path, &az_base_path)?;
 
     println!("ファイルを作成しています……");
-    let mut note_log = File::create("./aozora-rs-qa/result/invalid_note.txt")?;
-    let mut gaiji_log = File::create("./aozora-rs-qa/result/invalid_gaiji.txt")?;
-    let mut speed_log = File::create("./aozora-rs-qa/result/speed_report.md")?;
+    let mut note_log = File::create(format!("{}/result/invalid_note.txt", manifest))?;
+    let mut gaiji_log = File::create(format!("{}/result/invalid_gaiji.txt", manifest))?;
+    let mut speed_log = File::create(format!("{}/result/speed_report.md", manifest))?;
     let mut summary = String::new();
 
     let analyse_duration = Instant::now();
@@ -87,7 +88,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     println!("{}", &summary);
-    let mut summary_file = File::create("./aozora-rs-qa/result/summary.md")?;
+    let mut summary_file = File::create(format!("{}/result/summary.md", manifest))?;
     write!(summary_file, "{}", &summary)?;
 
     println!("すべて終了しました！");
