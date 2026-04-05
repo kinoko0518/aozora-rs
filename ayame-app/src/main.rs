@@ -1,3 +1,4 @@
+#[cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 use std::{f32, fs::File, path::Path, sync::Arc};
 
 use aozora_rs_zip::ImgExtension;
@@ -53,9 +54,13 @@ fn is_zip(path: &Path) -> bool {
 }
 
 impl AyameApp {
+    // Colours
     const OUTLINE_COLOUR: u32 = 0x334155;
     const BUTTON_BACKGROUND: u32 = 0x1e2b4d;
     const LIGHT_TEXT_COLOUR: u32 = 0x90a1b9;
+
+    // Sizes
+    const VERTICALIZE_THRESHOLD: f32 = 600.;
 
     fn get_meta(&self) -> (String, String) {
         self.aaz
@@ -223,7 +228,7 @@ impl AyameApp {
         div()
             .flex_1()
             .min_w(px(450.))
-            .max_w(px(600.))
+            .max_w(px(Self::VERTICALIZE_THRESHOLD))
             .flex()
             .flex_col()
             .justify_center()
@@ -311,7 +316,7 @@ impl AyameApp {
             .gap_2()
             .flex_1()
             .min_w(px(250.))
-            .max_w(px(600.))
+            .max_w(px(Self::VERTICALIZE_THRESHOLD))
             .child(write_direction_island)
             .child(css_island)
             .child(encoding_island)
