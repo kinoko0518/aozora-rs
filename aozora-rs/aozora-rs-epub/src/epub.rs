@@ -37,11 +37,7 @@ impl Default for EpubSetting<'_> {
         Self {
             language: "ja",
             is_rtl: true,
-            styles: vec![
-                include_str!("../../ayame-core/assets/horizontal.css"),
-                include_str!("../../ayame-core/assets/prelude.css"),
-                include_str!("../../ayame-core/assets/miyabi.css"),
-            ],
+            styles: vec![],
         }
     }
 }

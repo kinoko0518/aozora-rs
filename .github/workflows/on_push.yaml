@@ -22,7 +22,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Create result directory
-        run: mkdir -p ./aozora-rs-qa/result
+        run: mkdir -p ./aozora-rs/aozora-rs-qa/result
 
       - name: Run QA
         run: cargo run --bin qa
@@ -36,7 +36,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: qa-result
-          path: aozora-rs-qa/qa-result.zip
+          path: aozora-rs/aozora-rs-qa/qa-result.zip
 
   deploy-pages:
     name: Deploy ayame-demo to GitHub Pages
@@ -65,7 +65,7 @@ jobs:
       - name: Build WASM for demo
         run: |
           cd aozora-rs-wasm
-          wasm-pack build --target web --out-dir ../ayame-demo/pkg
+          wasm-pack build --target web --out-dir ../ayame/ayame-demo/pkg
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -73,7 +73,7 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "./ayame-demo"
+          path: "./ayame/ayame-demo"
 
       - name: Deploy to GitHub Pages
         id: deployment

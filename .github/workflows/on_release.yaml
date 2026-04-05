@@ -123,14 +123,14 @@ jobs:
 
       - name: Zip pkg directory
         run: |
-          cd aozora-rs-wasm
+          cd aozora-rs/aozora-rs-wasm
           zip -r aozora-rs-wasm-pkg.zip pkg
 
       - name: Upload WASM artifact
         uses: actions/upload-artifact@v4
         with:
           name: aozora-rs-wasm-pkg
-          path: aozora-rs-wasm/aozora-rs-wasm-pkg.zip
+          path: aozora-rs/aozora-rs-wasm/aozora-rs-wasm-pkg.zip
 
   build-and-upload:
     name: Upload Release
