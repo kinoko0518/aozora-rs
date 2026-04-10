@@ -1,11 +1,12 @@
 use std::io::{Seek, Write};
 
 use aozora_rs::{
-    AZResult, AZResultC, AozoraMeta, EpubSetting, NovelResult, parse_meta,
+    AZResult, AZResultC, AozoraMeta, EpubSetting, NovelResult, into_xhtml, parse_meta,
     retokenized_to_novel_result, str_to_retokenized,
 };
 pub use aozora_rs_zip::Encoding;
 use aozora_rs_zip::{AozoraZip, Dependencies};
+use miette::miette;
 
 #[derive(Default, Clone, Copy)]
 pub enum WritingDirection {
@@ -96,10 +97,18 @@ fn str_to_novel_result<'s>(text: &'s str) -> Result<NovelResult<'s>, Box<dyn std
     let copied_str = &mut &*text;
     let meta = parse_meta(copied_str)?;
     let (retokenized, errors) = str_to_retokenized(copied_str)
-        .map_err(|_| String::new())?
+        .map_err(|error| miette!(error))?
         .into_tuple();
     let novel_result = retokenized_to_novel_result(retokenized, meta, errors);
     Ok(novel_result)
+}
+
+pub fn str_to_embedding_xhtml(value: &str) -> Result<AZResult<String>, Box<dyn std::error::Error>> {
+    let (retokenized, errors) = str_to_retokenized(value)
+        .map_err(|error| miette!(error))?
+        .into_tuple();
+    let xhtml = into_xhtml(retokenized).xhtmls.join("\n");
+    Ok(AZResultC::from(errors).finally(xhtml))
 }
 
 impl<'s> AbstractAozoraZip<'s> {
