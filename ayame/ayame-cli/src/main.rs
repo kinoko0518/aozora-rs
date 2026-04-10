@@ -131,7 +131,7 @@ fn handle_xhtml(
     no_miyabi: bool,
     extra_css: Vec<PathBuf>,
     output: Option<PathBuf>,
-) -> Result<()> {
+) -> Result<(), Box<dyn std::error::Error>> {
     let timer = std::time::Instant::now();
     let output_dir = get_output_dir(output)?;
     let file_stem = get_file_stem(&source)?;
@@ -156,10 +156,10 @@ fn handle_xhtml(
         AozoraHyle::Txt((bytes, to_encoding(utf8)))
     };
     let (string, dependencies) = hyle.encode().map_err(|e| miette!("{}", e))?;
-    let abstract_zip: AbstractAozoraZip = (string.as_str(), dependencies).into();
+    let abstract_zip = AbstractAozoraZip::from_str_with_meta(string.as_str(), dependencies)?;
 
     let az_result = abstract_zip
-        .generate_browser_xhtml(potential, extra_css_refs)
+        .browser_xhtml(potential, extra_css_refs)
         .map_err(|e| miette!("{}", e))?;
 
     let (xhtml, errors) = az_result.into_tuple();
@@ -188,7 +188,7 @@ fn handle_epub(
     no_miyabi: bool,
     _extra_css: Vec<PathBuf>,
     output: Option<PathBuf>,
-) -> Result<()> {
+) -> Result<(), Box<dyn std::error::Error>> {
     let timer = std::time::Instant::now();
     let output_dir = get_output_dir(output)?;
     let file_stem = get_file_stem(&source)?;
@@ -210,13 +210,13 @@ fn handle_epub(
         AozoraHyle::Txt((bytes, to_encoding(utf8)))
     };
     let (string, dependencies) = hyle.encode().map_err(|e| miette!("{}", e))?;
-    let abstract_zip: AbstractAozoraZip = (string.as_str(), dependencies).into();
+    let abstract_zip = AbstractAozoraZip::from_str_with_meta(string.as_str(), dependencies)?;
 
     let output_path = output_dir.join(format!("{}.epub", file_stem));
     let mut file = fs::File::create(&output_path).into_diagnostic()?;
 
     let az_result = abstract_zip
-        .generate_epub(&mut file, potential, "ja")
+        .epub(&mut file, potential, "ja")
         .map_err(|e| miette!("{}", e))?;
 
     let ((), errors) = az_result.into_tuple();
@@ -234,7 +234,7 @@ fn handle_epub(
     Ok(())
 }
 
-fn main() -> Result<()> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
 
     match cli.command {

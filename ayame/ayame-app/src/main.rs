@@ -65,9 +65,10 @@ impl AyameApp {
     fn get_meta(&self) -> (String, String) {
         self.source
             .as_ref()
-            .and_then(|(text, _)| {
-                let aaz: AbstractAozoraZip = text.as_str().into();
-                let meta = aaz.scan_meta().ok()?;
+            .and_then(|(text, _)| -> Option<(String, String)> {
+                let aaz =
+                    AbstractAozoraZip::from_str_with_meta(text, Dependencies::default()).ok()?;
+                let meta = aaz.meta?;
                 Some((meta.title.to_owned(), meta.author.to_owned()))
             })
             .unwrap_or(("作品未選択".into(), "作品未選択".into()))
@@ -115,9 +116,10 @@ impl AyameApp {
                         .save_file(),
                     view.source.clone(),
                 ) {
-                    let aaz: AbstractAozoraZip = (text.as_str(), deps).into();
+                    let aaz: AbstractAozoraZip =
+                        AbstractAozoraZip::from_str_with_meta(text.as_str(), deps).unwrap();
                     let zip = File::create(save_to).unwrap();
-                    aaz.generate_epub(
+                    aaz.epub(
                         zip,
                         PotentialCSS {
                             use_miyabi: view.use_miyabi,

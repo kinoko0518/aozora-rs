@@ -14,6 +14,12 @@ pub enum WritingDirection {
     Horizontal,
 }
 
+/// 内部的にCSSに変換される設定群の直積です。
+///
+/// コンテンツを正しく描画するための内部CSS、preludeをオフにする場合はuse_preludeをfalseに、
+/// EPUBとして美しく表示するための内部CSS、miyabiをオフにする場合はuse_miyabiをfalseにしてください。
+///
+/// 縦書き / 横書きはdirectionで指定可能です。
 pub struct PotentialCSS {
     pub use_prelude: bool,
     pub use_miyabi: bool,
@@ -56,12 +62,14 @@ impl PotentialCSS {
     }
 }
 
+/// ayameが解析可能なソースの直和です。
 pub enum AozoraHyle {
     Txt((Vec<u8>, Encoding)),
     Zip((Vec<u8>, Encoding)),
 }
 
 impl AozoraHyle {
+    /// 自身を`(String, Dependencies)`に変換します。
     pub fn encode(self) -> Result<(String, Dependencies), Box<dyn std::error::Error>> {
         let (text, dependencies): (String, Dependencies) = match self {
             Self::Txt((data, encoding)) => {
@@ -79,26 +87,9 @@ impl AozoraHyle {
 
 #[derive(Clone)]
 pub struct AbstractAozoraZip<'s> {
+    pub meta: Option<AozoraMeta<'s>>,
     pub text: &'s str,
     pub dependencies: Dependencies,
-}
-
-impl<'s> From<&'s str> for AbstractAozoraZip<'s> {
-    fn from(value: &'s str) -> Self {
-        Self {
-            text: value,
-            dependencies: Dependencies::default(),
-        }
-    }
-}
-
-impl<'s> From<(&'s str, Dependencies)> for AbstractAozoraZip<'s> {
-    fn from(value: (&'s str, Dependencies)) -> Self {
-        Self {
-            text: value.0,
-            dependencies: value.1,
-        }
-    }
 }
 
 fn str_to_novel_result<'s>(text: &'s str) -> Result<NovelResult<'s>, Box<dyn std::error::Error>> {
@@ -112,7 +103,34 @@ fn str_to_novel_result<'s>(text: &'s str) -> Result<NovelResult<'s>, Box<dyn std
 }
 
 impl<'s> AbstractAozoraZip<'s> {
-    pub fn generate_epub(
+    /// 与えられた&strをもとにメタデータを考慮して解析し、`AbstractAozoraZip`を構築します。
+    /// メタデータの書き方は以下のURLの3-2. 基本となる書式を参照してください。
+    ///
+    /// https://www.aozora.gr.jp/aozora-manual/index-input.html
+    pub fn from_str_with_meta(
+        value: &'s str,
+        dependencies: Dependencies,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        let new = &mut &*value;
+        Ok(Self {
+            meta: Some(parse_meta(new)?),
+            text: new,
+            dependencies,
+        })
+    }
+
+    /// 与えられた&strをもとに`AbstractAozoraZip`を構築します。
+    pub fn from_str_no_meta(value: &'s str, dependencies: Dependencies) -> Self {
+        Self {
+            meta: None,
+            text: value,
+            dependencies,
+        }
+    }
+
+    /// EPUBを`Seek` + `Write`を実装したaccに書き込みます。
+    /// languageには言語コード（例: "ja"、"en"、"cn"）を入力してください。
+    pub fn epub(
         self,
         acc: impl Seek + Write,
         potential: PotentialCSS,
@@ -127,7 +145,9 @@ impl<'s> AbstractAozoraZip<'s> {
         )
     }
 
-    pub fn generate_browser_xhtml(
+    /// ブラウザでそのまま表示可能になるよう、CSSを埋め込んだり、
+    /// <html>タグと<body>タグでラップしたりなどの処理を行って返します。
+    pub fn browser_xhtml(
         self,
         potential: PotentialCSS,
         mut css: Vec<&str>,
@@ -143,6 +163,7 @@ impl<'s> AbstractAozoraZip<'s> {
         ))
     }
 
+    /// 文字列先頭のメタデータを読み、`AozoraMeta`を構築して返却します。文字列の消費は発生しません。
     pub fn scan_meta<'a>(&'a self) -> Result<AozoraMeta<'a>, miette::Report> {
         parse_meta(&mut &*self.text)
     }

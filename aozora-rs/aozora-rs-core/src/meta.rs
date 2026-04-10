@@ -2,6 +2,7 @@ use miette::Diagnostic;
 use thiserror::Error;
 use winnow::{Parser, combinator::delimited, error::ContextError, token::take_until};
 
+#[derive(Debug, Clone)]
 pub struct AozoraMeta<'s> {
     pub title: &'s str,
     pub author: &'s str,
