@@ -3,9 +3,8 @@ use aozora_rs_core::*;
 mod definitions;
 mod xhtmlnize;
 
+pub use crate::xhtmlnize::into_xhtml;
 pub use definitions::*;
-
-use crate::xhtmlnize::into_xhtml;
 
 pub struct NovelResult<'s> {
     pub xhtmls: XHTMLResult,
@@ -19,7 +18,7 @@ pub struct XHTMLResult {
     pub chapters: Vec<Chapter>,
 }
 
-pub fn retokenized_to_xhtml<'s>(
+pub fn retokenized_to_novel_result<'s>(
     retokenized: Vec<Retokenized>,
     meta: AozoraMeta<'s>,
     errors: Vec<miette::Error>,

@@ -7,7 +7,7 @@ members = [
     "aozora-rs/aozora-rs-wasm", "aozora-rs/aozora-rs-zip",
     "aozora-rs/aozora-rs-gaiji/gaiji-chuki-parser",
     # ayame
-    "ayame/ayame-cli", "ayame/ayame-core",
+    "ayame/ayame", "ayame/ayame-cli",
     "ayame/ayame-app",
 ]
 resolver = "3"
@@ -24,7 +24,7 @@ aozora-rs-zip = { path = "./aozora-rs/aozora-rs-zip" }
 gaiji-chuki-parser = { path = "./aozora-rs/aozora-rs-gaiji/gaiji-chuki-parser" }
 
 # ayame
-ayame-core = { path = "./ayame/ayame-core" }
+ayame = { path = "./ayame/ayame" }
 
 serde = { version = "1", features = ["derive"] }
 encoding_rs = "0.8.35"

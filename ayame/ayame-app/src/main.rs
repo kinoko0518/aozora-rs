@@ -1,8 +1,8 @@
 #[cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 use std::{f32, fs::File, path::Path, sync::Arc};
 
-use aozora_rs_zip::ImgExtension;
-use ayame_core::{AbstractAozoraZip, AozoraHyle, Encoding, PotentialCSS, WritingDirection};
+use aozora_rs_zip::{Dependencies, ImgExtension};
+use ayame::{AbstractAozoraZip, AozoraHyle, Encoding, PotentialCSS, WritingDirection};
 use gpui::{
     App, Application, Bounds, Context, Div, FontWeight, Image, ImageFormat, ImageSource, Window,
     WindowBounds, WindowOptions, actions, div, img, prelude::*, px, rgb, rgba, size,
@@ -19,7 +19,7 @@ use rfd::FileDialog;
 actions!(ayame, [SelectShiftJIS, SelectUtf8]);
 
 struct AyameApp {
-    aaz: Option<AbstractAozoraZip>,
+    source: Option<(String, Dependencies)>,
     cover: Option<(Vec<u8>, ImgExtension)>,
     writing_direction: WritingDirection,
     encoding: Encoding,
@@ -39,7 +39,7 @@ fn img_ext_to_img_fmt(img_ext: ImgExtension) -> ImageFormat {
 impl Default for AyameApp {
     fn default() -> Self {
         Self {
-            aaz: None,
+            source: None,
             cover: None,
             writing_direction: WritingDirection::Vertical,
             encoding: Encoding::ShiftJIS,
@@ -63,10 +63,13 @@ impl AyameApp {
     const VERTICALIZE_THRESHOLD: f32 = 600.;
 
     fn get_meta(&self) -> (String, String) {
-        self.aaz
+        self.source
             .as_ref()
-            .and_then(|s| s.scan_meta().ok())
-            .map(|meta| (meta.title.into(), meta.author.into()))
+            .and_then(|(text, _)| {
+                let aaz: AbstractAozoraZip = text.as_str().into();
+                let meta = aaz.scan_meta().ok()?;
+                Some((meta.title.to_owned(), meta.author.to_owned()))
+            })
             .unwrap_or(("作品未選択".into(), "作品未選択".into()))
     }
 
@@ -94,7 +97,7 @@ impl AyameApp {
                     } else {
                         AozoraHyle::Txt((read, view.encoding))
                     };
-                    view.aaz = hyle.try_into().ok();
+                    view.source = hyle.encode().ok();
                     cx.notify();
                 }
             }));
@@ -105,25 +108,25 @@ impl AyameApp {
             .label("保存する")
             .custom(btn_colour)
             .on_click(cx.listener(move |view, _, _, _| {
-                if let (Some(save_to), Some(picked)) = (
+                if let (Some(save_to), Some((text, deps))) = (
                     FileDialog::new()
                         .add_filter("EPUB", &["epub"])
                         .set_file_name(format!("[{}] {}", author, title))
                         .save_file(),
-                    view.aaz.clone(),
+                    view.source.clone(),
                 ) {
+                    let aaz: AbstractAozoraZip = (text.as_str(), deps).into();
                     let zip = File::create(save_to).unwrap();
-                    picked
-                        .generate_epub(
-                            zip,
-                            PotentialCSS {
-                                use_miyabi: view.use_miyabi,
-                                use_prelude: view.use_prelude,
-                                direction: view.writing_direction,
-                            },
-                            "ja",
-                        )
-                        .unwrap();
+                    aaz.generate_epub(
+                        zip,
+                        PotentialCSS {
+                            use_miyabi: view.use_miyabi,
+                            use_prelude: view.use_prelude,
+                            direction: view.writing_direction,
+                        },
+                        "ja",
+                    )
+                    .unwrap();
                 }
             }));
 

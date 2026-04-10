@@ -1,8 +1,8 @@
 use std::io::{Seek, Write};
 
 use aozora_rs::{
-    AZResult, AZResultC, AozoraMeta, EpubSetting, NovelResult, parse_meta, retokenized_to_xhtml,
-    str_to_retokenized,
+    AZResult, AZResultC, AozoraMeta, EpubSetting, NovelResult, parse_meta,
+    retokenized_to_novel_result, str_to_retokenized,
 };
 pub use aozora_rs_zip::Encoding;
 use aozora_rs_zip::{AozoraZip, Dependencies};
@@ -33,12 +33,15 @@ impl PotentialCSS {
             WritingDirection::Horizontal => include_str!("../assets/horizontal.css"),
         });
     }
+
     fn for_xhtml(&self, css: &mut Vec<&str>) {
         self.miyabi_not_specified_yet(css, include_str!("../assets/miyabix.css"));
     }
+
     fn for_epub(&self, css: &mut Vec<&str>) {
         self.miyabi_not_specified_yet(css, include_str!("../assets/miyabi.css"));
     }
+
     pub fn to_epub_setting<'a>(&'a self, language: &'a str) -> EpubSetting<'a> {
         let mut css = Vec::new();
         self.for_epub(&mut css);
@@ -53,32 +56,13 @@ impl PotentialCSS {
     }
 }
 
-/// テキストからNovelResultを生成する
-pub fn text_to_novel_result<'s>(
-    text: &'s str,
-) -> Result<NovelResult<'s>, Box<dyn std::error::Error>> {
-    let mut body = text;
-    let meta = parse_meta(&mut body)?;
-    let az_result = str_to_retokenized(body).map_err(|_| "".to_string())?;
-    let (retokenized, errors) = az_result.into_tuple();
-    Ok(retokenized_to_xhtml(retokenized, meta, errors))
-}
-
 pub enum AozoraHyle {
     Txt((Vec<u8>, Encoding)),
     Zip((Vec<u8>, Encoding)),
 }
 
-#[derive(Clone)]
-pub struct AbstractAozoraZip {
-    pub text: String,
-    pub dependencies: Dependencies,
-}
-
-impl TryInto<AbstractAozoraZip> for AozoraHyle {
-    type Error = Box<dyn std::error::Error>;
-
-    fn try_into(self) -> Result<AbstractAozoraZip, Self::Error> {
+impl AozoraHyle {
+    pub fn encode(self) -> Result<(String, Dependencies), Box<dyn std::error::Error>> {
         let (text, dependencies): (String, Dependencies) = match self {
             Self::Txt((data, encoding)) => {
                 let txt = encoding.bytes_to_string(data)?;
@@ -89,18 +73,52 @@ impl TryInto<AbstractAozoraZip> for AozoraHyle {
                 (azz.txt, Dependencies { images: azz.images })
             }
         };
-        Ok(AbstractAozoraZip { text, dependencies })
+        Ok((text, dependencies))
     }
 }
 
-impl AbstractAozoraZip {
+#[derive(Clone)]
+pub struct AbstractAozoraZip<'s> {
+    pub text: &'s str,
+    pub dependencies: Dependencies,
+}
+
+impl<'s> From<&'s str> for AbstractAozoraZip<'s> {
+    fn from(value: &'s str) -> Self {
+        Self {
+            text: value,
+            dependencies: Dependencies::default(),
+        }
+    }
+}
+
+impl<'s> From<(&'s str, Dependencies)> for AbstractAozoraZip<'s> {
+    fn from(value: (&'s str, Dependencies)) -> Self {
+        Self {
+            text: value.0,
+            dependencies: value.1,
+        }
+    }
+}
+
+fn str_to_novel_result<'s>(text: &'s str) -> Result<NovelResult<'s>, Box<dyn std::error::Error>> {
+    let copied_str = &mut &*text;
+    let meta = parse_meta(copied_str)?;
+    let (retokenized, errors) = str_to_retokenized(copied_str)
+        .map_err(|_| String::new())?
+        .into_tuple();
+    let novel_result = retokenized_to_novel_result(retokenized, meta, errors);
+    Ok(novel_result)
+}
+
+impl<'s> AbstractAozoraZip<'s> {
     pub fn generate_epub(
         self,
         acc: impl Seek + Write,
         potential: PotentialCSS,
         language: &str,
     ) -> Result<AZResult<()>, Box<dyn std::error::Error>> {
-        let novel_result = text_to_novel_result(&self.text)?;
+        let novel_result = str_to_novel_result(self.text)?;
         aozora_rs_epub::from_aozora_zip(
             acc,
             self.dependencies,
@@ -114,7 +132,7 @@ impl AbstractAozoraZip {
         potential: PotentialCSS,
         mut css: Vec<&str>,
     ) -> Result<AZResult<String>, Box<dyn std::error::Error>> {
-        let novel_result = text_to_novel_result(&self.text)?;
+        let novel_result = str_to_novel_result(self.text)?;
         let (xhtmls, meta, errors) = (novel_result.xhtmls, novel_result.meta, novel_result.errors);
         potential.for_xhtml(&mut css);
         Ok(AZResultC::from(errors).finally(
@@ -126,6 +144,6 @@ impl AbstractAozoraZip {
     }
 
     pub fn scan_meta<'a>(&'a self) -> Result<AozoraMeta<'a>, miette::Report> {
-        parse_meta(&mut self.text.as_str())
+        parse_meta(&mut &*self.text)
     }
 }

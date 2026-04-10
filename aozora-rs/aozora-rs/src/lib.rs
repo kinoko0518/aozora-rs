@@ -1,7 +1,7 @@
 // 再エクスポート
 pub use aozora_rs_core::*;
 pub use aozora_rs_epub::{EpubSetting, from_aozora_zip};
-pub use aozora_rs_xhtml::{NovelResult, XHTMLResult, retokenized_to_xhtml};
+pub use aozora_rs_xhtml::{NovelResult, XHTMLResult, into_xhtml, retokenized_to_novel_result};
 use winnow::{LocatingSlice, error::ContextError};
 
 /// 青空文庫書式で記述されたテキストを直接中間表現である[Retokenized]に変換します。

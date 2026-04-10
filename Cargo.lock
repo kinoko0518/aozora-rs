@@ -682,11 +682,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "ayame"
+version = "0.1.0"
+dependencies = [
+ "aozora-rs",
+ "aozora-rs-epub",
+ "aozora-rs-zip",
+ "encoding_rs",
+ "miette",
+ "serde",
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "ayame-app"
 version = "0.1.0"
 dependencies = [
  "aozora-rs-zip",
- "ayame-core",
+ "ayame",
  "gpui",
  "gpui-component",
  "rfd",
@@ -697,22 +710,9 @@ name = "ayame-cli"
 version = "0.1.0"
 dependencies = [
  "aozora-rs",
- "ayame-core",
+ "ayame",
  "clap",
  "miette",
-]
-
-[[package]]
-name = "ayame-core"
-version = "0.1.0"
-dependencies = [
- "aozora-rs",
- "aozora-rs-epub",
- "aozora-rs-zip",
- "encoding_rs",
- "miette",
- "serde",
- "thiserror 2.0.18",
 ]
 
 [[package]]

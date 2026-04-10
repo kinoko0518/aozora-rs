@@ -8,7 +8,7 @@ name = "ayame"
 path = "src/main.rs"
 
 [dependencies]
-ayame-core = { workspace = true }
+ayame = { workspace = true }
 aozora-rs = { workspace = true }
 clap = { workspace = true }
 miette = { workspace = true }

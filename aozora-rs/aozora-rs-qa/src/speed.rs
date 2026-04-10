@@ -84,7 +84,7 @@ fn analyse_per_work(s: String) -> Result<SpeedPerWork, Box<dyn std::error::Error
     let retokenized_duration = retokenize_instant.elapsed();
 
     let xhtmlnize_instant = Instant::now();
-    let xhtmlnized = aozora_rs_xhtml::retokenized_to_xhtml(retokenized, meta, errors);
+    let xhtmlnized = aozora_rs_xhtml::retokenized_to_novel_result(retokenized, meta, errors);
     let xhtmlnize_duration = xhtmlnize_instant.elapsed();
 
     let epub_instant = Instant::now();

@@ -7,5 +7,5 @@ edition = "2024"
 gpui = "0.2.2"
 gpui-component = "0.5.1"
 rfd = "0.17.2"
-ayame-core = { workspace = true }
+ayame = { workspace = true }
 aozora-rs-zip = { workspace = true }

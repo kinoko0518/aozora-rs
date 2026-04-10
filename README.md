@@ -107,14 +107,16 @@ ayame <COMMAND> <SOURCE> [OPTIONS]
 > [!WARNING]
 > クレートとしてのaozora-rsは近日中のAPIの整理が予定されています。
 
-**aozora-rs**
-```bash
-cargo add aozora-rs --git https://github.com/kinoko0518/aozora-rs/
-```
+高水準ライブラリが必要な場合はayame、低水準ライブラリが必要な場合はaozora-rsをご利用ください。
 
 **ayame-rs**
 ```bash
-cargo add ayame-core --git https://github.com/kinoko0518/aozora-rs/
+cargo add ayame --git https://github.com/kinoko0518/aozora-rs/
+```
+
+**aozora-rs**
+```bash
+cargo add aozora-rs --git https://github.com/kinoko0518/aozora-rs/
 ```
 
 **WASM**

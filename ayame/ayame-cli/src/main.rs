@@ -1,6 +1,4 @@
-use ayame_core::{
-    AbstractAozoraZip, AozoraHyle, Encoding, PotentialCSS, WritingDirection,
-};
+use ayame::{AbstractAozoraZip, AozoraHyle, Encoding, PotentialCSS, WritingDirection};
 use clap::{Parser, Subcommand};
 use miette::{IntoDiagnostic, Result, miette};
 use std::fs;
@@ -157,7 +155,8 @@ fn handle_xhtml(
     } else {
         AozoraHyle::Txt((bytes, to_encoding(utf8)))
     };
-    let abstract_zip: AbstractAozoraZip = hyle.try_into().map_err(|e| miette!("{}", e))?;
+    let (string, dependencies) = hyle.encode().map_err(|e| miette!("{}", e))?;
+    let abstract_zip: AbstractAozoraZip = (string.as_str(), dependencies).into();
 
     let az_result = abstract_zip
         .generate_browser_xhtml(potential, extra_css_refs)
@@ -171,7 +170,7 @@ fn handle_xhtml(
 
     let output_path = output_dir.join(format!("{}.xhtml", file_stem));
     fs::write(&output_path, xhtml).into_diagnostic()?;
-    
+
     println!(
         "生成完了（{:?}）: {}",
         timer.elapsed(),
@@ -210,7 +209,8 @@ fn handle_epub(
     } else {
         AozoraHyle::Txt((bytes, to_encoding(utf8)))
     };
-    let abstract_zip: AbstractAozoraZip = hyle.try_into().map_err(|e| miette!("{}", e))?;
+    let (string, dependencies) = hyle.encode().map_err(|e| miette!("{}", e))?;
+    let abstract_zip: AbstractAozoraZip = (string.as_str(), dependencies).into();
 
     let output_path = output_dir.join(format!("{}.epub", file_stem));
     let mut file = fs::File::create(&output_path).into_diagnostic()?;
@@ -247,9 +247,7 @@ fn main() -> Result<()> {
             css,
             output,
         } => {
-            handle_xhtml(
-                source, utf8, horizontal, no_prelude, no_miyabi, css, output,
-            )?;
+            handle_xhtml(source, utf8, horizontal, no_prelude, no_miyabi, css, output)?;
         }
         Commands::Epub {
             source,

@@ -1,5 +1,6 @@
 use aozora_rs::{
-    AozoraMeta, EpubSetting, from_aozora_zip, parse_meta, retokenized_to_xhtml, str_to_retokenized,
+    AozoraMeta, EpubSetting, from_aozora_zip, parse_meta, retokenized_to_novel_result,
+    str_to_retokenized,
 };
 use aozora_rs_zip::{AozoraZip, Encoding as ZipEncoding};
 use std::io::Cursor;
@@ -46,7 +47,7 @@ pub fn generate_standalone_xhtml(from: &str, delimiter: &str) -> Result<Standalo
     };
 
     let (retokenized, errors) = parsed.into_tuple();
-    let xhtml = retokenized_to_xhtml(retokenized, meta, errors);
+    let xhtml = retokenized_to_novel_result(retokenized, meta, errors);
 
     let report = reports_to_single_string(xhtml.errors);
 
@@ -104,7 +105,7 @@ pub fn parse_to_book_data(from: &str) -> Result<BookData, JsError> {
     };
 
     let (retokenized, errors) = parsed.into_tuple();
-    let result = retokenized_to_xhtml(retokenized, meta, errors);
+    let result = retokenized_to_novel_result(retokenized, meta, errors);
 
     let report = reports_to_single_string(result.errors);
 
@@ -167,7 +168,7 @@ pub fn build_epub_bytes(
     };
 
     let (retokenized, errors) = parsed.into_tuple();
-    let novel_result = retokenized_to_xhtml(retokenized, meta, errors);
+    let novel_result = retokenized_to_novel_result(retokenized, meta, errors);
 
     let setting = EpubSetting {
         language: "ja",
