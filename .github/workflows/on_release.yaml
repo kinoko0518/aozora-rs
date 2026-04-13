@@ -119,7 +119,7 @@ jobs:
           version: "latest"
 
       - name: Build WASM
-        run: wasm-pack build aozora-rs-wasm --target bundler
+        run: wasm-pack build ./aozora-rs/aozora-rs-wasm --target bundler
 
       - name: Zip pkg directory
         run: |

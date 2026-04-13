@@ -64,8 +64,7 @@ jobs:
 
       - name: Build WASM for demo
         run: |
-          cd aozora-rs/aozora-rs-wasm
-          wasm-pack build --target web --out-dir ../../ayame/ayame-demo/pkg
+          wasm-pack build ./aozora-rs/aozora-rs-wasm --target web --out-dir ./ayame/ayame-demo/pkg
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
