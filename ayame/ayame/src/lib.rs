@@ -103,14 +103,6 @@ fn str_to_novel_result<'s>(text: &'s str) -> Result<NovelResult<'s>, Box<dyn std
     Ok(novel_result)
 }
 
-pub fn str_to_embedding_xhtml(value: &str) -> Result<AZResult<String>, Box<dyn std::error::Error>> {
-    let (retokenized, errors) = str_to_retokenized(value)
-        .map_err(|error| miette!(error))?
-        .into_tuple();
-    let xhtml = into_xhtml(retokenized).xhtmls.join("\n");
-    Ok(AZResultC::from(errors).finally(xhtml))
-}
-
 impl<'s> AbstractAozoraZip<'s> {
     /// 与えられた&strをもとにメタデータを考慮して解析し、`AbstractAozoraZip`を構築します。
     /// メタデータの書き方は以下のURLの3-2. 基本となる書式を参照してください。
@@ -170,6 +162,15 @@ impl<'s> AbstractAozoraZip<'s> {
                 .replace("［＃スタイル］", &css.join("\n"))
                 .replace("［＃本文］", &xhtmls.xhtmls.join("\n<hr>\n")),
         ))
+    }
+
+    /// 他のHTMLに埋め込む前提で生のXHTMLを生成します。
+    pub fn embedding_xhtml(&self) -> Result<AZResult<String>, Box<dyn std::error::Error>> {
+        let (retokenized, errors) = str_to_retokenized(self.text)
+            .map_err(|error| miette!(error))?
+            .into_tuple();
+        let xhtml = into_xhtml(retokenized).xhtmls.join("\n");
+        Ok(AZResultC::from(errors).finally(xhtml))
     }
 
     /// 文字列先頭のメタデータを読み、`AozoraMeta`を構築して返却します。文字列の消費は発生しません。
