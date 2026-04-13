@@ -166,6 +166,14 @@ pub async fn get_latest_gaiji_chuki(
             .write_all(&to_bytes::<Error>(&gaiji_to_char)?)?;
         File::create(out_dir.join("char_to_gaiji.map"))?
             .write_all(&to_bytes::<Error>(&char_to_gaiji)?)?;
+        File::create(out_dir.join("conversion_map.txt"))?.write_all(
+            gaiji_to_char
+                .iter()
+                .map(|(key, value)| format!("K:\"{}\" -> V:\"{}\"", key, value))
+                .collect::<Vec<String>>()
+                .join("\n")
+                .as_bytes(),
+        )?;
     }
     Ok(())
 }

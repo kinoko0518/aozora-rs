@@ -26,10 +26,11 @@ gaiji-chuki-parser = { path = "./aozora-rs/aozora-rs-gaiji/gaiji-chuki-parser" }
 # ayame
 ayame = { path = "./ayame/ayame" }
 
-serde = { version = "1", features = ["derive"] }
+# external crates
 encoding_rs = "0.8.35"
-miette = { version = "7.6.0", features = ["fancy"] }
 winnow = "0.7.14"
+serde = { version = "1", features = ["derive"] }
+miette = { version = "7.6.0", features = ["fancy"] }
 thiserror = "2.0.18"
 itertools = "0.14.0"
 time = { version = "0.3", features = ["wasm-bindgen"] }

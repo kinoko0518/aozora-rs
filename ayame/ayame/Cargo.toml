@@ -10,4 +10,3 @@ aozora-rs-epub = { workspace = true }
 encoding_rs = { workspace = true }
 thiserror = { workspace = true }
 miette = { workspace = true }
-serde = { workspace = true }

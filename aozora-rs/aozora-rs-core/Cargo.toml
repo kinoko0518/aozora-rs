@@ -5,8 +5,6 @@ edition = "2024"
 
 [dependencies]
 aozora-rs-gaiji = { workspace = true }
-encoding_rs = { workspace = true }
-enum_dispatch = { workspace = true }
 miette = { workspace = true }
 thiserror = { workspace = true }
 winnow = { workspace = true }

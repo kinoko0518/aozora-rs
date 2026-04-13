@@ -1,5 +1,5 @@
 [package]
-name = "aozora-rs-tester"
+name = "aozora-rs-qa"
 version = "0.1.0"
 edition = "2024"
 
@@ -7,19 +7,15 @@ edition = "2024"
 aozora-rs-core = { workspace = true }
 aozora-rs-gaiji = { workspace = true }
 encoding_rs = { workspace = true }
-futures = { workspace = true }
 rkyv = { workspace = true }
 tokio = { workspace = true }
 walkdir = { workspace = true }
 winnow = { workspace = true }
-ratatui = { workspace = true }
-crossterm = { workspace = true }
 unicode-width = { workspace = true }
 rayon = { workspace = true }
 miette = { workspace = true }
-ansi-to-tui = { workspace = true }
-aozora-rs-xhtml.workspace = true
-aozora-rs-epub.workspace = true
+aozora-rs-xhtml =  { workspace = true }
+aozora-rs-epub =  { workspace = true }
 aozora-rs-zip = { workspace = true }
 
 [[bin]]

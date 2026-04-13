@@ -12,5 +12,5 @@ aozora-rs-core = { workspace = true }
 aozora-rs-xhtml = { workspace = true }
 miette = { workspace = true }
 thiserror = { workspace = true }
-winnow.workspace = true
-aozora-rs-zip = { version = "0.1.0", path = "../aozora-rs-zip" }
+winnow = { workspace = true }
+aozora-rs-zip = { workspace = true }
