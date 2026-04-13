@@ -60,7 +60,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (note, gaiji, speed) = tokio::join!(
         note_analyse(&mut note_log, &map),
         analyse_gaiji(&mut gaiji_log, &map),
-        speed_analyse(&mut speed_log)
+        speed_analyse(&mut speed_log, &base_path)
     );
     println!("解析が終了しました！（{:?}）", analyse_duration.elapsed());
 

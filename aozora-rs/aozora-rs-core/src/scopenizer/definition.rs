@@ -1,8 +1,5 @@
 use crate::*;
-use std::{
-    borrow::Cow,
-    collections::{HashMap, hash_map::Entry},
-};
+use std::collections::{HashMap, hash_map::Entry};
 
 #[derive(Debug, Default)]
 pub struct Scopenized<'s>(pub HashMap<usize, Vec<ScopeKind<'s>>>);
@@ -53,7 +50,7 @@ pub enum Break {
 
 #[derive(Clone, Debug)]
 pub enum FlatToken<'s> {
-    Text(Cow<'s, str>),
+    Text(&'s str),
     Break(Break),
     Odoriji(Odoriji),
     Kunten(&'s str),
@@ -70,20 +67,10 @@ impl<'s> FlatToken<'s> {
             if t.bytes().len() < at {
                 return (FlatToken::Text(t).into(), None);
             }
-            match t {
-                Cow::Borrowed(b) => {
-                    return (
-                        FlatToken::Text(Cow::Borrowed(&b[0..at])),
-                        Some(FlatToken::Text(Cow::Borrowed(&b[at..b.len()]))),
-                    );
-                }
-                Cow::Owned(o) => {
-                    return (
-                        FlatToken::Text(Cow::Owned(o[0..at].to_string())),
-                        Some(FlatToken::Text(Cow::Owned(o[at..o.len()].to_string()))),
-                    );
-                }
-            }
+            return (
+                FlatToken::Text(&t[0..at]),
+                Some(FlatToken::Text(&t[at..t.len()])),
+            );
         } else {
             return (self.into(), None);
         }

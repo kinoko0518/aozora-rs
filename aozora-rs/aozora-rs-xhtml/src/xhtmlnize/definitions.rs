@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::fmt::Write;
 
 pub enum XHTMLKind<'s> {
-    Text(Cow<'s, str>),
+    Text(&'s str),
     SpanBegin,
     SpanEnd,
     H1Begin,
@@ -14,8 +14,6 @@ pub enum XHTMLKind<'s> {
     Br,
     DivBegin,
     DivEnd,
-    SubBegin,
-    SubEnd,
     SupBegin,
     SupEnd,
     RubyBegin,
@@ -43,8 +41,6 @@ impl XHTMLKind<'_> {
             Self::Br => true,
             Self::DivBegin => false,
             Self::DivEnd => false,
-            Self::SubBegin => true,
-            Self::SubEnd => true,
             Self::SupBegin => true,
             Self::SupEnd => true,
             Self::RubyBegin => true,
@@ -106,7 +102,7 @@ impl<'s> XHTMLTag<'s> {
         let mut buff = String::from("<");
         buff.push_str(match self.kind {
             XHTMLKind::Text(t) => {
-                return t;
+                return Cow::Borrowed(t);
             }
             XHTMLKind::Br => "br",
             XHTMLKind::DivBegin => "div",
@@ -126,8 +122,6 @@ impl<'s> XHTMLTag<'s> {
             XHTMLKind::RubyEnd => "/ruby",
             XHTMLKind::SpanBegin => "span",
             XHTMLKind::SpanEnd => "/span",
-            XHTMLKind::SubBegin => "sub",
-            XHTMLKind::SubEnd => "/sub",
             XHTMLKind::SupBegin => "sup",
             XHTMLKind::SupEnd => "/sup",
         });

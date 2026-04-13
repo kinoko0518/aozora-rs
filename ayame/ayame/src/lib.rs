@@ -1,4 +1,7 @@
-use std::io::{Seek, Write};
+use std::{
+    borrow::Cow,
+    io::{Seek, Write},
+};
 
 use aozora_rs::{
     AZResult, AZResultC, AozoraMeta, EpubSetting, NovelResult, into_xhtml, parse_meta,
@@ -71,7 +74,10 @@ pub enum AozoraHyle {
 
 impl AozoraHyle {
     /// 自身を`(String, Dependencies)`に変換します。
-    pub fn encode(self) -> Result<(String, Dependencies), Box<dyn std::error::Error>> {
+    pub fn encode(
+        self,
+        consider_gaiji: bool,
+    ) -> Result<(String, Dependencies), Box<dyn std::error::Error>> {
         let (text, dependencies): (String, Dependencies) = match self {
             Self::Txt((data, encoding)) => {
                 let txt = encoding.bytes_to_string(data)?;
@@ -81,6 +87,14 @@ impl AozoraHyle {
                 let azz = AozoraZip::read_from_zip(&zip, &encoding)?;
                 (azz.txt, Dependencies { images: azz.images })
             }
+        };
+        let text = if consider_gaiji {
+            match aozora_rs::whole_gaiji_to_char(text.as_str()) {
+                Cow::Owned(o) => o,
+                Cow::Borrowed(_) => text,
+            }
+        } else {
+            text
         };
         Ok((text, dependencies))
     }

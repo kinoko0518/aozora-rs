@@ -25,6 +25,7 @@ struct AyameApp {
     encoding: Encoding,
     use_prelude: bool,
     use_miyabi: bool,
+    consider_gaiji: bool,
 }
 
 fn img_ext_to_img_fmt(img_ext: ImgExtension) -> ImageFormat {
@@ -45,6 +46,7 @@ impl Default for AyameApp {
             encoding: Encoding::ShiftJIS,
             use_prelude: true,
             use_miyabi: true,
+            consider_gaiji: true,
         }
     }
 }
@@ -98,7 +100,7 @@ impl AyameApp {
                     } else {
                         AozoraHyle::Txt((read, view.encoding))
                     };
-                    view.source = hyle.encode().ok();
+                    view.source = hyle.encode(view.consider_gaiji).ok();
                     cx.notify();
                 }
             }));
@@ -297,6 +299,15 @@ impl AyameApp {
                     .checked(!self.use_prelude)
                     .on_click(cx.listener(|view, checked: &bool, _, cx| {
                         view.use_prelude = !*checked;
+                        cx.notify();
+                    })),
+            )
+            .child(
+                Checkbox::new("consider_gaiji")
+                    .label("外字対応を無効化")
+                    .checked(!self.consider_gaiji)
+                    .on_click(cx.listener(|view, checked: &bool, _, cx| {
+                        view.consider_gaiji = !*checked;
                         cx.notify();
                     })),
             );

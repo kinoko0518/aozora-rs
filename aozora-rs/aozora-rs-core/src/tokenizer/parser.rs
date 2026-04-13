@@ -1,11 +1,8 @@
-use std::borrow::Cow;
-
-use aozora_rs_gaiji::whole_gaiji_to_char;
 use winnow::{
     Parser,
-    combinator::{alt, delimited, eof, not, opt, peek, repeat, repeat_till},
+    combinator::{alt, delimited, not, opt, peek, repeat},
     error::ContextError,
-    token::{any, take_until},
+    token::{any, take_till, take_until},
 };
 
 use crate::tokenizer::*;
@@ -24,28 +21,18 @@ fn odoriji<'s>(input: &mut Input<'s>) -> Result<Odoriji, ContextError> {
         .parse_next(input)
 }
 
-fn gaiji_pattern<'s>(input: &mut Input<'s>) -> Result<&'s str, ContextError> {
-    ("※", "［＃", take_until(1.., "］"), "］")
-        .take()
-        .parse_next(input)
-}
-
 fn special<'s>(input: &mut Input<'s>) -> Result<AozoraTokenKind<'s>, ContextError> {
     alt((
         '｜'.value(AozoraTokenKind::RubyDelimiter),
         '\n'.value(AozoraTokenKind::Br),
-        (
-            not('※'),
-            delimited(
-                "［＃",
-                alt((
-                    command.map(AozoraTokenKind::Note),
-                    take_until(1.., "］").map(|s| AozoraTokenKind::Note(Note::Unknown(s))),
-                )),
-                "］",
-            ),
-        )
-            .map(|(_, s)| s),
+        delimited(
+            "［＃",
+            alt((
+                command.map(AozoraTokenKind::Note),
+                take_until(1.., "］").map(|s| AozoraTokenKind::Note(Note::Unknown(s))),
+            )),
+            "］",
+        ),
         ruby.map(AozoraTokenKind::Ruby),
         odoriji.map(AozoraTokenKind::Odoriji),
     ))
@@ -53,9 +40,17 @@ fn special<'s>(input: &mut Input<'s>) -> Result<AozoraTokenKind<'s>, ContextErro
 }
 
 fn take_until_special<'s>(input: &mut Input<'s>) -> Result<&'s str, ContextError> {
-    let end = alt((peek(special).void(), eof.void()));
-    repeat_till(1.., alt((gaiji_pattern, any.take())), end)
-        .map(|(s, _): ((), _)| s)
+    fn fast_skip<'s>(input: &mut Input<'s>) -> Result<(), ContextError> {
+        take_till(1.., |c| matches!(c, '｜' | '\n' | '［' | '《' | '／'))
+            .void()
+            .parse_next(input)
+    }
+    fn false_trigger<'s>(input: &mut Input<'s>) -> Result<(), ContextError> {
+        (not(peek(special)), any).void().parse_next(input)
+    }
+
+    repeat(1.., alt((fast_skip, false_trigger)))
+        .map(|_: ()| ())
         .take()
         .parse_next(input)
 }
@@ -63,23 +58,9 @@ fn take_until_special<'s>(input: &mut Input<'s>) -> Result<&'s str, ContextError
 pub fn tokenize<'s>(input: &mut Input<'s>) -> Result<Vec<Tokenized<'s>>, ContextError> {
     let mut result: Vec<Tokenized> = repeat(
         0..,
-        alt((
-            special,
-            take_until_special
-                .map(whole_gaiji_to_char)
-                .map(AozoraTokenKind::Text),
-        ))
-        .with_span()
-        .map(|(k, s)| {
-            // 外字を扱っていた場合インデクスがずれるため別の計算ロジックを用いる
-            let span = if let AozoraTokenKind::Text(Cow::Owned(t)) = &k {
-                let length: usize = t.chars().map(|c| c.len_utf8()).sum();
-                s.start..(s.start + length)
-            } else {
-                s
-            };
-            Tokenized { kind: k, span }
-        }),
+        alt((special, take_until_special.map(AozoraTokenKind::Text)))
+            .with_span()
+            .map(|(kind, span)| Tokenized { kind, span }),
     )
     .parse_next(input)?;
 

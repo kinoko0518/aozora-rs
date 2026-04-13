@@ -1,5 +1,4 @@
 use std::{
-    borrow::Cow,
     collections::{HashMap, hash_map::Entry},
     usize,
 };
@@ -8,7 +7,7 @@ use crate::{scopenizer::Break, *};
 
 #[derive(Debug, Clone)]
 pub enum Retokenized<'s> {
-    Text(Cow<'s, str>),
+    Text(&'s str),
     Odoriji(Odoriji),
     Kunten(&'s str),
     Okurigana(&'s str),

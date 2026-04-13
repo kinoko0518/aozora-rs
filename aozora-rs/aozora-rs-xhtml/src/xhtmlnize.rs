@@ -94,7 +94,7 @@ pub fn into_xhtml<'s>(from: Vec<Retokenized<'s>>) -> XHTMLResult {
                         kind: XHTMLKind::SupBegin,
                         attributes: vec![Cow::Borrowed("class=\"kunten\"")],
                     },
-                    XHTMLTag::from_kind(XHTMLKind::Text(Cow::Borrowed(k))),
+                    XHTMLTag::from_kind(XHTMLKind::Text(k)),
                     XHTMLTag::from_kind(XHTMLKind::SupEnd),
                 ]);
             }
@@ -104,12 +104,12 @@ pub fn into_xhtml<'s>(from: Vec<Retokenized<'s>>) -> XHTMLResult {
                         kind: XHTMLKind::SupBegin,
                         attributes: vec![Cow::Borrowed("class=\"okurigana\"")],
                     },
-                    XHTMLTag::from_kind(XHTMLKind::Text(Cow::Borrowed(o))),
+                    XHTMLTag::from_kind(XHTMLKind::Text(o)),
                     XHTMLTag::from_kind(XHTMLKind::SupEnd),
                 ]);
             }
             Retokenized::Odoriji(o) => {
-                let text = Cow::Owned(format!("{}〵", if o.has_dakuten { "〴" } else { "〳" }));
+                let text = if o.has_dakuten { "〴〵" } else { "〳〵" };
                 buff.push(XHTMLTag::from_kind(XHTMLKind::Text(text)));
             }
             Retokenized::Figure(f) => {
@@ -292,7 +292,7 @@ pub fn into_xhtml<'s>(from: Vec<Retokenized<'s>>) -> XHTMLResult {
                     buff.extend(
                         [
                             XHTMLTag::from_kind(XHTMLKind::RtBegin),
-                            XHTMLTag::from_kind(XHTMLKind::Text(Cow::Borrowed(r))),
+                            XHTMLTag::from_kind(XHTMLKind::Text(r)),
                             XHTMLTag::from_kind(XHTMLKind::RtEnd),
                             XHTMLTag::from_kind(XHTMLKind::RubyEnd),
                         ]
@@ -303,7 +303,7 @@ pub fn into_xhtml<'s>(from: Vec<Retokenized<'s>>) -> XHTMLResult {
                     buff.extend(
                         [
                             XHTMLTag::from_kind(XHTMLKind::RtBegin),
-                            XHTMLTag::from_kind(XHTMLKind::Text(Cow::Borrowed("ママ"))),
+                            XHTMLTag::from_kind(XHTMLKind::Text("ママ")),
                             XHTMLTag::from_kind(XHTMLKind::RtEnd),
                             XHTMLTag::from_kind(XHTMLKind::RubyEnd),
                         ]

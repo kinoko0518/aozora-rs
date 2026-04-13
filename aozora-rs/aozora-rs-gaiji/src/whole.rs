@@ -46,24 +46,21 @@ fn parse_gaiji<'a>(input: &mut &'a str) -> Result<GaijiOrStr<'a>, ContextError> 
 
 pub fn whole_gaiji_to_char<'s>(input: &'s str) -> Cow<'s, str> {
     let mut input = input;
-    let mut result: Vec<GaijiOrStr> = repeat(0.., alt((parse_gaiji, parse_text)))
+    let result: Vec<GaijiOrStr> = repeat(0.., alt((parse_gaiji, parse_text)))
         .parse_next(&mut input)
         .unwrap();
-    let top = result.pop();
-    if let Some(s) = top {
-        if result.is_empty() {
-            s.to_cow()
-        } else {
-            Cow::Owned(
-                result
-                    .into_iter()
-                    .fold(s.to_cow().to_string(), |mut acc: String, r| {
-                        acc.push_str(r.to_cow().as_ref());
-                        acc
-                    }),
-            )
-        }
-    } else {
+    if result.is_empty() {
         Cow::Borrowed(input)
+    } else if result.len() == 1 {
+        result.into_iter().next().unwrap().to_cow()
+    } else {
+        Cow::Owned(
+            result
+                .into_iter()
+                .fold(String::new(), |mut acc: String, r| {
+                    acc.push_str(r.to_cow().as_ref());
+                    acc
+                }),
+        )
     }
 }

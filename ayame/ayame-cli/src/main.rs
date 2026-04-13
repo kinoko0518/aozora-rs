@@ -39,6 +39,10 @@ enum Commands {
         #[arg(long)]
         css: Vec<PathBuf>,
 
+        /// 外字についての対応を無効化する
+        #[arg(long)]
+        no_gaiji: bool,
+
         /// 出力先ディレクトリ（デフォルト: カレントディレクトリ）
         #[arg(short, long)]
         output: Option<PathBuf>,
@@ -67,6 +71,10 @@ enum Commands {
         /// 追加で適用するCSSファイルのパス（複数指定可）
         #[arg(long)]
         css: Vec<PathBuf>,
+
+        /// 外字についての対応を無効化する
+        #[arg(long)]
+        no_gaiji: bool,
 
         /// 出力先ディレクトリ（デフォルト: カレントディレクトリ）
         #[arg(short, long)]
@@ -129,6 +137,7 @@ fn handle_xhtml(
     horizontal: bool,
     no_prelude: bool,
     no_miyabi: bool,
+    no_gaiji: bool,
     extra_css: Vec<PathBuf>,
     output: Option<PathBuf>,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -155,7 +164,7 @@ fn handle_xhtml(
     } else {
         AozoraHyle::Txt((bytes, to_encoding(utf8)))
     };
-    let (string, dependencies) = hyle.encode().map_err(|e| miette!("{}", e))?;
+    let (string, dependencies) = hyle.encode(!no_gaiji).map_err(|e| miette!("{}", e))?;
     let abstract_zip = AbstractAozoraZip::from_str_with_meta(string.as_str(), dependencies)?;
 
     let az_result = abstract_zip
@@ -186,6 +195,7 @@ fn handle_epub(
     horizontal: bool,
     no_prelude: bool,
     no_miyabi: bool,
+    no_gaiji: bool,
     _extra_css: Vec<PathBuf>,
     output: Option<PathBuf>,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -209,7 +219,7 @@ fn handle_epub(
     } else {
         AozoraHyle::Txt((bytes, to_encoding(utf8)))
     };
-    let (string, dependencies) = hyle.encode().map_err(|e| miette!("{}", e))?;
+    let (string, dependencies) = hyle.encode(!no_gaiji).map_err(|e| miette!("{}", e))?;
     let abstract_zip = AbstractAozoraZip::from_str_with_meta(string.as_str(), dependencies)?;
 
     let output_path = output_dir.join(format!("{}.epub", file_stem));
@@ -244,10 +254,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             horizontal,
             no_prelude,
             no_miyabi,
+            no_gaiji,
             css,
             output,
         } => {
-            handle_xhtml(source, utf8, horizontal, no_prelude, no_miyabi, css, output)?;
+            handle_xhtml(
+                source, utf8, horizontal, no_prelude, no_miyabi, no_gaiji, css, output,
+            )?;
         }
         Commands::Epub {
             source,
@@ -255,10 +268,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             horizontal,
             no_prelude,
             no_miyabi,
+            no_gaiji,
             css,
             output,
         } => {
-            handle_epub(source, utf8, horizontal, no_prelude, no_miyabi, css, output)?;
+            handle_epub(
+                source, utf8, horizontal, no_prelude, no_miyabi, no_gaiji, css, output,
+            )?;
         }
     }
 

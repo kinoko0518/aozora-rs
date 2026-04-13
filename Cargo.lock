@@ -140,6 +140,7 @@ version = "0.1.0"
 dependencies = [
  "aozora-rs-core",
  "aozora-rs-epub",
+ "aozora-rs-gaiji",
  "aozora-rs-xhtml",
  "aozora-rs-zip",
  "winnow 0.7.15",

@@ -1,6 +1,7 @@
 use std::{
     fs::File,
     io::Write,
+    path::Path,
     time::{Duration, Instant},
 };
 
@@ -16,6 +17,7 @@ use winnow::LocatingSlice;
 pub struct SpeedPerWork {
     pub title: String,
     pub author: String,
+    pub gaiji_convert: Duration,
     pub get_meta: Duration,
     pub tokenize: Duration,
     pub scopenize: Duration,
@@ -27,10 +29,11 @@ pub struct SpeedPerWork {
 impl SpeedPerWork {
     pub fn fancy(&self) -> String {
         format!(
-            "## {} - {}\n| 実行項目 | 処理時間 |\n| --- | --- |\n| 全体処理時間 | {:?} |\n| メタデータ解析 | {:?} |\n| トークン化 | {:?} |\n| スコープ化 | {:?} |\n| 再トークン化 | {:?} |\n| XHTML生成 | {:?} |\n| epub生成 | {:?} |",
+            "## {} - {}\n| 実行項目 | 処理時間 |\n| --- | --- |\n| 全体処理時間 | {:?} |\n| 外字変換 | {:?} |\n| メタデータ解析 | {:?} |\n| トークン化 | {:?} |\n| スコープ化 | {:?} |\n| 再トークン化 | {:?} |\n| XHTML生成 | {:?} |\n| epub生成 | {:?} |",
             self.title,
             self.author,
             self.total(),
+            self.gaiji_convert,
             self.get_meta,
             self.tokenize,
             self.scopenize,
@@ -42,6 +45,7 @@ impl SpeedPerWork {
 
     pub fn total(&self) -> Duration {
         self.epub_gen
+            + self.gaiji_convert
             + self.get_meta
             + self.retokenize
             + self.scopenize
@@ -61,9 +65,16 @@ impl std::fmt::Display for SpeedSummary {
     }
 }
 
-fn analyse_per_work(s: String) -> Result<SpeedPerWork, Box<dyn std::error::Error>> {
+fn analyse_per_work(
+    s: String,
+    base_path: &Path,
+) -> Result<SpeedPerWork, Box<dyn std::error::Error>> {
+    let gaiji_instant = Instant::now();
+    let gaiji_converted = aozora_rs_gaiji::whole_gaiji_to_char(s.as_str());
+    let gaiji_duration = gaiji_instant.elapsed();
+    let mut s_slice: &str = &gaiji_converted;
+
     let meta_instant = Instant::now();
-    let mut s_slice = s.as_str();
     let meta = parse_meta(&mut s_slice).map_err(|e| e.to_string())?;
     let meta_duration = meta_instant.elapsed();
 
@@ -88,10 +99,10 @@ fn analyse_per_work(s: String) -> Result<SpeedPerWork, Box<dyn std::error::Error
     let xhtmlnize_duration = xhtmlnize_instant.elapsed();
 
     let epub_instant = Instant::now();
-    let epub_path_base = "./aozora-rs-qa/result/epubs";
-    std::fs::create_dir_all(epub_path_base)?;
+    let epub_base_path = base_path.join("result/epubs");
+    std::fs::create_dir_all(&epub_base_path)?;
     let _ = aozora_rs_epub::from_aozora_zip(
-        File::create(format!("{}/{}.epub", epub_path_base, title_owned))?,
+        File::create(epub_base_path.join(format!("{}.epub", title_owned)))?,
         Dependencies::default(),
         EpubSetting::default(),
         xhtmlnized,
@@ -101,6 +112,7 @@ fn analyse_per_work(s: String) -> Result<SpeedPerWork, Box<dyn std::error::Error
     Ok(SpeedPerWork {
         title: title_owned,
         author: author_owned,
+        gaiji_convert: gaiji_duration,
         get_meta: meta_duration,
         tokenize: tokenize_duration,
         scopenize: scopenized_duration,
@@ -112,6 +124,7 @@ fn analyse_per_work(s: String) -> Result<SpeedPerWork, Box<dyn std::error::Error
 
 pub async fn speed_analyse(
     log: &mut File,
+    base_path: &Path,
 ) -> Result<Vec<SpeedSummary>, Box<dyn std::error::Error>> {
     let decode = |bytes: &[u8]| -> String {
         let (cow, _, _) = SHIFT_JIS.decode(bytes);
@@ -127,7 +140,7 @@ pub async fn speed_analyse(
 
     let results: Result<Vec<SpeedPerWork>, _> = works
         .into_par_iter()
-        .map(|s| analyse_per_work(s).map_err(|e| e.to_string()))
+        .map(|s| analyse_per_work(s, base_path).map_err(|e| e.to_string()))
         .collect();
 
     let vec_results = results?;

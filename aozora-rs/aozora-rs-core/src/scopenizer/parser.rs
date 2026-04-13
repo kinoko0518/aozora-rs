@@ -47,7 +47,7 @@ pub fn scopenize<'s>(
                         BackRefResult::ItWontBackRef => break,
                     }
                 }
-                flatten.push((FlatToken::Text(t.clone()), token.span));
+                flatten.push((FlatToken::Text(t), token.span));
             }
             AozoraTokenKind::RubyDelimiter => {
                 // ルビ区切りが出たら次のトークンがテキスト、次の次のトークンがルビであることを期待する

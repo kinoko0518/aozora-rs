@@ -1,6 +1,5 @@
 use crate::tokenizer::*;
 use crate::*;
-use std::borrow::Cow;
 
 #[derive(Debug, Clone)]
 pub enum AozoraTokenKind<'s> {
@@ -8,7 +7,7 @@ pub enum AozoraTokenKind<'s> {
     Ruby(&'s str),
     RubyDelimiter,
     Odoriji(Odoriji),
-    Text(Cow<'s, str>),
+    Text(&'s str),
     Br,
 }
 
