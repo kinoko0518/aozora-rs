@@ -97,19 +97,23 @@ fn sandwiched_begin(input: &mut Input<'_>) -> Result<SandwichedBegins, ContextEr
 }
 
 fn sandwiched_end(input: &mut Input<'_>) -> Result<SandwichedEnds, ContextError> {
-    alt((
-        "大見出し終わり".value(SandwichedEnds::AHeadEnd),
-        "中見出し終わり".value(SandwichedEnds::BHeadEnd),
-        "小見出し終わり".value(SandwichedEnds::CHeadEnd),
-        "太字終わり".value(SandwichedEnds::BoldEnd),
-        "斜体終わり".value(SandwichedEnds::ItalicEnd),
-        (boten, "終わり").map(|(bt, _)| SandwichedEnds::BotenEnd(bt)),
-        (bosen, "終わり").map(|(bs, _)| SandwichedEnds::BosenEnd(bs)),
-        "小さな文字終わり".value(SandwichedEnds::SmallerEnd),
-        "大きな文字終わり".value(SandwichedEnds::BiggerEnd),
-        "割り注終わり".value(SandwichedEnds::WarichuEnd),
-    ))
-    .parse_next(input)
+    (
+        alt((
+            "大見出し".value(SandwichedEnds::AHeadEnd),
+            "中見出し".value(SandwichedEnds::BHeadEnd),
+            "小見出し".value(SandwichedEnds::CHeadEnd),
+            "太字".value(SandwichedEnds::BoldEnd),
+            "斜体".value(SandwichedEnds::ItalicEnd),
+            boten.map(|bt| SandwichedEnds::BotenEnd(bt)),
+            bosen.map(|bs| SandwichedEnds::BosenEnd(bs)),
+            "小さな文字".value(SandwichedEnds::SmallerEnd),
+            "大きな文字".value(SandwichedEnds::BiggerEnd),
+            "割り注".value(SandwichedEnds::WarichuEnd),
+        )),
+        "終わり",
+    )
+        .map(|(v, _)| v)
+        .parse_next(input)
 }
 
 pub fn sandwiched(input: &mut Input<'_>) -> Result<Sandwiched, ContextError> {

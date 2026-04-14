@@ -54,33 +54,40 @@ pub struct BackRef<'s> {
 
 pub fn backref<'s>(input: &mut Input<'s>) -> Result<BackRef<'s>, ContextError> {
     let target = BackRefSpec(delimited("「", take_until(1.., "」"), "」").parse_next(input)?);
-    alt((
-        "は太字".value(BackRefKind::Bold),
-        "は斜体".value(BackRefKind::Italic),
-        "は大見出し".value(BackRefKind::AHead),
-        "は中見出し".value(BackRefKind::BHead),
-        "は小見出し".value(BackRefKind::CHead),
-        alt(("はママ", "に「ママ」の注記")).value(BackRefKind::Mama),
-        alt(("は縦中横", "は横一列")).value(BackRefKind::HinV),
-        (
-            "に",
+    let ha = (
+        'は',
+        alt((
+            "太字".value(BackRefKind::Bold),
+            "斜体".value(BackRefKind::Italic),
+            "大見出し".value(BackRefKind::AHead),
+            "中見出し".value(BackRefKind::BHead),
+            "小見出し".value(BackRefKind::CHead),
+            "ママ".value(BackRefKind::Mama),
+            alt(("縦中横", "横一列")).value(BackRefKind::HinV),
+            (japanese_num, "段階小さな文字").map(|(size, _)| BackRefKind::Small(size)),
+            (japanese_num, "段階大きな文字").map(|(size, _)| BackRefKind::Big(size)),
+            (
+                take_until(1.., "では"),
+                "では「",
+                take_until(0.., "」"),
+                "」",
+            )
+                .map(|(on, _, variation, _)| BackRefKind::Variation((on, variation))),
+        )),
+    )
+        .map(|(_, v)| v);
+    let ni = (
+        'に',
+        alt((
+            "「ママ」の注記".value(BackRefKind::Mama),
             alt((bosen.map(BackRefKind::Bosen), boten.map(BackRefKind::Boten))),
-        )
-            .map(|(_, b)| b),
-        ("は", japanese_num, "段階小さな文字").map(|(_, size, _)| BackRefKind::Small(size)),
-        ("は", japanese_num, "段階大きな文字").map(|(_, size, _)| BackRefKind::Big(size)),
-        (
-            "は",
-            take_until(1.., "では"),
-            "では「",
-            take_until(0.., "」"),
-            "」",
-        )
-            .map(|(_, on, _, variation, _)| BackRefKind::Variation((on, variation))),
-    ))
-    .map(|b| BackRef {
-        kind: b,
-        range: target,
-    })
-    .parse_next(input)
+        )),
+    )
+        .map(|(_, v)| v);
+    alt((ha, ni))
+        .map(|b| BackRef {
+            kind: b,
+            range: target,
+        })
+        .parse_next(input)
 }
