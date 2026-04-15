@@ -112,7 +112,7 @@ pub fn from_aozora_zip<'s>(
     novel_result: NovelResult<'s>,
 ) -> Result<AZResult<()>, Box<dyn std::error::Error>> {
     let mut writer = ZipWriter::new(acc);
-    let options = SimpleFileOptions::default();
+    let options = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
     let epub_writer = EpubWriter {
         nresult: novel_result,
         image: dependencies.images,
