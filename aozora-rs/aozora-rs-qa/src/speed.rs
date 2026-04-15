@@ -28,11 +28,15 @@ pub struct SpeedPerWork {
 
 impl SpeedPerWork {
     pub fn fancy(&self) -> String {
+        let total = self.total();
+        let pure_parse_total = total - self.epub_gen;
         format!(
-            "## {} - {}\n| 実行項目 | 処理時間 |\n| --- | --- |\n| 全体処理時間 | {:?} |\n| 外字変換 | {:?} |\n| メタデータ解析 | {:?} |\n| トークン化 | {:?} |\n| スコープ化 | {:?} |\n| 再トークン化 | {:?} |\n| XHTML生成 | {:?} |\n| epub生成 | {:?} |",
+            "## {} - {}\n| 実行項目 | 処理時間 |\n| --- | --- |\n| 全体処理時間 | {:?} |\n| 純粋変換時間 | {:?}（{}%） |\n| 外字変換 | {:?} |\n| メタデータ解析 | {:?} |\n| トークン化 | {:?} |\n| スコープ化 | {:?} |\n| 再トークン化 | {:?} |\n| XHTML生成 | {:?} |\n| epub生成 | {:?} |",
             self.title,
             self.author,
-            self.total(),
+            total,
+            pure_parse_total,
+            (pure_parse_total.as_secs_f32() / total.as_secs_f32()) * 100.,
             self.gaiji_convert,
             self.get_meta,
             self.tokenize,
@@ -104,7 +108,14 @@ fn analyse_per_work(
     let _ = aozora_rs_epub::from_aozora_zip(
         File::create(epub_base_path.join(format!("{}.epub", title_owned)))?,
         Dependencies::default(),
-        EpubSetting::default(),
+        EpubSetting {
+            styles: vec![
+                include_str!("../../../ayame/ayame/assets/prelude.css"),
+                include_str!("../../../ayame/ayame/assets/vertical.css"),
+                include_str!("../../../ayame/ayame/assets/miyabi.css"),
+            ],
+            ..Default::default()
+        },
         xhtmlnized,
     )?;
     let epub_duration = epub_instant.elapsed();

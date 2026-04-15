@@ -36,6 +36,8 @@ pub enum BackRefKind<'s> {
     CHead,
     /// ママ
     Mama,
+    /// 注記
+    Note(&'s str),
     /// 縦中横
     HinV,
     /// N段階小さな文字
@@ -44,6 +46,10 @@ pub enum BackRefKind<'s> {
     Big(usize),
     /// …はXXでは
     Variation((&'s str, &'s str)),
+    /// 下付き小文字
+    Sub,
+    /// 上付き小文字
+    Sup,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -73,14 +79,16 @@ pub fn backref<'s>(input: &mut Input<'s>) -> Result<BackRef<'s>, ContextError> {
                 "」",
             )
                 .map(|(on, _, variation, _)| BackRefKind::Variation((on, variation))),
+            alt(("下付き小文字", "行右小書き")).value(BackRefKind::Sub),
+            alt(("上付き小文字", "行左小書き")).value(BackRefKind::Sup),
         )),
     )
         .map(|(_, v)| v);
     let ni = (
         'に',
         alt((
-            "「ママ」の注記".value(BackRefKind::Mama),
             alt((bosen.map(BackRefKind::Bosen), boten.map(BackRefKind::Boten))),
+            ('「', take_until(1.., '」'), '」', "の注記").map(|(_, s, _, _)| BackRefKind::Note(s)),
         )),
     )
         .map(|(_, v)| v);

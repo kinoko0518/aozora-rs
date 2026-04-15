@@ -14,6 +14,8 @@ pub enum XHTMLKind<'s> {
     Br,
     DivBegin,
     DivEnd,
+    SubBegin,
+    SubEnd,
     SupBegin,
     SupEnd,
     RubyBegin,
@@ -43,6 +45,8 @@ impl XHTMLKind<'_> {
             Self::DivEnd => false,
             Self::SupBegin => true,
             Self::SupEnd => true,
+            Self::SubBegin => true,
+            Self::SubEnd => true,
             Self::RubyBegin => true,
             Self::RubyEnd => true,
             Self::RtBegin => true,
@@ -124,6 +128,8 @@ impl<'s> XHTMLTag<'s> {
             XHTMLKind::SpanEnd => "/span",
             XHTMLKind::SupBegin => "sup",
             XHTMLKind::SupEnd => "/sup",
+            XHTMLKind::SubBegin => "sub",
+            XHTMLKind::SubEnd => "/sub",
         });
         for atr in &self.attributes {
             write!(buff, " ").unwrap();

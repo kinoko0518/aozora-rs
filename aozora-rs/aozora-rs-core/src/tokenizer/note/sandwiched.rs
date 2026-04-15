@@ -20,6 +20,8 @@ pub enum SandwichedBegins {
     SmallerBegin(usize),
     BiggerBegin(usize),
     Warichu,
+    HorizontalLayout,
+    Sup,
 }
 
 impl SandwichedBegins {
@@ -35,6 +37,8 @@ impl SandwichedBegins {
             Self::SmallerBegin(b) => Deco::Smaller(b),
             Self::BiggerBegin(b) => Deco::Bigger(b),
             Self::Warichu => Deco::Warichu,
+            Self::HorizontalLayout => Deco::HorizontalLayout,
+            Self::Sup => Deco::Sup,
         }
     }
 }
@@ -56,6 +60,8 @@ impl SandwichedBegin<SandwichedEnds> for SandwichedBegins {
             Self::SmallerBegin(_) => matches!(rhs, SandwichedEnds::SmallerEnd),
             Self::BiggerBegin(_) => matches!(rhs, SandwichedEnds::BiggerEnd),
             Self::Warichu => matches!(rhs, SandwichedEnds::WarichuEnd),
+            Self::HorizontalLayout => matches!(rhs, SandwichedEnds::HorizontalLayout),
+            Self::Sup => matches!(rhs, SandwichedEnds::Sup),
         }
     }
 }
@@ -72,6 +78,8 @@ pub enum SandwichedEnds {
     SmallerEnd,
     BiggerEnd,
     WarichuEnd,
+    HorizontalLayout,
+    Sup,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -92,6 +100,8 @@ fn sandwiched_begin(input: &mut Input<'_>) -> Result<SandwichedBegins, ContextEr
         (japanese_num, "段階小さな文字").map(|(s, _)| SandwichedBegins::SmallerBegin(s)),
         (japanese_num, "段階大きな文字").map(|(b, _)| SandwichedBegins::SmallerBegin(b)),
         "割り注".value(SandwichedBegins::Warichu),
+        "横組み".value(SandwichedBegins::HorizontalLayout),
+        "行右小書き".value(SandwichedBegins::Sup),
     ))
     .parse_next(input)
 }
@@ -109,6 +119,8 @@ fn sandwiched_end(input: &mut Input<'_>) -> Result<SandwichedEnds, ContextError>
             "小さな文字".value(SandwichedEnds::SmallerEnd),
             "大きな文字".value(SandwichedEnds::BiggerEnd),
             "割り注".value(SandwichedEnds::WarichuEnd),
+            "横組み".value(SandwichedEnds::HorizontalLayout),
+            "行右小書き".value(SandwichedEnds::Sup),
         )),
         "終わり",
     )

@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 #[derive(Debug, Clone, Copy)]
 pub struct Odoriji {
     pub has_dakuten: bool,
@@ -112,34 +114,39 @@ pub enum Deco<'s> {
     Bigger(usize),
     VHCentre,
     Warichu,
+    HorizontalLayout,
+    Kerning(usize),
+    Sub,
+    Sup,
 }
 
 impl std::fmt::Display for Deco<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "[{}]",
-            match self {
-                Self::Bold => "太字".to_string(),
-                Self::Italic => "斜体".to_string(),
-                Self::Ruby(r) => format!("ルビ「{}」", r),
-                Self::Bosen(b) => b.to_string(),
-                Self::Boten(b) => b.to_string(),
-                Self::Indent(i) => format!("{}字下げ", i),
-                Self::Hanging(h) => format!("{}字下げ、折り返して{}字下げ", h.0, h.1),
-                Self::Grounded => "地付き".to_string(),
-                Self::LowFlying(l) => format!("{}字寄せ", l),
-                Self::AHead => "大見出し".to_string(),
-                Self::BHead => "中見出し".to_string(),
-                Self::CHead => "小見出し".to_string(),
-                Self::HinV => "縦中横".to_string(),
-                Self::Mama => "ママ".to_string(),
-                Self::Smaller(s) => format!("{}段階小さな文字", s),
-                Self::Bigger(s) => format!("{}段階大きな文字", s),
-                Self::VHCentre => "ページの左右中央".to_string(),
-                Self::Warichu => "割注".to_string(),
-            }
-        )
+        let cow: Cow<str> = match self {
+            Self::Bold => "太字".into(),
+            Self::Italic => "斜体".into(),
+            Self::Ruby(r) => format!("ルビ「{}」", r).into(),
+            Self::Bosen(b) => b.to_string().into(),
+            Self::Boten(b) => b.to_string().into(),
+            Self::Indent(i) => format!("{}字下げ", i).into(),
+            Self::Hanging(h) => format!("{}字下げ、折り返して{}字下げ", h.0, h.1).into(),
+            Self::Grounded => "地付き".into(),
+            Self::LowFlying(l) => format!("{}字寄せ", l).into(),
+            Self::AHead => "大見出し".into(),
+            Self::BHead => "中見出し".into(),
+            Self::CHead => "小見出し".into(),
+            Self::HinV => "縦中横".into(),
+            Self::Mama => "ママ".into(),
+            Self::Smaller(s) => format!("{}段階小さな文字", s).into(),
+            Self::Bigger(s) => format!("{}段階大きな文字", s).into(),
+            Self::VHCentre => "ページの左右中央".into(),
+            Self::Warichu => "割注".into(),
+            Self::HorizontalLayout => "横組み".into(),
+            Self::Kerning(k) => format!("{}字詰め", k).into(),
+            Self::Sub => "下付き小文字".into(),
+            Self::Sup => "上付き小文字".into(),
+        };
+        write!(f, "[{}]", cow)
     }
 }
 

@@ -50,6 +50,8 @@ pub enum MultiLineBegins {
     Smaller(usize),
     /// 参照：https://www.aozora.gr.jp/annotation/etc.html#moji_size
     Bigger(usize),
+    /// 参照：https://www.aozora.gr.jp/annotation/etc.html#jizume
+    Kerning(usize),
 }
 
 impl SandwichedBegin<MultiLineEnds> for MultiLineBegins {
@@ -61,6 +63,7 @@ impl SandwichedBegin<MultiLineEnds> for MultiLineBegins {
             Self::LowFlying(_) => matches!(rhs, MultiLineEnds::LowFlyingEnd),
             Self::Smaller(_) => matches!(rhs, MultiLineEnds::SmallEnd),
             Self::Bigger(_) => matches!(rhs, MultiLineEnds::BigEnd),
+            Self::Kerning(_) => matches!(rhs, MultiLineEnds::Kerning),
         }
     }
 }
@@ -74,6 +77,7 @@ impl MultiLineBegins {
             Self::LowFlying(l) => Deco::LowFlying(l.level),
             Self::Smaller(s) => Deco::Smaller(s),
             Self::Bigger(b) => Deco::Bigger(b),
+            Self::Kerning(j) => Deco::Kerning(j),
         }
     }
 }
@@ -85,6 +89,7 @@ pub enum MultiLineEnds {
     LowFlyingEnd,
     SmallEnd,
     BigEnd,
+    Kerning,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -142,6 +147,12 @@ fn bigger_block_begins<'s>(input: &mut Input<'s>) -> Result<MultiLineBegins, Con
         .parse_next(input)
 }
 
+fn kerning_begins<'s>(input: &mut Input<'s>) -> Result<MultiLineBegins, ContextError> {
+    (japanese_num, "字詰め")
+        .map(|(u, _)| MultiLineBegins::Kerning(u))
+        .parse_next(input)
+}
+
 fn multiline_begins<'s>(input: &mut Input<'s>) -> Result<MultiLineBegins, ContextError> {
     (
         "ここから",
@@ -151,6 +162,7 @@ fn multiline_begins<'s>(input: &mut Input<'s>) -> Result<MultiLineBegins, Contex
             chiyose_block_begins,
             smaller_block_begins,
             bigger_block_begins,
+            kerning_begins,
         )),
     )
         .map(|(_, b)| b)
@@ -166,6 +178,7 @@ fn multiline_ends<'s>(input: &mut Input<'s>) -> Result<MultiLineEnds, ContextErr
             "地付け".value(MultiLineEnds::GroundedEnd),
             "小さな文字".value(MultiLineEnds::SmallEnd),
             "大きな文字".value(MultiLineEnds::BigEnd),
+            "字詰め".value(MultiLineEnds::Kerning),
         )),
         alt(("終わり", "おわり")),
     )
