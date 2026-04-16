@@ -123,7 +123,7 @@ impl AyameApp {
                     let zip = File::create(save_to).unwrap();
                     aaz.epub(
                         zip,
-                        PotentialCSS {
+                        &PotentialCSS {
                             use_miyabi: view.use_miyabi,
                             use_prelude: view.use_prelude,
                             direction: view.writing_direction,

@@ -148,7 +148,7 @@ impl<'s> AbstractAozoraZip<'s> {
     pub fn epub(
         self,
         acc: impl Seek + Write,
-        potential: PotentialCSS,
+        potential: &PotentialCSS,
         language: &str,
     ) -> Result<AZResult<()>, Box<dyn std::error::Error>> {
         let novel_result = str_to_novel_result(self.text)?;
@@ -164,7 +164,7 @@ impl<'s> AbstractAozoraZip<'s> {
     /// <html>タグと<body>タグでラップしたりなどの処理を行って返します。
     pub fn browser_xhtml(
         self,
-        potential: PotentialCSS,
+        potential: &PotentialCSS,
         mut css: Vec<&str>,
     ) -> Result<AZResult<String>, Box<dyn std::error::Error>> {
         let novel_result = str_to_novel_result(self.text)?;
