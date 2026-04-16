@@ -9,6 +9,7 @@
         />
         <title>aozora-rs デモ</title>
         <link rel="stylesheet" href="./style.css" />
+        <link rel="stylesheet" href="./preview_onsite.css">
         <script
             src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
             defer
@@ -44,10 +45,9 @@
                     </div>
                     <div class="editor-pane">
                         <div class="pane-label">プレビュー</div>
-                        <iframe
-                            id="preview-frame"
-                            sandbox="allow-same-origin"
-                        ></iframe>
+                        <div id="preview-area">
+                            <div id="preview-area-container" class="preview-container"></div>
+                        </div>
                     </div>
                 </div>
             </section>

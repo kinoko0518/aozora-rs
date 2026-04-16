@@ -4,6 +4,21 @@ import init, {
     build_epub_bytes,
 } from './pkg/aozora_rs_wasm.js';
 
+// web worker 準備
+const worker = new Worker('web_worker.js', { type: 'module' });
+
+worker.onmessage = (e) => {
+    if (e.data.type === 'READY') {
+        console.log("Wasm Worker is ready!");
+        state.wasmReady = true;
+        updatePreview();
+    } else if (e.data.type === 'RESULT') {
+        // 届いたHTMLをプレビューに表示
+        previewArea.innerHTML = e.data.html;
+    }
+};
+
+
 // === 状態管理 ===
 const state = {
     wasmReady: false,
@@ -15,7 +30,7 @@ const state = {
 // === DOM要素 ===
 const $ = (id) => document.getElementById(id);
 const textarea = $('editor-textarea');
-const previewFrame = $('preview-frame');
+const previewArea = $('preview-area-container');
 const encodingSwitch = $('encoding-switch');
 const labelUtf8 = $('label-utf8');
 const labelSjis = $('label-sjis');
@@ -73,21 +88,6 @@ function clearStatus() {
     statusBar.className = 'status-bar';
 }
 
-// === プレビューのXHTML構成 ===
-function buildPreviewHtml(xhtmlBody) {
-    return `<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>${previewCssText || ''}</style>
-</head>
-<body>${xhtmlBody}</body>
-</html>`;
-}
-
 // === XHTMLビューア用の完全なHTML ===
 function buildFullXhtml(xhtmlBodies) {
     const combinedCss = previewCssText || '';
@@ -118,35 +118,14 @@ function updatePreview() {
     if (!state.wasmReady || !previewCssText) return;
 
     const text = textarea.value;
-    try {
-        const result = generate_standalone_xhtml(text, '');
 
-        if (!result.result && result.occured_error) {
-            previewFrame.srcdoc = buildPreviewHtml(
-                `<p style="color:#e06060;font-family:Inter,sans-serif;font-size:0.9rem;padding:1em;">${escapeHtml(result.occured_error)}</p>`
-            );
-        } else {
-            const html = buildPreviewHtml(result.result);
-            previewFrame.srcdoc = html;
-        }
-
-        result.free();
-    } catch (e) {
-        previewFrame.srcdoc = buildPreviewHtml(
-            `<p style="color:#e06060;font-family:Inter,sans-serif;font-size:0.9rem;padding:1em;">${escapeHtml(e.message)}</p>`
-        );
-    }
+    // ゼロコピー転送を実装
+    const encoder = new TextEncoder();
+    const buffer = encoder.encode(text).buffer; 
+    worker.postMessage({ type: 'PARSE', buffer: buffer }, [buffer]);
 }
 
-function escapeHtml(str) {
-    return str
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-}
-
-const debouncedPreview = debounce(updatePreview, 200);
+const debouncedPreview = debounce(updatePreview, 50);
 
 // === エンコーディング切替 ===
 function updateEncodingLabels() {

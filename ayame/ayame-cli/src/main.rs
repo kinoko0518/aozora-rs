@@ -1,12 +1,17 @@
 use ayame::{AbstractAozoraZip, AozoraHyle, Encoding, PotentialCSS, WritingDirection};
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 use miette::{IntoDiagnostic, Result, miette};
+use rayon::prelude::*;
 use std::fs;
 use std::path::{Path, PathBuf};
 
 #[derive(Parser)]
 #[command(name = "ayame")]
-#[command(author, version, about = "青空文庫書式からXHTML/EPUBを生成するCLIツール", long_about = None)]
+#[command(
+    author,
+    version,
+    about = "青空文庫書式からXHTML/EPUBを生成するCLIツール"
+)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -14,81 +19,62 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// 青空文庫书式のファイルからXHTMLを生成
-    Xhtml {
-        /// 入力ファイル（.txt または .zip）
-        source: PathBuf,
-
-        /// 入力ファイルがUTF-8でエンコードされている場合に指定（デフォルト: Shift-JIS）
-        #[arg(long)]
-        utf8: bool,
-
-        /// 横書きで生成（デフォルト: 縦書き）
-        #[arg(long)]
-        horizontal: bool,
-
-        /// preludeを適用しない
-        #[arg(long)]
-        no_prelude: bool,
-
-        /// miyabiを適用しない
-        #[arg(long)]
-        no_miyabi: bool,
-
-        /// 追加で適用するCSSファイルのパス（複数指定可）
-        #[arg(long)]
-        css: Vec<PathBuf>,
-
-        /// 外字についての対応を無効化する
-        #[arg(long)]
-        no_gaiji: bool,
-
-        /// 出力先ディレクトリ（デフォルト: カレントディレクトリ）
-        #[arg(short, long)]
-        output: Option<PathBuf>,
-    },
+    /// 青空文庫書式のファイルからXHTMLを生成
+    Xhtml(CommonArgs),
     /// 青空文庫書式のファイルからEPUBを生成
-    Epub {
-        /// 入力ファイル（.txt または .zip）
-        source: PathBuf,
-
-        /// 入力ファイルがUTF-8でエンコードされている場合に指定（デフォルト: Shift-JIS）
-        #[arg(long)]
-        utf8: bool,
-
-        /// 横書きで生成（デフォルト: 縦書き）
-        #[arg(long)]
-        horizontal: bool,
-
-        /// preludeを適用しない
-        #[arg(long)]
-        no_prelude: bool,
-
-        /// miyabiを適用しない
-        #[arg(long)]
-        no_miyabi: bool,
-
-        /// 追加で適用するCSSファイルのパス（複数指定可）
-        #[arg(long)]
-        css: Vec<PathBuf>,
-
-        /// 外字についての対応を無効化する
-        #[arg(long)]
-        no_gaiji: bool,
-
-        /// 出力先ディレクトリ（デフォルト: カレントディレクトリ）
-        #[arg(short, long)]
-        output: Option<PathBuf>,
-    },
+    Epub(CommonArgs),
 }
 
-fn get_output_dir(output: Option<PathBuf>) -> Result<PathBuf> {
+/// XhtmlとEpubで共通のコマンドライン引数
+#[derive(Args)]
+struct CommonArgs {
+    #[arg(required = true)]
+    sources: Vec<PathBuf>,
+
+    #[arg(long)]
+    utf8: bool,
+
+    #[arg(long)]
+    horizontal: bool,
+
+    #[arg(long)]
+    no_prelude: bool,
+
+    #[arg(long)]
+    no_miyabi: bool,
+
+    #[arg(long)]
+    css: Vec<PathBuf>,
+
+    #[arg(long)]
+    no_gaiji: bool,
+
+    #[arg(short, long)]
+    output: Option<PathBuf>,
+}
+
+impl CommonArgs {
+    /// 引数からPotentialCSSを生成する
+    fn to_potential_css(&self) -> PotentialCSS {
+        PotentialCSS {
+            use_prelude: !self.no_prelude,
+            use_miyabi: !self.no_miyabi,
+            direction: if self.horizontal {
+                WritingDirection::Horizontal
+            } else {
+                WritingDirection::Vertical
+            },
+        }
+    }
+}
+
+fn get_output_dir(output: &Option<PathBuf>) -> Result<PathBuf> {
     match output {
         Some(path) => {
             if !path.exists() {
-                fs::create_dir_all(&path).into_diagnostic()?;
+                fs::create_dir_all(path).into_diagnostic()?;
             }
-            Ok(path)
+            Ok(path.clone())
         }
         None => std::env::current_dir().into_diagnostic(),
     }
@@ -99,7 +85,7 @@ fn get_file_stem(source: &Path) -> Result<String> {
         .file_stem()
         .and_then(|s| s.to_str())
         .map(|s| s.to_string())
-        .ok_or_else(|| miette!("ファイル名を取得できませんでした"))
+        .ok_or_else(|| miette!("ファイル名を取得できませんでした: {}", source.display()))
 }
 
 fn to_encoding(utf8: bool) -> Encoding {
@@ -119,110 +105,85 @@ fn is_zip(source: &Path) -> bool {
 }
 
 fn read_extra_css(extra_css: &[PathBuf]) -> Result<Vec<String>> {
-    let mut css_contents = Vec::new();
-    for path in extra_css {
-        if path.exists() {
-            let content = fs::read_to_string(path).into_diagnostic()?;
-            css_contents.push(content);
-        } else {
-            return Err(miette!("CSSファイルが見つかりません: {}", path.display()));
-        }
+    extra_css
+        .iter()
+        .map(|path| {
+            if path.exists() {
+                fs::read_to_string(path).into_diagnostic()
+            } else {
+                Err(miette!("CSSファイルが見つかりません: {}", path.display()))
+            }
+        })
+        .collect()
+}
+
+// --- 処理コア ---
+
+/// ファイルを読み込み、AozoraHyleを構築する共通処理
+fn read_hyle(source: &Path, utf8: bool) -> Result<AozoraHyle> {
+    let bytes = fs::read(source).into_diagnostic()?;
+
+    if is_zip(source) {
+        Ok(AozoraHyle::Zip((bytes, to_encoding(utf8))))
+    } else {
+        Ok(AozoraHyle::Txt((bytes, to_encoding(utf8))))
     }
-    Ok(css_contents)
 }
 
 fn handle_xhtml(
-    source: PathBuf,
-    utf8: bool,
-    horizontal: bool,
-    no_prelude: bool,
-    no_miyabi: bool,
-    no_gaiji: bool,
-    extra_css: Vec<PathBuf>,
-    output: Option<PathBuf>,
-) -> Result<(), Box<dyn std::error::Error>> {
+    source: &Path,
+    args: &CommonArgs,
+    potential: &PotentialCSS,
+    extra_css_refs: &[&str],
+    output_dir: &Path,
+) -> Result<()> {
     let timer = std::time::Instant::now();
-    let output_dir = get_output_dir(output)?;
-    let file_stem = get_file_stem(&source)?;
-    let bytes = fs::read(&source).into_diagnostic()?;
+    let file_stem = get_file_stem(source)?;
 
-    let potential = PotentialCSS {
-        use_prelude: !no_prelude,
-        use_miyabi: !no_miyabi,
-        direction: if horizontal {
-            WritingDirection::Horizontal
-        } else {
-            WritingDirection::Vertical
-        },
-    };
-
-    let extra_css_contents = read_extra_css(&extra_css)?;
-    let extra_css_refs: Vec<&str> = extra_css_contents.iter().map(|s| s.as_str()).collect();
-
-    let hyle = if is_zip(&source) {
-        AozoraHyle::Zip((bytes, to_encoding(utf8)))
-    } else {
-        AozoraHyle::Txt((bytes, to_encoding(utf8)))
-    };
-    let (string, dependencies) = hyle.encode(!no_gaiji).map_err(|e| miette!("{}", e))?;
-    let abstract_zip = AbstractAozoraZip::from_str_with_meta(string.as_str(), dependencies)?;
+    let hyle = read_hyle(source, args.utf8)?;
+    let (string, dependencies) = hyle.encode(!args.no_gaiji).map_err(|e| miette!("{}", e))?;
+    let abstract_zip = AbstractAozoraZip::from_str_with_meta(string.as_str(), dependencies)
+        .map_err(|e| miette!("{}", e))?;
 
     let az_result = abstract_zip
-        .browser_xhtml(potential, extra_css_refs)
+        .browser_xhtml(potential, extra_css_refs.to_vec())
         .map_err(|e| miette!("{}", e))?;
 
     let (xhtml, errors) = az_result.into_tuple();
-
     for error in &errors {
-        eprintln!("警告: {:?}", error);
+        eprintln!("警告 ({}): {:?}", source.display(), error);
     }
 
     let output_path = output_dir.join(format!("{}.xhtml", file_stem));
     fs::write(&output_path, xhtml).into_diagnostic()?;
 
     println!(
-        "生成完了（{:?}）: {}",
+        "生成完了 [{:?}] -> {}",
         timer.elapsed(),
         output_path.display()
     );
-
     Ok(())
 }
 
 fn handle_epub(
-    source: PathBuf,
-    utf8: bool,
-    horizontal: bool,
-    no_prelude: bool,
-    no_miyabi: bool,
-    no_gaiji: bool,
-    _extra_css: Vec<PathBuf>,
-    output: Option<PathBuf>,
-) -> Result<(), Box<dyn std::error::Error>> {
+    source: &Path,
+    args: &CommonArgs,
+    potential: &PotentialCSS,
+    output_dir: &Path,
+) -> Result<()> {
     let timer = std::time::Instant::now();
-    let output_dir = get_output_dir(output)?;
-    let file_stem = get_file_stem(&source)?;
-    let bytes = fs::read(&source).into_diagnostic()?;
 
-    let potential = PotentialCSS {
-        use_prelude: !no_prelude,
-        use_miyabi: !no_miyabi,
-        direction: if horizontal {
-            WritingDirection::Horizontal
-        } else {
-            WritingDirection::Vertical
-        },
-    };
+    let hyle = read_hyle(source, args.utf8)?;
+    let (string, dependencies) = hyle.encode(!args.no_gaiji).map_err(|e| miette!("{}", e))?;
+    let abstract_zip = AbstractAozoraZip::from_str_with_meta(string.as_str(), dependencies)
+        .map_err(|e| miette!("{}", e))?;
 
-    let hyle = if is_zip(&source) {
-        AozoraHyle::Zip((bytes, to_encoding(utf8)))
-    } else {
-        AozoraHyle::Txt((bytes, to_encoding(utf8)))
-    };
-    let (string, dependencies) = hyle.encode(!no_gaiji).map_err(|e| miette!("{}", e))?;
-    let abstract_zip = AbstractAozoraZip::from_str_with_meta(string.as_str(), dependencies)?;
+    let meta = abstract_zip
+        .meta
+        .as_ref()
+        .ok_or_else(|| miette!("メタデータが取得できません"))?;
 
-    let output_path = output_dir.join(format!("{}.epub", file_stem));
+    let output_path = output_dir.join(format!("[{}] {}.epub", meta.author, meta.title));
     let mut file = fs::File::create(&output_path).into_diagnostic()?;
 
     let az_result = abstract_zip
@@ -230,51 +191,44 @@ fn handle_epub(
         .map_err(|e| miette!("{}", e))?;
 
     let ((), errors) = az_result.into_tuple();
-
     for error in &errors {
-        eprintln!("警告: {:?}", error);
+        eprintln!("警告 ({}): {:?}", source.display(), error);
     }
 
     println!(
-        "生成完了（{:?}）: {}",
+        "生成完了 [{:?}] -> {}",
         timer.elapsed(),
         output_path.display()
     );
-
     Ok(())
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    match cli.command {
-        Commands::Xhtml {
-            source,
-            utf8,
-            horizontal,
-            no_prelude,
-            no_miyabi,
-            no_gaiji,
-            css,
-            output,
-        } => {
-            handle_xhtml(
-                source, utf8, horizontal, no_prelude, no_miyabi, no_gaiji, css, output,
-            )?;
+    match &cli.command {
+        Commands::Xhtml(args) => {
+            let output_dir = get_output_dir(&args.output)?;
+            let potential = args.to_potential_css();
+            let extra_css_contents = read_extra_css(&args.css)?;
+            let extra_css_refs: Vec<&str> = extra_css_contents.iter().map(|s| s.as_str()).collect();
+
+            args.sources.par_iter().for_each(|source| {
+                if let Err(e) = handle_xhtml(source, args, &potential, &extra_css_refs, &output_dir)
+                {
+                    eprintln!("エラー ({}): {:?}", source.display(), e);
+                }
+            });
         }
-        Commands::Epub {
-            source,
-            utf8,
-            horizontal,
-            no_prelude,
-            no_miyabi,
-            no_gaiji,
-            css,
-            output,
-        } => {
-            handle_epub(
-                source, utf8, horizontal, no_prelude, no_miyabi, no_gaiji, css, output,
-            )?;
+        Commands::Epub(args) => {
+            let output_dir = get_output_dir(&args.output)?;
+            let potential = args.to_potential_css();
+
+            args.sources.par_iter().for_each(|source| {
+                if let Err(e) = handle_epub(source, args, &potential, &output_dir) {
+                    eprintln!("エラー ({}): {:?}", source.display(), e);
+                }
+            });
         }
     }
 

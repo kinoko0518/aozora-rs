@@ -34,13 +34,14 @@ pub trait SandwichedBegin<E> {
 
 type RNote<'s> = Result<Note<'s>, ContextError>;
 
+/// 注記にマッチするパーサーです。
 pub fn command<'s>(input: &mut Input<'s>) -> RNote<'s> {
     alt((
-        multiline.map(Note::Multiline),
-        single.map(Note::Single),
         backref.map(Note::BackRef),
         sandwiched.map(Note::Sandwiched),
+        multiline.map(Note::Multiline),
         wholeline.map(Note::WholeLine),
+        single.map(Note::Single),
     ))
     .parse_next(input)
 }

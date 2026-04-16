@@ -58,6 +58,9 @@ pub fn backref_to_scope<'s>(
                     BackRefKind::Mama => Some(Deco::Mama),
                     BackRefKind::Big(size) => Some(Deco::Bigger(size)),
                     BackRefKind::Small(size) => Some(Deco::Smaller(size)),
+                    BackRefKind::Sub => Some(Deco::Sub),
+                    BackRefKind::Sup => Some(Deco::Sup),
+                    BackRefKind::Note(n) => Some(Deco::Ruby(n)),
                     BackRefKind::Variation(_) => None,
                 }
                 .and_then(|deco| {

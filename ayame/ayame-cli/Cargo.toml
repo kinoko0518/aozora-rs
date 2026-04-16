@@ -12,3 +12,4 @@ ayame = { workspace = true }
 aozora-rs = { workspace = true }
 clap = { workspace = true }
 miette = { workspace = true }
+rayon.workspace = true

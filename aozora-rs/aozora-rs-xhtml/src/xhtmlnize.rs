@@ -277,6 +277,27 @@ pub fn into_xhtml<'s>(from: Vec<Retokenized<'s>>) -> XHTMLResult {
                         attributes: vec![Cow::Borrowed("class=\"warichu\"")],
                     });
                 }
+                Deco::HorizontalLayout => {
+                    buff.push(XHTMLTag {
+                        kind: XHTMLKind::DivBegin,
+                        attributes: vec![Cow::Borrowed("class=\"horizontal-block\"")],
+                    });
+                }
+                Deco::Kerning(k) => {
+                    buff.push(XHTMLTag {
+                        kind: XHTMLKind::DivBegin,
+                        attributes: vec![Cow::Owned(format!(
+                            "style=\"max-inline-size: {}em;\"",
+                            k
+                        ))],
+                    });
+                }
+                Deco::Sub => {
+                    buff.push(XHTMLTag::from_kind(XHTMLKind::SubBegin));
+                }
+                Deco::Sup => {
+                    buff.push(XHTMLTag::from_kind(XHTMLKind::SupBegin));
+                }
             },
             Retokenized::DecoEnd(e) => match e {
                 Deco::AHead => {
@@ -310,11 +331,17 @@ pub fn into_xhtml<'s>(from: Vec<Retokenized<'s>>) -> XHTMLResult {
                         .into_iter(),
                     );
                 }
-                Deco::Indent(_) | Deco::Hanging(_) => {
+                Deco::Indent(_) | Deco::Hanging(_) | Deco::HorizontalLayout | Deco::Kerning(_) => {
                     buff.push(XHTMLTag::from_kind(XHTMLKind::DivEnd));
                 }
                 Deco::Grounded | Deco::LowFlying(_) => {
                     buff.push(XHTMLTag::from_kind(XHTMLKind::PEnd));
+                }
+                Deco::Sup => {
+                    buff.push(XHTMLTag::from_kind(XHTMLKind::SupEnd));
+                }
+                Deco::Sub => {
+                    buff.push(XHTMLTag::from_kind(XHTMLKind::SubEnd));
                 }
                 _ => {
                     buff.push(XHTMLTag::from_kind(XHTMLKind::SpanEnd));

@@ -50,6 +50,8 @@ pub enum MultiLineBegins {
     Smaller(usize),
     /// 参照：https://www.aozora.gr.jp/annotation/etc.html#moji_size
     Bigger(usize),
+    /// 参照：https://www.aozora.gr.jp/annotation/etc.html#jizume
+    Kerning(usize),
 }
 
 impl SandwichedBegin<MultiLineEnds> for MultiLineBegins {
@@ -61,6 +63,7 @@ impl SandwichedBegin<MultiLineEnds> for MultiLineBegins {
             Self::LowFlying(_) => matches!(rhs, MultiLineEnds::LowFlyingEnd),
             Self::Smaller(_) => matches!(rhs, MultiLineEnds::SmallEnd),
             Self::Bigger(_) => matches!(rhs, MultiLineEnds::BigEnd),
+            Self::Kerning(_) => matches!(rhs, MultiLineEnds::Kerning),
         }
     }
 }
@@ -74,6 +77,7 @@ impl MultiLineBegins {
             Self::LowFlying(l) => Deco::LowFlying(l.level),
             Self::Smaller(s) => Deco::Smaller(s),
             Self::Bigger(b) => Deco::Bigger(b),
+            Self::Kerning(j) => Deco::Kerning(j),
         }
     }
 }
@@ -85,6 +89,7 @@ pub enum MultiLineEnds {
     LowFlyingEnd,
     SmallEnd,
     BigEnd,
+    Kerning,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -99,11 +104,10 @@ fn jisage<'s>(input: &mut Input<'s>) -> Result<usize, ContextError> {
 
 fn block_indent_begins(input: &mut Input) -> Result<MultiLineBegins, ContextError> {
     (
-        "ここから",
         alt((jisage, "改行天付き".value(0))),
         opt(("、折り返して", jisage).map(|(_, o)| o)),
     )
-        .map(|(_, u, o)| match o {
+        .map(|(u, o)| match o {
             Some(o) => MultiLineBegins::HangingIndent(HangingIndent {
                 fst_lvl: u,
                 snd_lvl: o,
@@ -114,7 +118,7 @@ fn block_indent_begins(input: &mut Input) -> Result<MultiLineBegins, ContextErro
 }
 
 fn chitsuki_begins(input: &mut Input) -> Result<MultiLineBegins, ContextError> {
-    "ここから地付き"
+    "地付き"
         .value(MultiLineBegins::Grounded(Grounded))
         .parse_next(input)
 }
@@ -126,32 +130,43 @@ fn chiyose<'s>(input: &mut Input<'s>) -> Result<usize, ContextError> {
 }
 
 fn chiyose_block_begins<'s>(input: &mut Input<'s>) -> Result<MultiLineBegins, ContextError> {
-    ("ここから", chiyose)
-        .map(|(_, u)| MultiLineBegins::LowFlying(LowFlying { level: u }))
+    chiyose
+        .map(|u| MultiLineBegins::LowFlying(LowFlying { level: u }))
         .parse_next(input)
 }
 
 fn smaller_block_begins<'s>(input: &mut Input<'s>) -> Result<MultiLineBegins, ContextError> {
-    ("ここから", japanese_num, "段階小さな文字")
-        .map(|(_, u, _)| MultiLineBegins::Smaller(u))
+    (japanese_num, "段階小さな文字")
+        .map(|(u, _)| MultiLineBegins::Smaller(u))
         .parse_next(input)
 }
 
 fn bigger_block_begins<'s>(input: &mut Input<'s>) -> Result<MultiLineBegins, ContextError> {
-    ("ここから", japanese_num, "段階大きな文字")
-        .map(|(_, u, _)| MultiLineBegins::Bigger(u))
+    (japanese_num, "段階大きな文字")
+        .map(|(u, _)| MultiLineBegins::Bigger(u))
+        .parse_next(input)
+}
+
+fn kerning_begins<'s>(input: &mut Input<'s>) -> Result<MultiLineBegins, ContextError> {
+    (japanese_num, "字詰め")
+        .map(|(u, _)| MultiLineBegins::Kerning(u))
         .parse_next(input)
 }
 
 fn multiline_begins<'s>(input: &mut Input<'s>) -> Result<MultiLineBegins, ContextError> {
-    alt((
-        block_indent_begins,
-        chitsuki_begins,
-        chiyose_block_begins,
-        smaller_block_begins,
-        bigger_block_begins,
-    ))
-    .parse_next(input)
+    (
+        "ここから",
+        alt((
+            block_indent_begins,
+            chitsuki_begins,
+            chiyose_block_begins,
+            smaller_block_begins,
+            bigger_block_begins,
+            kerning_begins,
+        )),
+    )
+        .map(|(_, b)| b)
+        .parse_next(input)
 }
 
 fn multiline_ends<'s>(input: &mut Input<'s>) -> Result<MultiLineEnds, ContextError> {
@@ -163,6 +178,7 @@ fn multiline_ends<'s>(input: &mut Input<'s>) -> Result<MultiLineEnds, ContextErr
             "地付け".value(MultiLineEnds::GroundedEnd),
             "小さな文字".value(MultiLineEnds::SmallEnd),
             "大きな文字".value(MultiLineEnds::BigEnd),
+            "字詰め".value(MultiLineEnds::Kerning),
         )),
         alt(("終わり", "おわり")),
     )
