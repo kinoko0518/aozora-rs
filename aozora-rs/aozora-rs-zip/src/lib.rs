@@ -98,6 +98,13 @@ pub enum AozoraZipError {
         help("入力が青空文庫書式に従っていることを確認してください。")
     )]
     BrokenMetaData(miette::Report),
+
+    #[error("画像の読み取りに失敗しました")]
+    #[diagnostic(
+        code(aozora_rs_epub::failed_to_read_img),
+        help("入力が青空文庫書式に従っていることを確認してください。")
+    )]
+    ImgReadFailed(std::io::Error),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -141,14 +148,15 @@ impl AozoraZip {
 
     pub fn read_from_zip<'s>(zip: &[u8], encoding: &Encoding) -> Result<Self, AozoraZipError> {
         let mut zip = zip::ZipArchive::new(Cursor::new(zip)).map_err(AozoraZipError::BrokenZip)?;
-        let images = HashMap::new();
+        let mut images = HashMap::new();
         let mut txt = None;
 
         let zip_len = zip.len();
         for c in 0..zip_len {
             let c = zip.by_index(c).map_err(AozoraZipError::BrokenZip);
             let mut c = c?;
-            if c.name().rsplit_once(".").map(|(_, r)| r).unwrap_or("") == "txt" {
+            let extension = c.name().rsplit_once(".").map(|(_, r)| r).unwrap_or("");
+            if extension == "txt" {
                 let text = {
                     let mut buff: Vec<u8> = Vec::new();
                     c.read_to_end(&mut buff).map_err(AozoraZipError::Io)?;
@@ -161,6 +169,11 @@ impl AozoraZip {
                 } else {
                     return Err(AozoraZipError::MultiTextFound);
                 }
+            } else if let Some(ext) = ImgExtension::from_extension(extension) {
+                let mut buff: Vec<u8> = Vec::new();
+                c.read_to_end(&mut buff)
+                    .map_err(AozoraZipError::ImgReadFailed)?;
+                images.insert(c.name().into(), (ext, buff));
             }
         }
         let nresult = if let Some(s) = txt {
