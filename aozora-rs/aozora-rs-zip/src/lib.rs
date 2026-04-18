@@ -38,7 +38,7 @@ impl ImgExtension {
 
 /// AozoraZipからepubやXHTMLを生成するときに発生しうるエラーを列挙したエラー型です。
 #[derive(Debug)]
-pub enum DependenciesError {
+pub enum AozoraZipError {
     Io(std::io::Error),
     MultiTextFound,
     NoTextFound,
@@ -50,7 +50,7 @@ pub enum DependenciesError {
     ImgReadFailed(std::io::Error),
 }
 
-impl std::fmt::Display for DependenciesError {
+impl std::fmt::Display for AozoraZipError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let err: String = match self {
             Self::BrokenMetaData => "メタデータが破損しています".into(),
@@ -104,43 +104,43 @@ pub struct Dependencies {
 }
 
 impl AozoraZip {
-    pub fn read_from_zip<'s, T>(zip: T, encoding: &Encoding) -> Result<Self, DependenciesError>
+    pub fn read_from_zip<'s, T>(zip: T, encoding: &Encoding) -> Result<Self, AozoraZipError>
     where
         T: Read + Seek,
     {
-        let mut zip = zip::ZipArchive::new(zip).map_err(DependenciesError::BrokenZip)?;
+        let mut zip = zip::ZipArchive::new(zip).map_err(AozoraZipError::BrokenZip)?;
         let mut images = HashMap::new();
         let mut txt = None;
 
         let zip_len = zip.len();
         for c in 0..zip_len {
-            let c = zip.by_index(c).map_err(DependenciesError::BrokenZip);
+            let c = zip.by_index(c).map_err(AozoraZipError::BrokenZip);
             let mut c = c?;
             let extension = c.name().rsplit_once(".").map(|(_, r)| r).unwrap_or("");
             if extension == "txt" {
                 let text = {
                     let mut buff: Vec<u8> = Vec::new();
-                    c.read_to_end(&mut buff).map_err(DependenciesError::Io)?;
+                    c.read_to_end(&mut buff).map_err(AozoraZipError::Io)?;
                     encoding
                         .bytes_to_string(buff)
-                        .map_err(|_| DependenciesError::BrokenText)?
+                        .map_err(|_| AozoraZipError::BrokenText)?
                 };
                 if txt.is_none() {
                     txt = Some(text);
                 } else {
-                    return Err(DependenciesError::MultiTextFound);
+                    return Err(AozoraZipError::MultiTextFound);
                 }
             } else if let Some(ext) = ImgExtension::from_extension(extension) {
                 let mut buff: Vec<u8> = Vec::new();
                 c.read_to_end(&mut buff)
-                    .map_err(DependenciesError::ImgReadFailed)?;
+                    .map_err(AozoraZipError::ImgReadFailed)?;
                 images.insert(c.name().into(), (ext, buff));
             }
         }
         let nresult = if let Some(s) = txt {
             s
         } else {
-            return Err(DependenciesError::NoTextFound);
+            return Err(AozoraZipError::NoTextFound);
         };
         Ok(Self {
             txt: nresult,

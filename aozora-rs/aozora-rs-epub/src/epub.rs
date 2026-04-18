@@ -136,48 +136,48 @@ impl EpubWriter<'_> {
 }
 
 #[derive(Debug)]
-pub enum AozoraZipWarning {
+pub enum EpubWarning {
     DependencieNotFound(String),
 }
 
-impl std::fmt::Display for AozoraZipWarning {
+impl std::fmt::Display for EpubWarning {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(
             f,
             "{}",
             match self {
-                AozoraZipWarning::DependencieNotFound(d) =>
+                EpubWarning::DependencieNotFound(d) =>
                     format!("次のファイルがzip内に見つかりませんでした：{}", d),
             }
         )
     }
 }
 
-impl Default for AozoraZipWarning {
+impl Default for EpubWarning {
     fn default() -> Self {
         Self::DependencieNotFound("".into())
     }
 }
 
 #[derive(Debug)]
-pub enum AozoraZipError {
+pub enum AozoraEpubError {
     IoFailed(std::io::Error),
     ZipError(ZipError),
 }
 
-impl Into<AozoraZipError> for std::io::Error {
-    fn into(self) -> AozoraZipError {
-        AozoraZipError::IoFailed(self)
+impl Into<AozoraEpubError> for std::io::Error {
+    fn into(self) -> AozoraEpubError {
+        AozoraEpubError::IoFailed(self)
     }
 }
 
-impl Into<AozoraZipError> for ZipError {
-    fn into(self) -> AozoraZipError {
-        AozoraZipError::ZipError(self)
+impl Into<AozoraEpubError> for ZipError {
+    fn into(self) -> AozoraEpubError {
+        AozoraEpubError::ZipError(self)
     }
 }
 
-impl std::fmt::Display for AozoraZipError {
+impl std::fmt::Display for AozoraEpubError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -213,7 +213,7 @@ pub fn from_aozora_zip(
     setting: &EpubSetting,
     meta: &AozoraMeta,
     injectors: &PageInjectors,
-) -> Result<AZResult<(), AozoraZipWarning>, AozoraZipError> {
+) -> Result<AZResult<(), EpubWarning>, AozoraEpubError> {
     let mut writer = ZipWriter::new(acc);
     let options = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
     let epub_writer = EpubWriter {
@@ -304,7 +304,7 @@ pub fn from_aozora_zip(
                 .map_err(|e| e.into())?;
             writer.write(&img.1).map_err(|e| e.into())?;
         } else {
-            azresult.acc_err(AozoraZipWarning::DependencieNotFound(d.clone()));
+            azresult.acc_err(EpubWarning::DependencieNotFound(d.clone()));
         }
     }
 

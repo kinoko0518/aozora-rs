@@ -1,10 +1,10 @@
 use std::io::Write;
 
-pub use aozora_rs::internal::{Dependencies, Encoding};
 pub use aozora_rs::{
     AozoraDocument, AozoraError, AozoraWarning, AozoraZip, Chapter, PageInjectors, Style,
     TitlePageHyle, TocPageHyle, WritingDirection, XHTMLResult, utf8tify_all_gaiji,
 };
+pub use aozora_rs::{Dependencies, Encoding};
 
 pub const MIYABI_CSS: &str = include_str!("../assets/miyabi.css");
 

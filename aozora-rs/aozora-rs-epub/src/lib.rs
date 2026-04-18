@@ -1,6 +1,6 @@
 mod epub;
 
 pub use epub::{
-    AozoraZipError, AozoraZipWarning, EpubSetting, PageInjectors, TitlePageHyle, TocPageHyle,
+    AozoraEpubError, EpubSetting, EpubWarning, PageInjectors, TitlePageHyle, TocPageHyle,
     from_aozora_zip,
 };

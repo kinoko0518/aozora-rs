@@ -8,14 +8,6 @@ pub fn init_panic_hook() {
     console_error_panic_hook::set_once();
 }
 
-fn reports_to_single_string(reports: Vec<miette::Report>) -> String {
-    reports
-        .iter()
-        .map(|r| format!("{:?}", r))
-        .collect::<Vec<_>>()
-        .join("\n")
-}
-
 #[wasm_bindgen]
 pub struct StandaloneXHTML {
     #[wasm_bindgen(getter_with_clone)]
@@ -88,7 +80,7 @@ pub fn build_epub_bytes(
     )?
     .epub(
         &mut acc,
-        aozora_rs::Style::default().extend_css(styles.into_iter()),
+        &aozora_rs::Style::default().extend_css(styles.into_iter()),
         &aozora_rs::PageInjectors::default(),
     )
     .map_err(|_| JsError::new("EPUB生成中にエラーが発生しました"))?;

@@ -6,10 +6,10 @@ use std::{
 };
 
 use aozora_rs::{
-    AozoraError,
+    AozoraError, Dependencies,
     internal::{
-        Dependencies, EpubSetting, from_aozora_zip, parse_meta, retokenize, retokenized_to_xhtml,
-        scopenize, tokenize,
+        EpubSetting, from_aozora_zip, parse_meta, retokenize, retokenized_to_xhtml, scopenize,
+        tokenize,
     },
     utf8tify_all_gaiji,
 };
