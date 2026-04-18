@@ -6,7 +6,7 @@ use std::borrow::Cow;
 use std::{collections::HashMap, sync::LazyLock};
 use winnow::Parser;
 
-pub use crate::whole::whole_gaiji_to_char;
+pub use crate::whole::utf8tify_all_gaiji;
 pub use gaiji_chuki_parser::{GaijiChuki, parse_tag};
 
 use rkyv::util::AlignedVec;

@@ -1,7 +1,6 @@
 use winnow::{
     Parser,
     combinator::{alt, delimited, opt},
-    error::ContextError,
     token::{one_of, take_until},
 };
 
@@ -25,7 +24,7 @@ pub enum Single<'s> {
     Okurigana(&'s str),
 }
 
-fn figure_size(input: &mut Input) -> Result<(usize, usize), ContextError> {
+fn figure_size(input: &mut Input) -> Result<(usize, usize), WinnowError> {
     (
         "横",
         japanese_num,
@@ -37,7 +36,7 @@ fn figure_size(input: &mut Input) -> Result<(usize, usize), ContextError> {
         .parse_next(input)
 }
 
-pub fn single<'s>(input: &mut Input<'s>) -> Result<Single<'s>, ContextError> {
+pub fn single<'s>(input: &mut Input<'s>) -> Result<Single<'s>, WinnowError> {
     let path_and_size = (
         take_until(1.., "、"),
         opt(("、", figure_size).map(|(_, size)| size)),

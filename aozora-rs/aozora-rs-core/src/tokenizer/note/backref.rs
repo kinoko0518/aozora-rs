@@ -5,7 +5,6 @@
 use winnow::{
     Parser,
     combinator::{alt, delimited},
-    error::ContextError,
     token::take_until,
 };
 
@@ -58,7 +57,7 @@ pub struct BackRef<'s> {
     pub range: BackRefSpec<'s>,
 }
 
-pub fn backref<'s>(input: &mut Input<'s>) -> Result<BackRef<'s>, ContextError> {
+pub fn backref<'s>(input: &mut Input<'s>) -> Result<BackRef<'s>, WinnowError> {
     let target = BackRefSpec(delimited("「", take_until(1.., "」"), "」").parse_next(input)?);
     let ha = (
         'は',

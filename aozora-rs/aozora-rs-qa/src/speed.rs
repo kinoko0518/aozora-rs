@@ -5,9 +5,14 @@ use std::{
     time::{Duration, Instant},
 };
 
-use aozora_rs_core::{parse_meta, retokenize, scopenize, tokenize};
-use aozora_rs_epub::EpubSetting;
-use aozora_rs_zip::Dependencies;
+use aozora_rs::{
+    AozoraError,
+    internal::{
+        Dependencies, EpubSetting, from_aozora_zip, parse_meta, retokenize, retokenized_to_xhtml,
+        scopenize, tokenize,
+    },
+    utf8tify_all_gaiji,
+};
 use encoding_rs::SHIFT_JIS;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
@@ -66,55 +71,54 @@ impl std::fmt::Display for SpeedSummary {
     }
 }
 
-fn analyse_per_work(
-    s: String,
-    base_path: &Path,
-) -> Result<SpeedPerWork, Box<dyn std::error::Error>> {
+fn analyse_per_work(s: String, base_path: &Path) -> Result<SpeedPerWork, AozoraError> {
     let gaiji_instant = Instant::now();
-    let gaiji_converted = aozora_rs_gaiji::whole_gaiji_to_char(s.as_str());
+    let gaiji_converted = utf8tify_all_gaiji(s.as_str());
     let gaiji_duration = gaiji_instant.elapsed();
     let mut s_slice: &str = &gaiji_converted;
 
     let meta_instant = Instant::now();
-    let meta = parse_meta(&mut s_slice).map_err(|e| e.to_string())?;
+    let meta = parse_meta(&mut s_slice).map_err(|e| e.into())?;
     let meta_duration = meta_instant.elapsed();
 
     let title_owned = meta.title.to_string();
     let author_owned = meta.author.to_string();
 
     let tokenize_instant = Instant::now();
-    let tokenized = tokenize(&mut LocatingSlice::new(s_slice)).map_err(|e| e.to_string())?;
+    let tokenized = tokenize(&mut LocatingSlice::new(s_slice)).map_err(|e| e.into())?;
     let tokenize_duration = tokenize_instant.elapsed();
 
     let scopenize_instant = Instant::now();
-    let ((deco, flat), mut errors) = scopenize(tokenized, s_slice).into_tuple();
+    let ((deco, flat), _) = scopenize(tokenized).into_tuple();
     let scopenized_duration = scopenize_instant.elapsed();
 
     let retokenize_instant = Instant::now();
-    let (retokenized, retokenized_errors) = retokenize(flat, deco).into_tuple();
-    errors.extend(retokenized_errors.into_iter());
+    let (retokenized, _) = retokenize(flat, deco).into_tuple();
     let retokenized_duration = retokenize_instant.elapsed();
 
     let xhtmlnize_instant = Instant::now();
-    let xhtmlnized = aozora_rs_xhtml::retokenized_to_novel_result(retokenized, meta, errors);
+    let xhtmlnized = retokenized_to_xhtml(retokenized);
     let xhtmlnize_duration = xhtmlnize_instant.elapsed();
 
     let epub_instant = Instant::now();
     let epub_base_path = base_path.join("result/epubs");
-    std::fs::create_dir_all(&epub_base_path)?;
-    let _ = aozora_rs_epub::from_aozora_zip(
-        File::create(epub_base_path.join(format!("{}.epub", title_owned)))?,
-        Dependencies::default(),
-        EpubSetting {
+    std::fs::create_dir_all(&epub_base_path).map_err(|e| e.into())?;
+    from_aozora_zip(
+        File::create(epub_base_path.join(format!("{}.epub", title_owned))).map_err(|e| e.into())?,
+        &Dependencies::default(),
+        &xhtmlnized,
+        &EpubSetting {
             styles: vec![
-                include_str!("../../../ayame/ayame/assets/prelude.css"),
-                include_str!("../../../ayame/ayame/assets/vertical.css"),
+                include_str!("../../aozora-rs/css/prelude.css"),
+                include_str!("../../aozora-rs/css/vertical.css"),
                 include_str!("../../../ayame/ayame/assets/miyabi.css"),
             ],
             ..Default::default()
         },
-        xhtmlnized,
-    )?;
+        &meta,
+        &aozora_rs::PageInjectors::default(),
+    )
+    .map_err(|e| e.into())?;
     let epub_duration = epub_instant.elapsed();
 
     Ok(SpeedPerWork {
@@ -133,7 +137,7 @@ fn analyse_per_work(
 pub async fn speed_analyse(
     log: &mut File,
     base_path: &Path,
-) -> Result<Vec<SpeedSummary>, Box<dyn std::error::Error>> {
+) -> Result<Vec<SpeedSummary>, AozoraError> {
     let decode = |bytes: &[u8]| -> String {
         let (cow, _, _) = SHIFT_JIS.decode(bytes);
         cow.replace("\r\n", "\n")
@@ -148,15 +152,15 @@ pub async fn speed_analyse(
 
     let results: Result<Vec<SpeedPerWork>, _> = works
         .into_par_iter()
-        .map(|s| analyse_per_work(s, base_path).map_err(|e| e.to_string()))
+        .map(|s| analyse_per_work(s, base_path))
         .collect();
 
     let vec_results = results?;
     let arr: [SpeedPerWork; 4] = vec_results.try_into().unwrap();
 
-    writeln!(log, "# 処理時間レポート")?;
+    writeln!(log, "# 処理時間レポート").map_err(|e| e.into())?;
     for s in &arr {
-        writeln!(log, "{}", s.fancy())?;
+        writeln!(log, "{}", s.fancy()).map_err(|e| e.into())?;
     }
 
     Ok(arr

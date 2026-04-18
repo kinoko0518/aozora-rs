@@ -17,6 +17,26 @@ pub enum Retokenized<'s> {
     DecoEnd(Deco<'s>),
 }
 
+#[derive(Default, Debug)]
+pub enum RetokenizeError {
+    #[default]
+    InvalidEndOfToken,
+    InvalidEndOfScope,
+}
+
+impl std::fmt::Display for RetokenizeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::InvalidEndOfScope => "スコープの終了地点が不正です。これは内部的なエラーです",
+                Self::InvalidEndOfToken => "トークンの終了地点が不正です。これは内部的なエラーです",
+            }
+        )
+    }
+}
+
 impl Retokenized<'_> {
     pub fn is_visible(&self) -> bool {
         match self {

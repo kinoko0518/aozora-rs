@@ -1,4 +1,4 @@
-use winnow::{Parser, combinator::alt, error::ContextError};
+use winnow::{Parser, combinator::alt};
 
 use crate::tokenizer::note::backref::BackRef;
 use crate::tokenizer::note::backref::backref;
@@ -32,7 +32,7 @@ pub trait SandwichedBegin<E> {
     fn do_match(&self, rhs: &E) -> bool;
 }
 
-type RNote<'s> = Result<Note<'s>, ContextError>;
+type RNote<'s> = Result<Note<'s>, WinnowError>;
 
 /// 注記にマッチするパーサーです。
 pub fn command<'s>(input: &mut Input<'s>) -> RNote<'s> {

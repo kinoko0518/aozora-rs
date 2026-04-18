@@ -13,10 +13,10 @@
 use winnow::{
     Parser,
     combinator::{alt, delimited, opt},
-    error::ContextError,
 };
 
 use crate::{
+    WinnowError,
     deco::{BlockIndent, Deco},
     nihongo::japanese_num,
     tokenizer::note::{Input, SandwichedBegin},
@@ -98,11 +98,11 @@ pub enum MultiLine {
     End(MultiLineEnds),
 }
 
-fn jisage<'s>(input: &mut Input<'s>) -> Result<usize, ContextError> {
+fn jisage<'s>(input: &mut Input<'s>) -> Result<usize, WinnowError> {
     (japanese_num, "字下げ").map(|(u, _)| u).parse_next(input)
 }
 
-fn block_indent_begins(input: &mut Input) -> Result<MultiLineBegins, ContextError> {
+fn block_indent_begins(input: &mut Input) -> Result<MultiLineBegins, WinnowError> {
     (
         alt((jisage, "改行天付き".value(0))),
         opt(("、折り返して", jisage).map(|(_, o)| o)),
@@ -117,43 +117,43 @@ fn block_indent_begins(input: &mut Input) -> Result<MultiLineBegins, ContextErro
         .parse_next(input)
 }
 
-fn chitsuki_begins(input: &mut Input) -> Result<MultiLineBegins, ContextError> {
+fn chitsuki_begins(input: &mut Input) -> Result<MultiLineBegins, WinnowError> {
     "地付き"
         .value(MultiLineBegins::Grounded(Grounded))
         .parse_next(input)
 }
 
-fn chiyose<'s>(input: &mut Input<'s>) -> Result<usize, ContextError> {
+fn chiyose<'s>(input: &mut Input<'s>) -> Result<usize, WinnowError> {
     ("地から", japanese_num, "字上げ")
         .map(|(_, u, _)| u)
         .parse_next(input)
 }
 
-fn chiyose_block_begins<'s>(input: &mut Input<'s>) -> Result<MultiLineBegins, ContextError> {
+fn chiyose_block_begins<'s>(input: &mut Input<'s>) -> Result<MultiLineBegins, WinnowError> {
     chiyose
         .map(|u| MultiLineBegins::LowFlying(LowFlying { level: u }))
         .parse_next(input)
 }
 
-fn smaller_block_begins<'s>(input: &mut Input<'s>) -> Result<MultiLineBegins, ContextError> {
+fn smaller_block_begins<'s>(input: &mut Input<'s>) -> Result<MultiLineBegins, WinnowError> {
     (japanese_num, "段階小さな文字")
         .map(|(u, _)| MultiLineBegins::Smaller(u))
         .parse_next(input)
 }
 
-fn bigger_block_begins<'s>(input: &mut Input<'s>) -> Result<MultiLineBegins, ContextError> {
+fn bigger_block_begins<'s>(input: &mut Input<'s>) -> Result<MultiLineBegins, WinnowError> {
     (japanese_num, "段階大きな文字")
         .map(|(u, _)| MultiLineBegins::Bigger(u))
         .parse_next(input)
 }
 
-fn kerning_begins<'s>(input: &mut Input<'s>) -> Result<MultiLineBegins, ContextError> {
+fn kerning_begins<'s>(input: &mut Input<'s>) -> Result<MultiLineBegins, WinnowError> {
     (japanese_num, "字詰め")
         .map(|(u, _)| MultiLineBegins::Kerning(u))
         .parse_next(input)
 }
 
-fn multiline_begins<'s>(input: &mut Input<'s>) -> Result<MultiLineBegins, ContextError> {
+fn multiline_begins<'s>(input: &mut Input<'s>) -> Result<MultiLineBegins, WinnowError> {
     (
         "ここから",
         alt((
@@ -169,7 +169,7 @@ fn multiline_begins<'s>(input: &mut Input<'s>) -> Result<MultiLineBegins, Contex
         .parse_next(input)
 }
 
-fn multiline_ends<'s>(input: &mut Input<'s>) -> Result<MultiLineEnds, ContextError> {
+fn multiline_ends<'s>(input: &mut Input<'s>) -> Result<MultiLineEnds, WinnowError> {
     delimited(
         "ここで",
         alt((
@@ -185,7 +185,7 @@ fn multiline_ends<'s>(input: &mut Input<'s>) -> Result<MultiLineEnds, ContextErr
     .parse_next(input)
 }
 
-pub fn multiline<'s>(input: &mut Input<'s>) -> Result<MultiLine, ContextError> {
+pub fn multiline<'s>(input: &mut Input<'s>) -> Result<MultiLine, WinnowError> {
     alt((
         multiline_begins.map(MultiLine::Begin),
         multiline_ends.map(MultiLine::End),

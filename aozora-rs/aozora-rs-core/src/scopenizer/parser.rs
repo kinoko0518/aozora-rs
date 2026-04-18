@@ -1,15 +1,14 @@
 use super::definition::*;
-use super::error::*;
 
 use crate::scopenizer::conversion::BackRefResult;
 use crate::scopenizer::conversion::backref_to_scope;
+use crate::scopenizer::error::ScopenizeError;
 use crate::tokenizer::*;
 use crate::*;
 
 pub fn scopenize<'s>(
     tokens: Vec<Tokenized<'s>>,
-    original: &str,
-) -> AZResult<(Scopenized<'s>, Vec<(FlatToken<'s>, Span)>)> {
+) -> AZResult<(Scopenized<'s>, Vec<(FlatToken<'s>, Span)>), ScopenizeError> {
     // 改行などのBreakをまたがない注記用のスタック
     let mut inline_stack = Vec::new();
     // Breakをまたぐ注記用のスタック
@@ -36,13 +35,7 @@ pub fn scopenize<'s>(
                         // 前方参照に失敗した場合一個peekableを消費して無視
                         BackRefResult::BackRefFailed => {
                             peekable.next();
-                            azc.acc_err(
-                                BackRefFailed {
-                                    source_code: original.to_string(),
-                                    failed_note: scope,
-                                }
-                                .into(),
-                            )
+                            azc.acc_err(ScopenizeError::BackRefFailed(scope).into())
                         }
                         BackRefResult::ItWontBackRef => break,
                     }
@@ -59,13 +52,7 @@ pub fn scopenize<'s>(
                     scopes.push(t.span, Deco::Ruby(ruby));
                 } else {
                     // 修復は難しいので無視
-                    azc.acc_err(
-                        InvalidRubyDelimiterUsage {
-                            source_code: original.to_string(),
-                            failed_note: token.span,
-                        }
-                        .into(),
-                    );
+                    azc.acc_err(ScopenizeError::InvalidRubyDelimiterUsage(token.span).into());
                 }
             }
             AozoraTokenKind::Note(c) => match c {
@@ -76,13 +63,7 @@ pub fn scopenize<'s>(
                     Sandwiched::End(e) => {
                         if inline_stack.is_empty() {
                             // 何もないものを閉じようとするのは単に無視すれば続行可能
-                            azc.acc_err(
-                                IsolatedEndNote {
-                                    source_code: original.to_string(),
-                                    range: token.span.clone(),
-                                }
-                                .into(),
-                            );
+                            azc.acc_err(ScopenizeError::IsolatedEndNote(token.span.clone()).into());
                         }
                         while let Some(s) = inline_stack.pop() {
                             let range = s.1.end..token.span.start;
@@ -91,13 +72,7 @@ pub fn scopenize<'s>(
                             } else {
                                 // 交差タグは本来HTMLではエラーであるためエラーを蓄積する
                                 // ブラウザ側が自動修復を試みるのでaozora-rs側では特に処理を行わない
-                                azc.acc_err(
-                                    CrossingNote {
-                                        source_code: original.to_string(),
-                                        range,
-                                    }
-                                    .into(),
-                                );
+                                azc.acc_err(ScopenizeError::CrossingNote(range).into());
                             }
                         }
                     }
@@ -109,13 +84,7 @@ pub fn scopenize<'s>(
                     MultiLine::End(e) => {
                         if stack.is_empty() {
                             // 何もないものを閉じようとするのは単に無視すれば続行可能
-                            azc.acc_err(
-                                IsolatedEndNote {
-                                    source_code: original.to_string(),
-                                    range: token.span.clone(),
-                                }
-                                .into(),
-                            );
+                            azc.acc_err(ScopenizeError::IsolatedEndNote(token.span.clone()).into());
                         }
                         while let Some((kind, span)) = stack.pop() {
                             let range = span.end..token.span.start;
@@ -123,13 +92,7 @@ pub fn scopenize<'s>(
                                 scopes.push(range, kind.into_deco());
                             } else {
                                 // Sandwichedと同様の対応
-                                azc.acc_err(
-                                    CrossingNote {
-                                        source_code: original.to_string(),
-                                        range,
-                                    }
-                                    .into(),
-                                );
+                                azc.acc_err(ScopenizeError::CrossingNote(range).into());
                             }
                         }
                     }
@@ -139,13 +102,7 @@ pub fn scopenize<'s>(
                 }
                 Note::BackRef(_) => {
                     // 前方参照型の注記はTextのアームで処理されるため、ここに到達した時点で不正
-                    azc.acc_err(
-                        BackRefFailed {
-                            source_code: original.to_string(),
-                            failed_note: token.span,
-                        }
-                        .into(),
-                    );
+                    azc.acc_err(ScopenizeError::BackRefFailed(token.span).into());
                 }
                 Note::WholeLine(w) => {
                     wholeline.push((w, token.span.clone()));
@@ -155,13 +112,7 @@ pub fn scopenize<'s>(
             // ルビも前方参照型なのでTextのアームで処理されていることを期待するため
             // このアームに到達した時点で不正
             AozoraTokenKind::Ruby(_) => {
-                azc.acc_err(
-                    BackRefFailed {
-                        source_code: original.to_string(),
-                        failed_note: token.span,
-                    }
-                    .into(),
-                );
+                azc.acc_err(ScopenizeError::BackRefFailed(token.span).into());
             }
             AozoraTokenKind::Br => {
                 flatten.push((FlatToken::Break(Break::BreakLine), token.span.clone()));
@@ -173,11 +124,7 @@ pub fn scopenize<'s>(
                         scopes.push(tag.1.end..token.span.start, tag.0.into_deco());
                     }
                     azc.acc_err(
-                        UnclosedInlineNote {
-                            source_code: original.to_string(),
-                            unclosed_area: last.1.start..token.span.end,
-                        }
-                        .into(),
+                        ScopenizeError::UnclosedInlineNote(last.1.start..token.span.end).into(),
                     );
                 }
                 // 行全体注記の範囲を確定

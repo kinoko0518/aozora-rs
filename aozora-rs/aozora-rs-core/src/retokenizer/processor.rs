@@ -1,9 +1,9 @@
 use std::cmp::Ordering;
 
-use miette::Diagnostic;
-use thiserror::Error;
-
-use crate::{AZResult, AZResultC, Deco, Retokenized, Scopenized, Span, scopenizer::FlatToken};
+use crate::{
+    AZResult, AZResultC, Deco, RetokenizeError, Retokenized, Scopenized, Span,
+    scopenizer::FlatToken,
+};
 
 #[derive(Default, Debug)]
 pub enum RetokenizeEvent<'s> {
@@ -13,26 +13,6 @@ pub enum RetokenizeEvent<'s> {
     DecoBegin(Deco<'s>),
     DecoEnd,
 }
-
-#[derive(Error, Debug, Diagnostic)]
-#[error("不正な終了トークン")]
-#[diagnostic(
-    code(aozora_rs::closed_before_token_start),
-    help(
-        "いずれの開始トークンより前に終了トークンが出現しました。この問題はaozora.rsのバグである可能性があります。お手数ですが、GitHubでご一報ください。"
-    )
-)]
-struct InvalidEndOfToken;
-
-#[derive(Error, Debug, Diagnostic)]
-#[error("不正なスコープ終端")]
-#[diagnostic(
-    code(aozora_rs::closed_before_scope_start),
-    help(
-        "いずれのスコープが開始されるより前に終端が出現しました。この問題はaozora.rsのバグである可能性があります。お手数ですが、GitHubでご一報ください。"
-    )
-)]
-struct InvalidEndOfScope;
 
 type Events<'s> = Vec<(usize, RetokenizeEvent<'s>)>;
 
@@ -77,7 +57,7 @@ pub fn extract_events<'s>(
 pub fn retokenize<'s>(
     flattoken: Vec<(FlatToken<'s>, Span)>,
     scopenized: Scopenized<'s>,
-) -> AZResult<Vec<Retokenized<'s>>> {
+) -> AZResult<Vec<Retokenized<'s>>, RetokenizeError> {
     // Retokenizerにおいて、考慮しなければならない状態を列挙する。
     //
     // 1.   トークンの開始地点より前から開始されている注記が存在している
@@ -124,7 +104,7 @@ pub fn retokenize<'s>(
                     retokenized.push(t.into());
                     unclosed_token = (None, i)
                 }
-                None => eacc.acc_err(InvalidEndOfToken.into()),
+                None => eacc.acc_err(RetokenizeError::InvalidEndOfToken.into()),
             },
             RetokenizeEvent::DecoBegin(d) => {
                 if let (Some(t), unclosed_until) = unclosed_token {
@@ -148,14 +128,14 @@ pub fn retokenize<'s>(
                         retokenized.push(Retokenized::DecoEnd(d));
                         unclosed_token = (unclosed, i);
                     } else {
-                        eacc.acc_err(InvalidEndOfScope.into());
+                        eacc.acc_err(RetokenizeError::InvalidEndOfScope.into());
                         unclosed_token = (Some(t), unclosed_until);
                     }
                 } else {
                     if let Some(d) = popped_deco {
                         retokenized.push(Retokenized::DecoEnd(d));
                     } else {
-                        eacc.acc_err(InvalidEndOfScope.into());
+                        eacc.acc_err(RetokenizeError::InvalidEndOfScope.into());
                     }
                 }
             }

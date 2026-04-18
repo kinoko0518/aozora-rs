@@ -2,7 +2,7 @@
 //!　ドキュメントは[こちら](https://github.com/aozorahack/specs/blob/master/aozora-text.md#%E5%89%8D%E6%96%B9%E5%8F%82%E7%85%A7%E5%9E%8B%E3%81%A8%E9%96%8B%E5%A7%8B%E7%B5%82%E4%BA%86%E5%9E%8B)
 //! から確認できます。
 
-use winnow::{Parser, combinator::alt, error::ContextError};
+use winnow::{Parser, combinator::alt};
 
 use crate::nihongo::japanese_num;
 use crate::tokenizer::note::{SandwichedBegin, definitions::*};
@@ -88,7 +88,7 @@ pub enum Sandwiched {
     End(SandwichedEnds),
 }
 
-fn sandwiched_begin(input: &mut Input<'_>) -> Result<SandwichedBegins, ContextError> {
+fn sandwiched_begin(input: &mut Input<'_>) -> Result<SandwichedBegins, WinnowError> {
     alt((
         "大見出し".value(SandwichedBegins::AHeadBegin),
         "中見出し".value(SandwichedBegins::BHeadBegin),
@@ -106,7 +106,7 @@ fn sandwiched_begin(input: &mut Input<'_>) -> Result<SandwichedBegins, ContextEr
     .parse_next(input)
 }
 
-fn sandwiched_end(input: &mut Input<'_>) -> Result<SandwichedEnds, ContextError> {
+fn sandwiched_end(input: &mut Input<'_>) -> Result<SandwichedEnds, WinnowError> {
     (
         alt((
             "大見出し".value(SandwichedEnds::AHeadEnd),
@@ -128,7 +128,7 @@ fn sandwiched_end(input: &mut Input<'_>) -> Result<SandwichedEnds, ContextError>
         .parse_next(input)
 }
 
-pub fn sandwiched(input: &mut Input<'_>) -> Result<Sandwiched, ContextError> {
+pub fn sandwiched(input: &mut Input<'_>) -> Result<Sandwiched, WinnowError> {
     alt((
         sandwiched_end.map(Sandwiched::End),
         sandwiched_begin.map(Sandwiched::Begin),

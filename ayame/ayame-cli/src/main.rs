@@ -1,4 +1,8 @@
-use ayame::{AbstractAozoraZip, AozoraHyle, Encoding, PotentialCSS, WritingDirection};
+use std::io::Cursor;
+
+use ayame::{
+    AozoraDocument, AozoraZip, Dependencies, Encoding, PageInjectors, Style, WritingDirection,
+};
 use clap::{Args, Parser, Subcommand};
 use miette::{IntoDiagnostic, Result, miette};
 use rayon::prelude::*;
@@ -54,17 +58,22 @@ struct CommonArgs {
 }
 
 impl CommonArgs {
-    /// 引数からPotentialCSSを生成する
-    fn to_potential_css(&self) -> PotentialCSS {
-        PotentialCSS {
-            use_prelude: !self.no_prelude,
-            use_miyabi: !self.no_miyabi,
-            direction: if self.horizontal {
+    fn to_style<'a>(&self, extra_css: &'a [String]) -> Style<'a> {
+        let mut style = Style::default();
+        style
+            .prelude(!self.no_prelude)
+            .direction(if self.horizontal {
                 WritingDirection::Horizontal
             } else {
                 WritingDirection::Vertical
-            },
+            });
+        if !self.no_miyabi {
+            ayame::apply_miyabi(&mut style);
         }
+        for css in extra_css {
+            style.add_css(css.as_str());
+        }
+        style
     }
 }
 
@@ -117,41 +126,37 @@ fn read_extra_css(extra_css: &[PathBuf]) -> Result<Vec<String>> {
         .collect()
 }
 
-// --- 処理コア ---
-
-/// ファイルを読み込み、AozoraHyleを構築する共通処理
-fn read_hyle(source: &Path, utf8: bool) -> Result<AozoraHyle> {
+/// ソースファイルを読み込み、テキストと画像依存を返す
+fn read_source(source: &Path, encoding: &Encoding, gaiji: bool) -> Result<(String, Dependencies)> {
     let bytes = fs::read(source).into_diagnostic()?;
-
-    if is_zip(source) {
-        Ok(AozoraHyle::Zip((bytes, to_encoding(utf8))))
+    let (text, deps) = if is_zip(source) {
+        let azz =
+            AozoraZip::read_from_zip(Cursor::new(bytes), encoding).map_err(|e| miette!("{}", e))?;
+        (azz.txt, azz.images)
     } else {
-        Ok(AozoraHyle::Txt((bytes, to_encoding(utf8))))
-    }
+        let txt = encoding
+            .bytes_to_string(bytes)
+            .map_err(|e| miette!("{}", e))?;
+        (txt, Dependencies::default())
+    };
+    let text = if gaiji {
+        aozora_rs::utf8tify_all_gaiji(&text).into_owned()
+    } else {
+        text
+    };
+    Ok((text, deps))
 }
 
-fn handle_xhtml(
-    source: &Path,
-    args: &CommonArgs,
-    potential: &PotentialCSS,
-    extra_css_refs: &[&str],
-    output_dir: &Path,
-) -> Result<()> {
+fn handle_xhtml(source: &Path, args: &CommonArgs, style: &Style, output_dir: &Path) -> Result<()> {
     let timer = std::time::Instant::now();
     let file_stem = get_file_stem(source)?;
 
-    let hyle = read_hyle(source, args.utf8)?;
-    let (string, dependencies) = hyle.encode(!args.no_gaiji).map_err(|e| miette!("{}", e))?;
-    let abstract_zip = AbstractAozoraZip::from_str_with_meta(string.as_str(), dependencies)
-        .map_err(|e| miette!("{}", e))?;
+    let (text, deps) = read_source(source, &to_encoding(args.utf8), !args.no_gaiji)?;
+    let doc = AozoraDocument::from_str(&text, Some(&deps)).map_err(|e| miette!("{}", e))?;
 
-    let az_result = abstract_zip
-        .browser_xhtml(potential, extra_css_refs.to_vec())
-        .map_err(|e| miette!("{}", e))?;
-
-    let (xhtml, errors) = az_result.into_tuple();
+    let (xhtml, errors) = ayame::to_browser_xhtml(&doc, style).map_err(|e| miette!("{}", e))?;
     for error in &errors {
-        eprintln!("警告 ({}): {:?}", source.display(), error);
+        eprintln!("警告 ({}): {}", source.display(), error.display(&text));
     }
 
     let output_path = output_dir.join(format!("{}.xhtml", file_stem));
@@ -165,34 +170,25 @@ fn handle_xhtml(
     Ok(())
 }
 
-fn handle_epub(
-    source: &Path,
-    args: &CommonArgs,
-    potential: &PotentialCSS,
-    output_dir: &Path,
-) -> Result<()> {
+fn handle_epub(source: &Path, args: &CommonArgs, style: &Style, output_dir: &Path) -> Result<()> {
     let timer = std::time::Instant::now();
 
-    let hyle = read_hyle(source, args.utf8)?;
-    let (string, dependencies) = hyle.encode(!args.no_gaiji).map_err(|e| miette!("{}", e))?;
-    let abstract_zip = AbstractAozoraZip::from_str_with_meta(string.as_str(), dependencies)
-        .map_err(|e| miette!("{}", e))?;
+    let (text, deps) = read_source(source, &to_encoding(args.utf8), !args.no_gaiji)?;
+    let doc = AozoraDocument::from_str(&text, Some(&deps)).map_err(|e| miette!("{}", e))?;
 
-    let meta = abstract_zip
-        .meta
-        .as_ref()
-        .ok_or_else(|| miette!("メタデータが取得できません"))?;
-
-    let output_path = output_dir.join(format!("[{}] {}.epub", meta.author, meta.title));
+    let output_path = output_dir.join(format!("[{}] {}.epub", doc.meta.author, doc.meta.title));
     let mut file = fs::File::create(&output_path).into_diagnostic()?;
 
-    let az_result = abstract_zip
-        .epub(&mut file, potential, "ja")
-        .map_err(|e| miette!("{}", e))?;
+    let injectors = PageInjectors {
+        title_page: Some(ayame::title_page_writer()),
+        toc_page: Some(ayame::toc_page_writer()),
+    };
 
-    let ((), errors) = az_result.into_tuple();
-    for error in &errors {
-        eprintln!("警告 ({}): {:?}", source.display(), error);
+    let warnings = doc
+        .epub(&mut file, style, &injectors)
+        .map_err(|e| miette!("{}", e))?;
+    for w in &warnings {
+        eprintln!("警告 ({}): {}", source.display(), w.display(&text));
     }
 
     println!(
@@ -209,23 +205,22 @@ fn main() -> Result<()> {
     match &cli.command {
         Commands::Xhtml(args) => {
             let output_dir = get_output_dir(&args.output)?;
-            let potential = args.to_potential_css();
             let extra_css_contents = read_extra_css(&args.css)?;
-            let extra_css_refs: Vec<&str> = extra_css_contents.iter().map(|s| s.as_str()).collect();
+            let style = args.to_style(&extra_css_contents);
 
             args.sources.par_iter().for_each(|source| {
-                if let Err(e) = handle_xhtml(source, args, &potential, &extra_css_refs, &output_dir)
-                {
+                if let Err(e) = handle_xhtml(source, args, &style, &output_dir) {
                     eprintln!("エラー ({}): {:?}", source.display(), e);
                 }
             });
         }
         Commands::Epub(args) => {
             let output_dir = get_output_dir(&args.output)?;
-            let potential = args.to_potential_css();
+            let extra_css_contents = read_extra_css(&args.css)?;
+            let style = args.to_style(&extra_css_contents);
 
             args.sources.par_iter().for_each(|source| {
-                if let Err(e) = handle_epub(source, args, &potential, &output_dir) {
+                if let Err(e) = handle_epub(source, args, &style, &output_dir) {
                     eprintln!("エラー ({}): {:?}", source.display(), e);
                 }
             });

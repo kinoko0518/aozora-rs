@@ -10,3 +10,4 @@ aozora-rs-xhtml = { workspace = true }
 aozora-rs-zip = { workspace = true }
 aozora-rs-gaiji = { workspace = true }
 winnow.workspace = true
+colored = "3.1.1"

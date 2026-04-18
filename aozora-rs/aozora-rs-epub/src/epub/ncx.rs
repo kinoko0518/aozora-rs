@@ -22,7 +22,7 @@ impl EpubWriter<'_> {
     fn write_ncx_navmaps(&self, writer: &mut impl Write) -> Result<(), std::io::Error> {
         writer.write_all("<navMap>\n".as_bytes())?;
 
-        for (i, chapter) in self.nresult.xhtmls.chapters.iter().enumerate() {
+        for (i, chapter) in self.nresult.chapters.iter().enumerate() {
             let order = i + 1;
             writeln!(
                 writer,
@@ -55,7 +55,7 @@ impl EpubWriter<'_> {
         writeln!(
             writer,
             "\n<docTitle>\n\t<text>{}</text>\n</docTitle>",
-            self.nresult.meta.title
+            self.meta.title
         )?;
         self.write_ncx_navmaps(writer)?;
 

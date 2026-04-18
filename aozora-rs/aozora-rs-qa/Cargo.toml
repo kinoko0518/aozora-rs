@@ -4,8 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-aozora-rs-core = { workspace = true }
-aozora-rs-gaiji = { workspace = true }
+aozora-rs = { workspace = true }
 encoding_rs = { workspace = true }
 rkyv = { workspace = true }
 tokio = { workspace = true }
@@ -14,9 +13,6 @@ winnow = { workspace = true }
 unicode-width = { workspace = true }
 rayon = { workspace = true }
 miette = { workspace = true }
-aozora-rs-xhtml =  { workspace = true }
-aozora-rs-epub =  { workspace = true }
-aozora-rs-zip = { workspace = true }
 
 [[bin]]
 name = "qa"

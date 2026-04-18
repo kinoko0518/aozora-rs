@@ -1,7 +1,6 @@
 use crate::{AnalysedSummary, MapCache};
-use aozora_rs_core::tokenizer::Note;
-use aozora_rs_core::{AozoraTokenKind, parse_meta, tokenize};
-use aozora_rs_gaiji::whole_gaiji_to_char;
+use aozora_rs::internal::{AozoraTokenKind, parse_meta, tokenize, tokenizer::Note};
+use aozora_rs::utf8tify_all_gaiji;
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::io::Write as IoWrite;
@@ -16,7 +15,7 @@ fn analyse_file(path: &Path) -> Option<(usize, usize, HashMap<String, usize>)> {
     let bytes = fs::read(path).ok()?;
 
     let read_original = encoding_rs::SHIFT_JIS.decode(&bytes).0;
-    let read = whole_gaiji_to_char(&read_original);
+    let read = utf8tify_all_gaiji(&read_original);
 
     let mut success = 0;
     let mut fail = 0;

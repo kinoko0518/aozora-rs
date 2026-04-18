@@ -9,12 +9,12 @@ impl EpubWriter<'_> {
         write!(
             writer,
             "\t\t<!-- 作品名 -->\n\t\t<dc:title id=\"title\">{}</dc:title>\n",
-            self.nresult.meta.title
+            self.meta.title
         )?;
         write!(
             writer,
             "\t\t<!-- 著者名 -->\n\t\t<dc:creator id=\"creator01\">{}</dc:creator>\n",
-            self.nresult.meta.author
+            self.meta.author
         )?;
         write!(
             writer,
@@ -76,6 +76,14 @@ impl EpubWriter<'_> {
             )?;
         }
 
+        // 注入ページを宣言
+        if self.has_title_page() {
+            writer.write_all("\t\t<item id=\"title-page\" href=\"xhtml/title.xhtml\" media-type=\"application/xhtml+xml\"/>\n".as_bytes())?;
+        }
+        if self.has_toc_page() {
+            writer.write_all("\t\t<item id=\"toc-page\" href=\"xhtml/toc.xhtml\" media-type=\"application/xhtml+xml\"/>\n".as_bytes())?;
+        }
+
         // XHTMLを宣言
         writer.write_all("\t\t<!-- xhtml -->\n".as_bytes())?;
         for (id, xhtml) in self.xhtmls().enumerate() {
@@ -93,13 +101,7 @@ impl EpubWriter<'_> {
     }
 
     fn write_opf_spine(&self, writer: &mut impl Write) -> Result<(), std::io::Error> {
-        let spines = self
-            .nresult
-            .xhtmls
-            .xhtmls
-            .iter()
-            .enumerate()
-            .map(|(num, _)| num);
+        let spines = self.nresult.xhtmls.iter().enumerate().map(|(num, _)| num);
 
         writeln!(
             writer,
@@ -107,6 +109,12 @@ impl EpubWriter<'_> {
             if self.setting.is_rtl { "rtl" } else { "ltr" }
         )?;
         writer.write_all("\t\t<itemref idref=\"nav\" linear=\"yes\" />\n".as_bytes())?;
+        if self.has_title_page() {
+            writer.write_all("\t\t<itemref idref=\"title-page\" linear=\"yes\" />\n".as_bytes())?;
+        }
+        if self.has_toc_page() {
+            writer.write_all("\t\t<itemref idref=\"toc-page\" linear=\"yes\" />\n".as_bytes())?;
+        }
         for s in spines {
             writeln!(
                 writer,

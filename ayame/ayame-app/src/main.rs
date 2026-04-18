@@ -1,8 +1,10 @@
 #[cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-use std::{f32, fs::File, path::Path, sync::Arc};
+use std::{f32, fs::File, io::Cursor, path::Path, sync::Arc};
 
-use aozora_rs_zip::{Dependencies, ImgExtension};
-use ayame::{AbstractAozoraZip, AozoraHyle, Encoding, PotentialCSS, WritingDirection};
+use aozora_rs_zip::ImgExtension;
+use ayame::{
+    AozoraDocument, AozoraZip, Dependencies, Encoding, PageInjectors, Style, WritingDirection,
+};
 use gpui::{
     App, Application, Bounds, Context, Div, FontWeight, Image, ImageFormat, ImageSource, Window,
     WindowBounds, WindowOptions, actions, div, img, prelude::*, px, rgb, rgba, size,
@@ -64,14 +66,23 @@ impl AyameApp {
     // Sizes
     const VERTICALIZE_THRESHOLD: f32 = 600.;
 
+    fn build_style(&self) -> Style<'static> {
+        let mut style = Style::default();
+        style
+            .prelude(self.use_prelude)
+            .direction(self.writing_direction);
+        if self.use_miyabi {
+            ayame::apply_miyabi(&mut style);
+        }
+        style
+    }
+
     fn get_meta(&self) -> (String, String) {
         self.source
             .as_ref()
-            .and_then(|(text, _)| -> Option<(String, String)> {
-                let aaz =
-                    AbstractAozoraZip::from_str_with_meta(text, Dependencies::default()).ok()?;
-                let meta = aaz.meta?;
-                Some((meta.title.to_owned(), meta.author.to_owned()))
+            .and_then(|(text, deps)| -> Option<(String, String)> {
+                let doc = AozoraDocument::from_str(text, Some(deps)).ok()?;
+                Some((doc.meta.title.to_owned(), doc.meta.author.to_owned()))
             })
             .unwrap_or(("作品未選択".into(), "作品未選択".into()))
     }
@@ -95,12 +106,20 @@ impl AyameApp {
                     .pick_file()
                 {
                     let read = std::fs::read(&picked).unwrap();
-                    let hyle = if is_zip(&picked) {
-                        AozoraHyle::Zip((read, view.encoding))
+                    let (text, deps) = if is_zip(&picked) {
+                        let azz =
+                            AozoraZip::read_from_zip(Cursor::new(read), &view.encoding).unwrap();
+                        (azz.txt, azz.images)
                     } else {
-                        AozoraHyle::Txt((read, view.encoding))
+                        let txt = view.encoding.bytes_to_string(read).unwrap();
+                        (txt, Dependencies::default())
                     };
-                    view.source = hyle.encode(view.consider_gaiji).ok();
+                    let text = if view.consider_gaiji {
+                        ayame::utf8tify_all_gaiji(&text).into_owned()
+                    } else {
+                        text
+                    };
+                    view.source = Some((text, deps));
                     cx.notify();
                 }
             }));
@@ -118,19 +137,14 @@ impl AyameApp {
                         .save_file(),
                     view.source.clone(),
                 ) {
-                    let aaz: AbstractAozoraZip =
-                        AbstractAozoraZip::from_str_with_meta(text.as_str(), deps).unwrap();
-                    let zip = File::create(save_to).unwrap();
-                    aaz.epub(
-                        zip,
-                        &PotentialCSS {
-                            use_miyabi: view.use_miyabi,
-                            use_prelude: view.use_prelude,
-                            direction: view.writing_direction,
-                        },
-                        "ja",
-                    )
-                    .unwrap();
+                    let doc = AozoraDocument::from_str(text.as_str(), Some(&deps)).unwrap();
+                    let style = view.build_style();
+                    let injectors = PageInjectors {
+                        title_page: Some(ayame::title_page_writer()),
+                        toc_page: Some(ayame::toc_page_writer()),
+                    };
+                    let mut file = File::create(save_to).unwrap();
+                    doc.epub(&mut file, &style, &injectors).unwrap();
                 }
             }));
 

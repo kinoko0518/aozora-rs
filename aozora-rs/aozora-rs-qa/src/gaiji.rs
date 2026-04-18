@@ -5,7 +5,7 @@ use std::time::Instant;
 
 use crate::{AnalysedSummary, MapCache};
 
-use aozora_rs_gaiji::{GAIJI_TO_CHAR, MENKUTEN_TO_UNICODE, parse_tag};
+use aozora_rs::internal::{GAIJI_TO_CHAR, MENKUTEN_TO_UNICODE, parse_tag};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use winnow::{
     Parser,

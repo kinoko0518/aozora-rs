@@ -15,13 +15,13 @@ use std::{
     io::{Seek, Write},
 };
 
-use aozora_rs_core::{AZResult, AZResultC};
-use aozora_rs_xhtml::NovelResult;
+use aozora_rs_core::{AZResult, AZResultC, AozoraMeta};
+use aozora_rs_xhtml::{Chapter, XHTMLResult};
 use aozora_rs_zip::{Dependencies, ImgExtension};
 use chrono::Local;
 use uuid::Uuid;
 
-use zip::{ZipWriter, write::SimpleFileOptions};
+use zip::{ZipWriter, result::ZipError, write::SimpleFileOptions};
 
 /// Epubの生成に関する設定を保持する構造体です。
 ///
@@ -37,7 +37,33 @@ impl Default for EpubSetting<'_> {
         Self {
             language: "ja",
             is_rtl: true,
-            styles: vec![],
+            styles: Vec::new(),
+        }
+    }
+}
+
+/// 扉ページ生成に必要なデータ
+pub struct TitlePageHyle<'a> {
+    pub title: &'a str,
+    pub author: &'a str,
+}
+
+/// 目次ページ生成に必要なデータ
+pub struct TocPageHyle<'a> {
+    pub chapters: &'a [Chapter],
+}
+
+/// EPUB生成時に注入可能なページ生成ロジック
+pub struct PageInjectors {
+    pub title_page: Option<Box<dyn Fn(&mut dyn Write, &TitlePageHyle) -> std::io::Result<()>>>,
+    pub toc_page: Option<Box<dyn Fn(&mut dyn Write, &TocPageHyle) -> std::io::Result<()>>>,
+}
+
+impl Default for PageInjectors {
+    fn default() -> Self {
+        Self {
+            title_page: None,
+            toc_page: None,
         }
     }
 }
@@ -45,30 +71,39 @@ impl Default for EpubSetting<'_> {
 /// epubの生成時に必要なデータをすべてまとめた構造体です。
 ///
 /// epubを実際に生成する処理はこの構造体のメソッドとして実装されています。
-pub struct EpubWriter<'s> {
-    nresult: NovelResult<'s>,
-    image: HashMap<String, (ImgExtension, Vec<u8>)>,
-    setting: EpubSetting<'s>,
+pub(crate) struct EpubWriter<'s> {
+    meta: &'s AozoraMeta<'s>,
+    nresult: &'s XHTMLResult,
+    image: &'s HashMap<String, (ImgExtension, Vec<u8>)>,
+    setting: &'s EpubSetting<'s>,
+    injectors: &'s PageInjectors,
     lud: chrono::DateTime<Local>,
 }
 
 impl EpubWriter<'_> {
-    pub fn uuid(&self) -> Uuid {
+    pub(crate) fn uuid(&self) -> Uuid {
         let namespace = Uuid::NAMESPACE_OID;
-        let seed = format!("{}|{}", &self.nresult.meta.author, &self.nresult.meta.title);
+        let seed = format!("{}|{}", &self.meta.author, &self.meta.title);
         Uuid::new_v5(&namespace, seed.as_bytes())
     }
 
-    pub fn xhtmls(&self) -> impl Iterator<Item = String> {
+    pub(crate) fn has_title_page(&self) -> bool {
+        self.injectors.title_page.is_some()
+    }
+
+    pub(crate) fn has_toc_page(&self) -> bool {
+        self.injectors.toc_page.is_some()
+    }
+
+    pub(crate) fn xhtmls(&self) -> impl Iterator<Item = String> {
         self.nresult
-            .xhtmls
             .xhtmls
             .iter()
             .enumerate()
             .map(|(num, _)| format!("xhtml/sec{:>04}.xhtml", num))
     }
 
-    pub fn css(&self) -> impl Iterator<Item = String> {
+    pub(crate) fn css(&self) -> impl Iterator<Item = String> {
         self.setting
             .styles
             .iter()
@@ -76,16 +111,15 @@ impl EpubWriter<'_> {
             .map(|(num, _)| format!("style/style{:>04}.css", num))
     }
 
-    pub fn images(&self) -> impl Iterator<Item = (String, ImgExtension)> {
+    pub(crate) fn images(&self) -> impl Iterator<Item = (String, ImgExtension)> {
         self.nresult
-            .xhtmls
             .dependency
             .iter()
             .filter_map(|i| Some((i, ImgExtension::from_extension(i)?)))
             .map(|(i, e)| (format!("images/{i}"), e))
     }
 
-    pub fn apply_css(
+    pub(crate) fn apply_css(
         &self,
         writer: &mut impl Write,
         base_path: &str,
@@ -101,61 +135,176 @@ impl EpubWriter<'_> {
     }
 }
 
+#[derive(Debug)]
+pub enum AozoraZipWarning {
+    DependencieNotFound(String),
+}
+
+impl std::fmt::Display for AozoraZipWarning {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(
+            f,
+            "{}",
+            match self {
+                AozoraZipWarning::DependencieNotFound(d) =>
+                    format!("次のファイルがzip内に見つかりませんでした：{}", d),
+            }
+        )
+    }
+}
+
+impl Default for AozoraZipWarning {
+    fn default() -> Self {
+        Self::DependencieNotFound("".into())
+    }
+}
+
+#[derive(Debug)]
+pub enum AozoraZipError {
+    IoFailed(std::io::Error),
+    ZipError(ZipError),
+}
+
+impl Into<AozoraZipError> for std::io::Error {
+    fn into(self) -> AozoraZipError {
+        AozoraZipError::IoFailed(self)
+    }
+}
+
+impl Into<AozoraZipError> for ZipError {
+    fn into(self) -> AozoraZipError {
+        AozoraZipError::ZipError(self)
+    }
+}
+
+impl std::fmt::Display for AozoraZipError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::ZipError(z) => {
+                    let err: String = match z {
+                        ZipError::FileNotFound => "必要なファイルが見つかりませんでした".into(),
+                        ZipError::InvalidArchive(_) => "無効なアーカイブです".into(),
+                        ZipError::InvalidPassword => "Zipがパスワードで保護されています".into(),
+                        ZipError::Io(i) => format!("IOエラーが発生しました：{}", i).into(),
+                        ZipError::UnsupportedArchive(_) => {
+                            "サポートされていないアーカイブ形式です".into()
+                        }
+                        _ => "".into(),
+                    };
+                    err
+                }
+                Self::IoFailed(i) => format!("IOエラーが発生しました：{}", i).into(),
+            }
+        )
+    }
+}
+
 /// AozoraZipからEpubを生成します。
 ///
-/// accには書き込み先を、azzには元となるAozoraZipを、settingにはEpubSettingを指定してください。
-/// 最後にNovelResultを渡すことで、Epubを生成します。
-pub fn from_aozora_zip<'s>(
+/// accには書き込み先を、settingにはEpubSettingを指定してください。
+/// injectorsを指定すると、扉ページや目次ページを本文の前に挿入できます。
+pub fn from_aozora_zip(
     acc: impl Write + Seek,
-    dependencies: Dependencies,
-    setting: EpubSetting,
-    novel_result: NovelResult<'s>,
-) -> Result<AZResult<()>, Box<dyn std::error::Error>> {
+    dependencies: &Dependencies,
+    xhtml: &XHTMLResult,
+    setting: &EpubSetting,
+    meta: &AozoraMeta,
+    injectors: &PageInjectors,
+) -> Result<AZResult<(), AozoraZipWarning>, AozoraZipError> {
     let mut writer = ZipWriter::new(acc);
     let options = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
     let epub_writer = EpubWriter {
-        nresult: novel_result,
-        image: dependencies.images,
+        meta,
+        nresult: xhtml,
+        image: &dependencies.images,
         setting,
+        injectors,
         lud: Local::now(),
     };
     let stored = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
 
-    writer.start_file("mimetype", stored)?;
-    writer.write_all(b"application/epub+zip")?;
+    writer
+        .start_file("mimetype", stored)
+        .map_err(|e| e.into())?;
+    writer
+        .write_all(b"application/epub+zip")
+        .map_err(|e| e.into())?;
 
-    writer.start_file("META-INF/container.xml", options)?;
-    writer.write_all(include_str!("../assets/container.xml").as_bytes())?;
+    writer
+        .start_file("META-INF/container.xml", options)
+        .map_err(|e| e.into())?;
+    writer
+        .write_all(include_str!("../assets/container.xml").as_bytes())
+        .map_err(|e| e.into())?;
 
-    writer.start_file("item/standard.opf", options)?;
-    epub_writer.write_opf(&mut writer)?;
+    writer
+        .start_file("item/standard.opf", options)
+        .map_err(|e| e.into())?;
+    epub_writer.write_opf(&mut writer).map_err(|e| e.into())?;
 
-    writer.start_file("item/toc.ncx", options)?;
-    epub_writer.write_ncx(&mut writer)?;
+    writer
+        .start_file("item/toc.ncx", options)
+        .map_err(|e| e.into())?;
+    epub_writer.write_ncx(&mut writer).map_err(|e| e.into())?;
 
-    writer.start_file("item/nav.xhtml", options)?;
-    epub_writer.write_nav(&mut writer)?;
+    writer
+        .start_file("item/nav.xhtml", options)
+        .map_err(|e| e.into())?;
+    epub_writer.write_nav(&mut writer).map_err(|e| e.into())?;
 
-    for (i, x) in epub_writer.nresult.xhtmls.xhtmls.iter().enumerate() {
-        writer.start_file(format!("item/xhtml/sec{:>04}.xhtml", i), options)?;
-        epub_writer.write_xhtml(x, &mut writer)?;
+    if let Some(ref title_writer) = injectors.title_page {
+        writer
+            .start_file("item/xhtml/title.xhtml", options)
+            .map_err(|e| e.into())?;
+        let hyle = TitlePageHyle {
+            title: meta.title,
+            author: meta.author,
+        };
+        epub_writer
+            .write_injected_page(&mut writer, &hyle, title_writer.as_ref())
+            .map_err(|e| e.into())?;
+    }
+
+    if let Some(ref toc_writer) = injectors.toc_page {
+        writer
+            .start_file("item/xhtml/toc.xhtml", options)
+            .map_err(|e| e.into())?;
+        let hyle = TocPageHyle {
+            chapters: &xhtml.chapters,
+        };
+        epub_writer
+            .write_injected_page(&mut writer, &hyle, toc_writer.as_ref())
+            .map_err(|e| e.into())?;
+    }
+
+    for (i, x) in epub_writer.nresult.xhtmls.iter().enumerate() {
+        writer
+            .start_file(format!("item/xhtml/sec{:>04}.xhtml", i), options)
+            .map_err(|e| e.into())?;
+        epub_writer
+            .write_xhtml(x, &mut writer)
+            .map_err(|e| e.into())?;
     }
 
     for (i, css) in epub_writer.setting.styles.iter().enumerate() {
-        writer.start_file(format!("item/style/style{:>04}.css", i), options)?;
-        writer.write_all(css.as_bytes())?;
+        writer
+            .start_file(format!("item/style/style{:>04}.css", i), options)
+            .map_err(|e| e.into())?;
+        writer.write_all(css.as_bytes()).map_err(|e| e.into())?;
     }
 
     let mut azresult = AZResultC::default();
-    for d in epub_writer.nresult.xhtmls.dependency {
-        if let Some(img) = epub_writer.image.get(&d) {
-            writer.start_file(format!("item/image/{}", d), options)?;
-            writer.write(&img.1)?;
+    for d in &epub_writer.nresult.dependency {
+        if let Some(img) = epub_writer.image.get(d) {
+            writer
+                .start_file(format!("item/image/{}", d), options)
+                .map_err(|e| e.into())?;
+            writer.write(&img.1).map_err(|e| e.into())?;
         } else {
-            azresult.acc_err(miette::miette!(
-                "依存関係にあるファイルが見つかりませんでした：{}",
-                d
-            ));
+            azresult.acc_err(AozoraZipWarning::DependencieNotFound(d.clone()));
         }
     }
 

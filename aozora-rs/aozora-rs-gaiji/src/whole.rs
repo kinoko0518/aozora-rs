@@ -44,7 +44,7 @@ fn parse_gaiji<'a>(input: &mut &'a str) -> Result<GaijiOrStr<'a>, ContextError> 
         .parse_next(input)
 }
 
-pub fn whole_gaiji_to_char<'s>(input: &'s str) -> Cow<'s, str> {
+pub fn utf8tify_all_gaiji<'s>(input: &'s str) -> Cow<'s, str> {
     let mut input = input;
     let result: Vec<GaijiOrStr> = repeat(0.., alt((parse_gaiji, parse_text)))
         .parse_next(&mut input)

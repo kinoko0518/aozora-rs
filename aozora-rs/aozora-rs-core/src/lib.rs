@@ -1,8 +1,5 @@
-//! # 使い方
-//! preludeの中の
-
-mod azerror;
 mod deco;
+mod error;
 mod meta;
 mod nihongo;
 
@@ -14,13 +11,13 @@ use winnow::LocatingSlice;
 
 pub type Input<'s> = LocatingSlice<&'s str>;
 pub type Span = std::ops::Range<usize>;
+pub type WinnowError = ();
 
 pub use crate::deco::*;
 
-pub use crate::azerror::{AZResult, AZResultC};
+pub use crate::error::*;
 
-pub use crate::meta::{AozoraMeta, parse_meta};
-
-pub use crate::retokenizer::{Retokenized, retokenize};
-pub use crate::scopenizer::{ScopeKind, Scopenized, scopenize};
-pub use crate::tokenizer::{AozoraTokenKind, Tokenized, tokenize};
+pub use crate::meta::*;
+pub use crate::retokenizer::*;
+pub use crate::scopenizer::*;
+pub use crate::tokenizer::*;

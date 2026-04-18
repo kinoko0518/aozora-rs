@@ -1,6 +1,6 @@
 use std::char::from_u32;
 
-use winnow::{Parser, combinator::alt, error::ContextError, token::take_while};
+use winnow::{Parser, combinator::alt, token::take_while};
 
 use crate::*;
 
@@ -22,7 +22,7 @@ fn fw_digit_to_hw(original: char) -> Option<char> {
         .and_then(from_u32)
 }
 
-fn fw_digit(input: &mut Input) -> Result<usize, ContextError> {
+fn fw_digit(input: &mut Input) -> Result<usize, WinnowError> {
     take_while(1.., |c| matches!(c, '０'..='９'))
         .map(|s: &str| {
             s.chars()
@@ -33,12 +33,12 @@ fn fw_digit(input: &mut Input) -> Result<usize, ContextError> {
         .parse_next(input)
 }
 
-fn hw_digit(input: &mut Input) -> Result<usize, ContextError> {
+fn hw_digit(input: &mut Input) -> Result<usize, WinnowError> {
     take_while(1.., |c: char| c.is_ascii_digit())
         .map(|s: &str| s.parse::<usize>().unwrap())
         .parse_next(input)
 }
 
-pub fn japanese_num(input: &mut Input) -> Result<usize, ContextError> {
+pub fn japanese_num(input: &mut Input) -> Result<usize, WinnowError> {
     alt((fw_digit, hw_digit)).parse_next(input)
 }

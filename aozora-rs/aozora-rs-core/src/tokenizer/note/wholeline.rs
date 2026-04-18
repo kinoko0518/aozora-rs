@@ -1,7 +1,6 @@
 use winnow::{
     Parser,
     combinator::{alt, opt},
-    error::ContextError,
 };
 
 use crate::{nihongo::japanese_num, *};
@@ -29,7 +28,7 @@ impl WholeLine {
     }
 }
 
-pub fn wholeline(input: &mut Input) -> Result<WholeLine, ContextError> {
+pub fn wholeline(input: &mut Input) -> Result<WholeLine, WinnowError> {
     alt((
         (opt("天から"), japanese_num, "字下げ").map(|(_, n, _)| WholeLine::Indent(n)),
         "地付き".value(WholeLine::Grounded),

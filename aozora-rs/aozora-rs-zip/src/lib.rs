@@ -1,11 +1,9 @@
 use std::{
     collections::HashMap,
-    io::{Cursor, Read},
+    io::{Read, Seek},
     string::FromUtf8Error,
 };
 
-use miette::Diagnostic;
-use thiserror::Error;
 use winnow::error::ContextError;
 use zip::result::ZipError;
 
@@ -39,72 +37,41 @@ impl ImgExtension {
 }
 
 /// AozoraZipからepubやXHTMLを生成するときに発生しうるエラーを列挙したエラー型です。
-#[derive(Debug, Error, Diagnostic)]
-pub enum AozoraZipError {
-    #[error("ファイル操作中にエラーが発生しました")]
-    #[diagnostic(
-        code(aozora_rs_epub::io_error),
-        help("ファイルパスや読み取り権限を確認してください。")
-    )]
-    Io(#[from] std::io::Error),
-
-    #[error("複数のテキストファイルが見つかりました")]
-    #[diagnostic(
-        code(aozora_rs_epub::multi_textfile_found),
-        help("対象になりうるテキストファイルは1つまでです。")
-    )]
+#[derive(Debug)]
+pub enum DependenciesError {
+    Io(std::io::Error),
     MultiTextFound,
-
-    #[error("テキストファイルが見つかりませんでした")]
-    #[diagnostic(
-        code(aozora_rs_epub::no_textfile_found),
-        help("対象となるテキストファイルが必要です。")
-    )]
     NoTextFound,
-
-    #[error("Zipファイルの形式が不正です")]
-    #[diagnostic(
-        code(aozora_rs_epub::broken_zip_file),
-        help("ファイルが破損していないかを確認してください。")
-    )]
     BrokenZip(ZipError),
-
-    #[error("エンコードエラーが発生しました")]
-    #[diagnostic(
-        code(aozora_rs_epub::encoding_error),
-        help("Shift-JISファイルの場合は sjis オプションを有効にしてください。")
-    )]
     EncodingError,
-
-    #[error("txtファイルが破損しています")]
-    #[diagnostic(
-        code(aozora_rs_epub::encoding_error),
-        help("Shift-JISファイルの場合は sjis オプションを有効にしてください。")
-    )]
-    BrokenText(FromUtf8Error),
-
-    #[error("トークン化に失敗しました")]
-    #[diagnostic(
-        code(aozora_rs_epub::encoding_error),
-        help(
-            "原理的に失敗しないエラーです。お手数ですが、公開できるものであれば入力したデータとともに開発者へご連絡ください。"
-        )
-    )]
+    BrokenText,
     TokenizeFailed(ContextError),
-
-    #[error("メタデータの解析に失敗しました")]
-    #[diagnostic(
-        code(aozora_rs_epub::encoding_error),
-        help("入力が青空文庫書式に従っていることを確認してください。")
-    )]
-    BrokenMetaData(miette::Report),
-
-    #[error("画像の読み取りに失敗しました")]
-    #[diagnostic(
-        code(aozora_rs_epub::failed_to_read_img),
-        help("入力が青空文庫書式に従っていることを確認してください。")
-    )]
+    BrokenMetaData,
     ImgReadFailed(std::io::Error),
+}
+
+impl std::fmt::Display for DependenciesError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let err: String = match self {
+            Self::BrokenMetaData => "メタデータが破損しています".into(),
+            Self::BrokenText => "入力されたテキストデータは破損しています".into(),
+            Self::BrokenZip(z) => match z {
+                ZipError::FileNotFound => "必要なファイルが見つかりませんでした".into(),
+                ZipError::InvalidArchive(_) => "無効なアーカイブです".into(),
+                ZipError::InvalidPassword => "Zipがパスワードで保護されています".into(),
+                ZipError::Io(i) => format!("IOエラーが発生しました：{}", i),
+                ZipError::UnsupportedArchive(_) => "サポートされていないアーカイブ形式です".into(),
+                _ => "".into()
+            },
+            Self::EncodingError => "テキストデータの解釈に失敗しました。指定した文字コードが正しいことを確認してください".into(),
+            Self::ImgReadFailed(i) => format!("画像の読み込みに失敗しました：{}", i).into(),
+            Self::Io(i) => format!("I/Oに失敗しました：{}", i).into(),
+            Self::MultiTextFound => "Zipの中に複数のテキストファイルが見つかりました".into(),
+            Self::NoTextFound => "Zipの中にテキストファイルが見つかりませんでした".into(),
+            Self::TokenizeFailed(_) => "テキストのトークン化に失敗しました".into()
+        };
+        write!(f, "{}", err)
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -128,7 +95,7 @@ impl Encoding {
 /// Zipファイルから読み込んだ、青空文庫書式の解析に必要なデータを保持する構造体です。
 pub struct AozoraZip {
     pub txt: String,
-    pub images: HashMap<String, (ImgExtension, Vec<u8>)>,
+    pub images: Dependencies,
 }
 
 #[derive(Default, Clone)]
@@ -137,53 +104,47 @@ pub struct Dependencies {
 }
 
 impl AozoraZip {
-    pub fn into_dependencies(self) -> (String, Dependencies) {
-        (
-            self.txt,
-            Dependencies {
-                images: self.images,
-            },
-        )
-    }
-
-    pub fn read_from_zip<'s>(zip: &[u8], encoding: &Encoding) -> Result<Self, AozoraZipError> {
-        let mut zip = zip::ZipArchive::new(Cursor::new(zip)).map_err(AozoraZipError::BrokenZip)?;
+    pub fn read_from_zip<'s, T>(zip: T, encoding: &Encoding) -> Result<Self, DependenciesError>
+    where
+        T: Read + Seek,
+    {
+        let mut zip = zip::ZipArchive::new(zip).map_err(DependenciesError::BrokenZip)?;
         let mut images = HashMap::new();
         let mut txt = None;
 
         let zip_len = zip.len();
         for c in 0..zip_len {
-            let c = zip.by_index(c).map_err(AozoraZipError::BrokenZip);
+            let c = zip.by_index(c).map_err(DependenciesError::BrokenZip);
             let mut c = c?;
             let extension = c.name().rsplit_once(".").map(|(_, r)| r).unwrap_or("");
             if extension == "txt" {
                 let text = {
                     let mut buff: Vec<u8> = Vec::new();
-                    c.read_to_end(&mut buff).map_err(AozoraZipError::Io)?;
+                    c.read_to_end(&mut buff).map_err(DependenciesError::Io)?;
                     encoding
                         .bytes_to_string(buff)
-                        .map_err(AozoraZipError::BrokenText)?
+                        .map_err(|_| DependenciesError::BrokenText)?
                 };
                 if txt.is_none() {
                     txt = Some(text);
                 } else {
-                    return Err(AozoraZipError::MultiTextFound);
+                    return Err(DependenciesError::MultiTextFound);
                 }
             } else if let Some(ext) = ImgExtension::from_extension(extension) {
                 let mut buff: Vec<u8> = Vec::new();
                 c.read_to_end(&mut buff)
-                    .map_err(AozoraZipError::ImgReadFailed)?;
+                    .map_err(DependenciesError::ImgReadFailed)?;
                 images.insert(c.name().into(), (ext, buff));
             }
         }
         let nresult = if let Some(s) = txt {
             s
         } else {
-            return Err(AozoraZipError::NoTextFound);
+            return Err(DependenciesError::NoTextFound);
         };
         Ok(Self {
             txt: nresult,
-            images,
+            images: Dependencies { images },
         })
     }
 }

@@ -5,6 +5,6 @@ edition = "2024"
 
 [dependencies]
 aozora-rs-gaiji = { workspace = true }
-miette = { workspace = true }
-thiserror = { workspace = true }
+colored = "3.1.1"
+memchr = "2.8.0"
 winnow = { workspace = true }

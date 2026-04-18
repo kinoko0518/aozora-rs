@@ -1,10 +1,10 @@
 //! スタイルで汎用的に使用される定義を行います。
 
-use winnow::{Parser, combinator::alt, error::ContextError};
+use winnow::{Parser, combinator::alt};
 
 use crate::*;
 
-pub fn boten(input: &mut Input) -> Result<BotenKind, ContextError> {
+pub fn boten(input: &mut Input) -> Result<BotenKind, WinnowError> {
     (
         alt((
             "白ゴマ".value(BotenKind::Sesame),
@@ -23,7 +23,7 @@ pub fn boten(input: &mut Input) -> Result<BotenKind, ContextError> {
         .parse_next(input)
 }
 
-pub fn bosen(input: &mut Input) -> Result<BosenKind, ContextError> {
+pub fn bosen(input: &mut Input) -> Result<BosenKind, WinnowError> {
     alt((
         "傍線".value(BosenKind::Plain),
         "二重傍線".value(BosenKind::Double),

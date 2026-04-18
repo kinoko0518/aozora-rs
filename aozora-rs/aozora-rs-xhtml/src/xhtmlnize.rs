@@ -14,7 +14,7 @@ use crate::{
     },
 };
 
-pub fn into_xhtml<'s>(from: Vec<Retokenized<'s>>) -> XHTMLResult {
+pub fn retokenized_to_xhtml<'s>(from: Vec<Retokenized<'s>>) -> XHTMLResult {
     // States
     let mut c_depth = CDepth::default();
     let mut peekable = from.into_iter().multipeek();

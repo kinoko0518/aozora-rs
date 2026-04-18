@@ -1,19 +1,18 @@
 use winnow::{
     Parser,
     combinator::{alt, delimited, not, opt, peek, repeat},
-    error::ContextError,
     token::{any, take_till, take_until},
 };
 
 use crate::tokenizer::*;
 use crate::{tokenizer::note::command, *};
 
-fn ruby<'s>(input: &mut Input<'s>) -> Result<&'s str, ContextError> {
+fn ruby<'s>(input: &mut Input<'s>) -> Result<&'s str, WinnowError> {
     const END: char = '》';
     delimited('《', take_until(1.., END), END).parse_next(input)
 }
 
-fn odoriji<'s>(input: &mut Input<'s>) -> Result<Odoriji, ContextError> {
+fn odoriji<'s>(input: &mut Input<'s>) -> Result<Odoriji, WinnowError> {
     ("／", opt('″'), "＼")
         .map(|(_, dakuten, _)| Odoriji {
             has_dakuten: dakuten.is_some(),
@@ -21,7 +20,7 @@ fn odoriji<'s>(input: &mut Input<'s>) -> Result<Odoriji, ContextError> {
         .parse_next(input)
 }
 
-fn special<'s>(input: &mut Input<'s>) -> Result<AozoraTokenKind<'s>, ContextError> {
+fn special<'s>(input: &mut Input<'s>) -> Result<AozoraTokenKind<'s>, WinnowError> {
     alt((
         '｜'.value(AozoraTokenKind::RubyDelimiter),
         '\n'.value(AozoraTokenKind::Br),
@@ -39,13 +38,13 @@ fn special<'s>(input: &mut Input<'s>) -> Result<AozoraTokenKind<'s>, ContextErro
     .parse_next(input)
 }
 
-fn take_until_special<'s>(input: &mut Input<'s>) -> Result<&'s str, ContextError> {
-    fn fast_skip<'s>(input: &mut Input<'s>) -> Result<(), ContextError> {
+fn take_until_special<'s>(input: &mut Input<'s>) -> Result<&'s str, WinnowError> {
+    fn fast_skip<'s>(input: &mut Input<'s>) -> Result<(), WinnowError> {
         take_till(1.., |c| matches!(c, '｜' | '\n' | '［' | '《' | '／'))
             .void()
             .parse_next(input)
     }
-    fn false_trigger<'s>(input: &mut Input<'s>) -> Result<(), ContextError> {
+    fn false_trigger<'s>(input: &mut Input<'s>) -> Result<(), WinnowError> {
         (not(peek(special)), any).void().parse_next(input)
     }
 
@@ -55,7 +54,7 @@ fn take_until_special<'s>(input: &mut Input<'s>) -> Result<&'s str, ContextError
         .parse_next(input)
 }
 
-pub fn tokenize<'s>(input: &mut Input<'s>) -> Result<Vec<Tokenized<'s>>, ContextError> {
+pub fn tokenize<'s>(input: &mut Input<'s>) -> Result<Vec<Tokenized<'s>>, WinnowError> {
     let mut result: Vec<Tokenized> = repeat(
         0..,
         alt((special, take_until_special.map(AozoraTokenKind::Text)))
