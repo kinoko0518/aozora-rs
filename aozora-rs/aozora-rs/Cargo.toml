@@ -1,7 +1,15 @@
 [package]
 name = "aozora-rs"
-version = "0.4.3"
+version = "0.5.0"
 edition = "2024"
+
+description = "Pure-Rustな超高速青空文庫書式パーサー"
+repository = "https://github.com/kinoko0518/aozora-rs"
+license = "Apache-2.0"
+readme = "../README.md"
+
+categories = ["parsing"]
+keywords = ["aozorabunko", "青空文庫書式", "markup"]
 
 [dependencies]
 aozora-rs-core = { workspace = true }

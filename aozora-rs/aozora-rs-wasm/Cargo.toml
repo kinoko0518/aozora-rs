@@ -3,6 +3,10 @@ name = "aozora-rs-wasm"
 version = "0.1.0"
 edition = "2024"
 
+description = "Pure-Rustな超高速青空文庫書式パーサー"
+repository = "https://github.com/kinoko0518/aozora-rs"
+license = "Apache-2.0"
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 
