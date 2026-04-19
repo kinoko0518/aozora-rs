@@ -1,25 +1,28 @@
 @charset "utf-8";
 
 /*
- * プレビュー用統合スタイル
- * prelude.css + miyabix.css + horizontal.css を統合
+ * サイト内プレビュー用スタイル
+ * prelude.css + miyabi + vertical.css を統合（縦書き対応）
  */
 
 #preview-area {
-    max-height: 100vh;
-    overflow-y: scroll;
+    flex: 1;
+    min-height: 0;
+    overflow-y: hidden;
 }
 
-/* === horizontal === */
+/* === vertical === */
 .preview-container {
     max-width: 100%;
-    writing-mode: horizontal-tb;
-    -webkit-writing-mode: horizontal-tb;
+    height: 100%;
+    writing-mode: vertical-rl;
+    -webkit-writing-mode: vertical-rl;
+    overflow-x: scroll;
     margin: 0;
     padding: 0;
 }
 
-/* === miyabix === */
+/* === miyabi === */
 .preview-container {
     font-family: "Shippori Mincho", serif;
     font-weight: 400;
@@ -31,7 +34,6 @@
     -moz-osx-font-smoothing: grayscale;
     text-align: justify;
     hanging-punctuation: allow-end;
-    color: #e0dcd0;
     background: transparent;
 }
 

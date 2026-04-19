@@ -3,7 +3,7 @@
 
 ## GUI版
 
-<img src="./docs/images/screenshots/gui.png" width="800px">
+<img src="../docs/images/screenshots/gui.png" width="800px">
 
 ## インストール
 
@@ -18,30 +18,30 @@ cargo install --git https://github.com/kinoko0518/aozora-rs ayame-app
 <div align="center">
     <a href="https://github.com/kinoko0518/aozora-rs/releases/latest/download/ayame-app-windows-x86_64.exe">
         <picture>
-            <source media="(prefers-color-scheme: dark)" srcset="./docs/images/icons/windows-in-dark.svg">
-            <source media="(prefers-color-scheme: light)" srcset="./docs/images/icons/windows-in-light.svg">
-            <img alt="Windows" src="./docs/images/icons/windows-in-dark.svg">
+            <source media="(prefers-color-scheme: dark)" srcset="../docs/images/icons/windows-in-dark.svg">
+            <source media="(prefers-color-scheme: light)" srcset="../docs/images/icons/windows-in-light.svg">
+            <img alt="Windows" src="../docs/images/icons/windows-in-dark.svg">
         </picture>
     </a>
     <a href="https://github.com/kinoko0518/aozora-rs/releases/latest/download/ayame-app-linux-x86_64">
         <picture>
-            <source media="(prefers-color-scheme: dark)" srcset="./docs/images/icons/linux-in-dark.svg">
-            <source media="(prefers-color-scheme: light)" srcset="./docs/images/icons/linux-in-light.svg">
-            <img alt="Linux" src="./docs/images/icons/linux-in-dark.svg">
+            <source media="(prefers-color-scheme: dark)" srcset="../docs/images/icons/linux-in-dark.svg">
+            <source media="(prefers-color-scheme: light)" srcset="../docs/images/icons/linux-in-light.svg">
+            <img alt="Linux" src="../docs/images/icons/linux-in-dark.svg">
         </picture>
     </a>
     <a href="https://github.com/kinoko0518/aozora-rs/releases/latest/download/ayame-app-macos-aarch64">
         <picture>
-            <source media="(prefers-color-scheme: dark)" srcset="./docs/images/icons/mac-in-dark.svg">
-            <source media="(prefers-color-scheme: light)" srcset="./docs/images/icons/mac-in-light.svg">
-            <img alt="macOS" src="./docs/images/icons/mac-in-dark.svg">
+            <source media="(prefers-color-scheme: dark)" srcset="../docs/images/icons/mac-in-dark.svg">
+            <source media="(prefers-color-scheme: light)" srcset="../docs/images/icons/mac-in-light.svg">
+            <img alt="macOS" src="../docs/images/icons/mac-in-dark.svg">
         </picture>
     </a>
 </div>
 
 ## CLI版
 
-<img src="./docs/images/screenshots/cli.png" width="800px">
+<img src="../docs/images/screenshots/cli.png" width="800px">
 
 ### インストール
 
@@ -56,23 +56,23 @@ cargo install --git https://github.com/kinoko0518/aozora-rs ayame-cli
 <div align="center">
     <a href="https://github.com/kinoko0518/aozora-rs/releases/latest/download/ayame-cli-windows-x86_64.exe">
         <picture>
-            <source media="(prefers-color-scheme: dark)" srcset="./docs/images/icons/windows-in-dark.svg">
-            <source media="(prefers-color-scheme: light)" srcset="./docs/images/icons/windows-in-light.svg">
-            <img alt="Windows" src="./docs/images/icons/windows-in-dark.svg">
+            <source media="(prefers-color-scheme: dark)" srcset="../docs/images/icons/windows-in-dark.svg">
+            <source media="(prefers-color-scheme: light)" srcset="../docs/images/icons/windows-in-light.svg">
+            <img alt="Windows" src="../docs/images/icons/windows-in-dark.svg">
         </picture>
     </a>
     <a href="https://github.com/kinoko0518/aozora-rs/releases/latest/download/ayame-cli-linux-x86_64">
         <picture>
-            <source media="(prefers-color-scheme: dark)" srcset="./docs/images/icons/linux-in-dark.svg">
-            <source media="(prefers-color-scheme: light)" srcset="./docs/images/icons/linux-in-light.svg">
-            <img alt="Linux" src="./docs/images/icons/linux-in-dark.svg">
+            <source media="(prefers-color-scheme: dark)" srcset="../docs/images/icons/linux-in-dark.svg">
+            <source media="(prefers-color-scheme: light)" srcset="../docs/images/icons/linux-in-light.svg">
+            <img alt="Linux" src="../docs/images/icons/linux-in-dark.svg">
         </picture>
     </a>
     <a href="https://github.com/kinoko0518/aozora-rs/releases/latest/download/ayame-cli-macos-aarch64">
         <picture>
-            <source media="(prefers-color-scheme: dark)" srcset="./docs/images/icons/mac-in-dark.svg">
-            <source media="(prefers-color-scheme: light)" srcset="./docs/images/icons/mac-in-light.svg">
-            <img alt="macOS" src="./docs/images/icons/mac-in-dark.svg">
+            <source media="(prefers-color-scheme: dark)" srcset="../docs/images/icons/mac-in-dark.svg">
+            <source media="(prefers-color-scheme: light)" srcset="../docs/images/icons/mac-in-light.svg">
+            <img alt="macOS" src="../docs/images/icons/mac-in-dark.svg">
         </picture>
     </a>
 </div>

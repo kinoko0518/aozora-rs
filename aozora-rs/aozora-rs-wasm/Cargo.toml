@@ -13,6 +13,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 aozora-rs = { workspace = true }
 aozora-rs-zip = { workspace = true }
+ayame = { workspace = true }
 console_error_panic_hook = "0.1.7"
 miette = { workspace = true }
 wasm-bindgen = { workspace = true }

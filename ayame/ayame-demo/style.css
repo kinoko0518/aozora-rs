@@ -1,36 +1,37 @@
 @charset "utf-8";
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Shippori+Mincho:wght@400;500;600;700&display=swap");
 
-/* === Design Tokens === */
+/* === Design Tokens (ayame-app準拠) === */
 :root {
-    --bg-deep: hsl(230, 20%, 8%);
-    --bg-surface: hsl(230, 18%, 12%);
-    --bg-card: hsl(230, 16%, 15%);
-    --bg-hover: hsl(230, 14%, 18%);
+    --bg-deep: hsl(222, 47%, 8%);
+    --bg-surface: hsl(220, 42%, 12%);
+    --bg-card: hsl(220, 42%, 16%);
+    --bg-hover: hsl(220, 35%, 20%);
+    --bg-island: hsl(220, 42%, 16%);
 
-    --border-subtle: hsla(230, 20%, 40%, 0.2);
-    --border-accent: hsla(260, 60%, 60%, 0.3);
+    --border-subtle: hsl(215, 25%, 27%);
+    --border-accent: hsla(220, 50%, 50%, 0.3);
 
-    --text-primary: hsl(40, 20%, 88%);
-    --text-secondary: hsl(40, 10%, 60%);
-    --text-muted: hsl(40, 5%, 42%);
+    --text-primary: hsl(210, 25%, 85%);
+    --text-secondary: hsl(215, 20%, 63%);
+    --text-muted: hsl(215, 15%, 42%);
 
-    --accent: hsl(260, 55%, 62%);
-    --accent-glow: hsla(260, 55%, 62%, 0.15);
-    --accent-hover: hsl(260, 60%, 70%);
+    --accent: hsl(220, 60%, 55%);
+    --accent-glow: hsla(220, 60%, 55%, 0.12);
+    --accent-hover: hsl(220, 65%, 65%);
 
     --success: hsl(160, 50%, 50%);
     --warning: hsl(40, 80%, 55%);
 
-    --glass-bg: hsla(230, 18%, 14%, 0.7);
+    --glass-bg: hsla(220, 42%, 14%, 0.7);
     --glass-blur: 16px;
 
     --radius-sm: 6px;
     --radius-md: 10px;
     --radius-lg: 16px;
 
-    --shadow-card: 0 4px 24px hsla(230, 40%, 4%, 0.5);
-    --shadow-glow: 0 0 40px hsla(260, 55%, 50%, 0.08);
+    --shadow-card: 0 4px 24px hsla(220, 40%, 4%, 0.5);
+    --shadow-glow: 0 0 40px hsla(220, 55%, 50%, 0.06);
 
     --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
     --transition-smooth: 300ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -68,21 +69,15 @@ body::before {
     width: 200%;
     height: 200%;
     background:
-        radial-gradient(
-            ellipse at 20% 20%,
-            hsla(260, 60%, 30%, 0.08) 0%,
-            transparent 50%
-        ),
-        radial-gradient(
-            ellipse at 80% 80%,
-            hsla(200, 50%, 25%, 0.06) 0%,
-            transparent 50%
-        ),
-        radial-gradient(
-            ellipse at 50% 50%,
-            hsla(300, 40%, 20%, 0.04) 0%,
-            transparent 70%
-        );
+        radial-gradient(ellipse at 20% 20%,
+            hsla(220, 60%, 20%, 0.08) 0%,
+            transparent 50%),
+        radial-gradient(ellipse at 80% 80%,
+            hsla(200, 50%, 20%, 0.06) 0%,
+            transparent 50%),
+        radial-gradient(ellipse at 50% 50%,
+            hsla(240, 40%, 15%, 0.04) 0%,
+            transparent 70%);
     pointer-events: none;
     z-index: 0;
     animation: bgDrift 30s ease-in-out infinite alternate;
@@ -118,11 +113,9 @@ body::before {
     font-size: 2.5rem;
     font-weight: 700;
     letter-spacing: 0.15em;
-    background: linear-gradient(
-        135deg,
-        var(--text-primary) 0%,
-        var(--accent-hover) 100%
-    );
+    background: linear-gradient(135deg,
+            var(--text-primary) 0%,
+            var(--accent-hover) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -167,7 +160,7 @@ body::before {
 /* === Editor Panel (Real-time Preview) === */
 .editor-panel {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 1px;
     background: var(--border-subtle);
     border-radius: var(--radius-lg);
@@ -181,6 +174,9 @@ body::before {
     background: var(--bg-card);
     display: flex;
     flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .pane-label {
@@ -237,6 +233,36 @@ body::before {
     border-bottom: 1px solid var(--border-subtle);
 }
 
+/* === Setting Islands (ayame-app準拠) === */
+.converter__settings {
+    padding: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.setting-island {
+    flex: 1;
+    min-width: 180px;
+    background: var(--bg-island);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.setting-island__title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    user-select: none;
+}
+
 /* === Toggle Switch === */
 .toggle-group {
     display: flex;
@@ -289,11 +315,61 @@ body::before {
     background: var(--accent);
     border-radius: 50%;
     transition: transform var(--transition-smooth);
-    box-shadow: 0 1px 4px hsla(260, 50%, 30%, 0.3);
+    box-shadow: 0 1px 4px hsla(220, 50%, 30%, 0.3);
 }
 
-.toggle-switch input:checked + .toggle-switch__track::after {
+.toggle-switch input:checked+.toggle-switch__track::after {
     transform: translateX(20px);
+}
+
+/* === Checkbox (ayame-app準拠) === */
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.checkbox-group input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid var(--border-subtle);
+    border-radius: 4px;
+    background: var(--bg-hover);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    position: relative;
+    flex-shrink: 0;
+}
+
+.checkbox-group input[type="checkbox"]:checked {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.checkbox-group input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 5px;
+    width: 5px;
+    height: 9px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.checkbox-group input[type="checkbox"]:hover {
+    border-color: var(--accent);
+}
+
+.checkbox-group__label {
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    font-weight: 400;
 }
 
 /* === Upload Button === */
@@ -323,7 +399,7 @@ body::before {
     background: var(--accent-glow);
     border-color: var(--accent);
     transform: translateY(-1px);
-    box-shadow: 0 4px 16px hsla(260, 55%, 50%, 0.15);
+    box-shadow: 0 4px 16px hsla(220, 55%, 50%, 0.15);
 }
 
 .upload-btn:active {
@@ -377,18 +453,16 @@ body::before {
 }
 
 .action-btn--primary {
-    background: linear-gradient(
-        135deg,
-        var(--accent) 0%,
-        hsl(280, 50%, 55%) 100%
-    );
+    background: linear-gradient(135deg,
+            var(--accent) 0%,
+            hsl(240, 50%, 55%) 100%);
     color: #fff;
-    box-shadow: 0 2px 12px hsla(260, 55%, 50%, 0.25);
+    box-shadow: 0 2px 12px hsla(220, 55%, 50%, 0.25);
 }
 
 .action-btn--primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 24px hsla(260, 55%, 50%, 0.35);
+    box-shadow: 0 6px 24px hsla(220, 55%, 50%, 0.35);
 }
 
 .action-btn--primary:active {
@@ -493,11 +567,20 @@ body::before {
 
     .editor-pane {
         min-height: 300px;
+        height: 37.5vh;
     }
 
     .converter__controls {
         flex-direction: column;
         align-items: flex-start;
+    }
+
+    .converter__settings {
+        flex-direction: column;
+    }
+
+    .setting-island {
+        min-width: unset;
     }
 }
 
@@ -512,10 +595,10 @@ body::before {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: hsla(230, 20%, 40%, 0.3);
+    background: hsla(215, 20%, 40%, 0.3);
     border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: hsla(230, 20%, 40%, 0.5);
+    background: hsla(215, 20%, 40%, 0.5);
 }

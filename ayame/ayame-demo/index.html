@@ -57,22 +57,6 @@
                 <h2 class="section__heading">ファイル変換</h2>
                 <div class="converter">
                     <div class="converter__controls">
-                        <!-- Encoding Toggle -->
-                        <div class="toggle-group" id="encoding-toggle">
-                            <span
-                                class="toggle-group__label toggle-group__label--active"
-                                id="label-utf8"
-                                >UTF-8</span
-                            >
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="encoding-switch" />
-                                <span class="toggle-switch__track"></span>
-                            </label>
-                            <span class="toggle-group__label" id="label-sjis"
-                                >Shift_JIS</span
-                            >
-                        </div>
-
                         <!-- File Upload -->
                         <div class="upload-area">
                             <label
@@ -104,6 +88,71 @@
                         </div>
 
                         <span class="file-info" id="file-info"></span>
+                    </div>
+
+                    <!-- Settings (ayame-app準拠のアイランド型) -->
+                    <div class="converter__settings">
+                        <!-- 文字コード -->
+                        <div class="setting-island">
+                            <span class="setting-island__title">文字コード</span>
+                            <div class="toggle-group" id="encoding-toggle">
+                                <span
+                                    class="toggle-group__label toggle-group__label--active"
+                                    id="label-utf8"
+                                    >UTF-8</span
+                                >
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="encoding-switch" />
+                                    <span class="toggle-switch__track"></span>
+                                </label>
+                                <span class="toggle-group__label" id="label-sjis"
+                                    >Shift_JIS</span
+                                >
+                            </div>
+                        </div>
+
+                        <!-- 書字方向 -->
+                        <div class="setting-island">
+                            <span class="setting-island__title">書字方向</span>
+                            <div class="toggle-group" id="direction-toggle">
+                                <span
+                                    class="toggle-group__label"
+                                    id="label-horizontal"
+                                    >横書き</span
+                                >
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="direction-switch" checked />
+                                    <span class="toggle-switch__track"></span>
+                                </label>
+                                <span
+                                    class="toggle-group__label toggle-group__label--active"
+                                    id="label-vertical"
+                                    >縦書き</span
+                                >
+                            </div>
+                        </div>
+
+                        <!-- スタイル設定 -->
+                        <div class="setting-island">
+                            <span class="setting-island__title">スタイル</span>
+                            <label class="checkbox-group">
+                                <input type="checkbox" id="cb-miyabi" checked />
+                                <span class="checkbox-group__label">miyabiを有効化</span>
+                            </label>
+                            <label class="checkbox-group">
+                                <input type="checkbox" id="cb-prelude" checked />
+                                <span class="checkbox-group__label">preludeを有効化</span>
+                            </label>
+                        </div>
+
+                        <!-- その他 -->
+                        <div class="setting-island">
+                            <span class="setting-island__title">その他</span>
+                            <label class="checkbox-group">
+                                <input type="checkbox" id="cb-gaiji" checked />
+                                <span class="checkbox-group__label">外字対応</span>
+                            </label>
+                        </div>
                     </div>
 
                     <!-- Action Buttons -->

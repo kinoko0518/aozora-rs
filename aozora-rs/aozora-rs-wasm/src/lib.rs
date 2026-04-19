@@ -1,6 +1,9 @@
 use std::io::Cursor;
 
-use aozora_rs::{AozoraDocument, AozoraWarning, AozoraZip, utf8tify_all_gaiji};
+use aozora_rs::{
+    AozoraDocument, AozoraWarning, AozoraZip, WritingDirection, internal::AozoraMeta,
+    utf8tify_all_gaiji,
+};
 use wasm_bindgen::{JsError, prelude::wasm_bindgen};
 
 #[wasm_bindgen(start)]
@@ -25,9 +28,16 @@ pub fn warnings_to_string(errors: Vec<AozoraWarning>, original: impl AsRef<str>)
 }
 
 #[wasm_bindgen]
-pub fn generate_standalone_xhtml(from: &str, delimiter: &str) -> Result<StandaloneXHTML, JsError> {
+pub fn generate_embedding_xhtml(from: &str, delimiter: &str) -> Result<StandaloneXHTML, JsError> {
     let converted = utf8tify_all_gaiji(from);
-    let doc = AozoraDocument::from_str(&converted, None)?;
+    let doc = AozoraDocument::from_str_and_meta(
+        AozoraMeta {
+            title: "MOCK_TITLE",
+            author: "MOCK_AUTHOR",
+        },
+        &converted,
+        None,
+    );
     let (xhtml, errors) = doc.xhtml()?;
     Ok(StandaloneXHTML {
         result: xhtml.xhtmls.join(delimiter),
@@ -63,26 +73,47 @@ pub fn parse_to_book_data(from: &str) -> Result<BookData, JsError> {
 #[wasm_bindgen]
 pub fn build_epub_bytes(
     from: &[u8],
-    styles: Vec<String>,
     encoding: &str,
+    is_vertical: bool,
+    use_miyabi: bool,
+    use_prelude: bool,
+    consider_gaiji: bool,
 ) -> Result<Vec<u8>, JsError> {
     let mut acc = Cursor::new(Vec::new());
-    let styles: Vec<&str> = styles.iter().map(|s| s.as_str()).collect();
-    AozoraDocument::from_zip(
-        &AozoraZip::read_from_zip(
-            Cursor::new(from),
-            &match encoding {
-                "utf8" | "utf-8" | "UTF8" | "UTF-8" => aozora_rs_zip::Encoding::Utf8,
-                _ => aozora_rs_zip::Encoding::ShiftJIS,
-            },
-        )
-        .map_err(|_| JsError::new("ZipからのAozoraDocumentの構築に失敗しました"))?,
-    )?
-    .epub(
-        &mut acc,
-        &aozora_rs::Style::default().extend_css(styles.into_iter()),
-        &aozora_rs::PageInjectors::default(),
-    )
-    .map_err(|_| JsError::new("EPUB生成中にエラーが発生しました"))?;
+    let enc = match encoding {
+        "utf8" | "utf-8" | "UTF8" | "UTF-8" => aozora_rs_zip::Encoding::Utf8,
+        _ => aozora_rs_zip::Encoding::ShiftJIS,
+    };
+
+    let azz = AozoraZip::read_from_zip(Cursor::new(from), &enc)
+        .map_err(|_| JsError::new("ZipからのAozoraDocumentの構築に失敗しました"))?;
+
+    let txt = if consider_gaiji {
+        utf8tify_all_gaiji(&azz.txt).into_owned()
+    } else {
+        azz.txt.clone()
+    };
+
+    let direction = if is_vertical {
+        WritingDirection::Vertical
+    } else {
+        WritingDirection::Horizontal
+    };
+
+    let mut style = aozora_rs::Style::default();
+    style.direction(direction).prelude(use_prelude);
+    if use_miyabi {
+        ayame::apply_miyabi(&mut style);
+    }
+
+    let injectors = aozora_rs::PageInjectors {
+        title_page: Some(ayame::title_page_writer()),
+        toc_page: Some(ayame::toc_page_writer()),
+    };
+
+    AozoraDocument::from_str(&txt, Some(&azz.images))?
+        .epub(&mut acc, &style, &injectors)
+        .map_err(|e| JsError::new(&format!("EPUB生成中にエラーが発生しました: {}", e)))?;
+
     Ok(acc.into_inner())
 }

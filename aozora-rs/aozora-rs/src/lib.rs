@@ -112,6 +112,22 @@ impl<'s> AozoraDocument<'s> {
         })
     }
 
+    /// メタデータと本文を直接注入して[`AozoraDocument`]を構築します。
+    ///
+    /// textのヘッダにメタデータが記述されていても考慮されません。すでにパースしたメタデータを注入したり、
+    /// モックのメタデータを注入する用途を想定しています。
+    pub fn from_str_and_meta(
+        meta: AozoraMeta<'s>,
+        text: &'s str,
+        dependencies: Option<&'s Dependencies>,
+    ) -> Self {
+        Self {
+            meta,
+            text,
+            dependencies,
+        }
+    }
+
     /// [`&AozoraZip`]から[`AozoraDocument`]を構築します。
     ///
     /// # Example

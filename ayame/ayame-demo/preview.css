@@ -2,18 +2,18 @@
 
 /*
  * プレビュー用統合スタイル
- * prelude.css + miyabix.css + horizontal.css を統合
+ * prelude.css + miyabi + vertical.css を統合
  */
 
-/* === horizontal === */
+/* === vertical === */
 body {
-    writing-mode: horizontal-tb;
-    -webkit-writing-mode: horizontal-tb;
+    writing-mode: vertical-rl;
+    -webkit-writing-mode: vertical-rl;
     margin: 0;
     padding: 0;
 }
 
-/* === miyabix === */
+/* === miyabi === */
 body {
     font-family: "Shippori Mincho", serif;
     font-weight: 400;
