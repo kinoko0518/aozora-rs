@@ -14,17 +14,13 @@ enum GaijiOrStr<'s> {
 }
 
 impl<'s> GaijiOrStr<'s> {
-    fn to_cow(&self) -> Cow<'s, str> {
+    fn to_cow(&self) -> Result<Cow<'s, str>, &'s str> {
         match self {
             GaijiOrStr::Gaiji(g) => {
                 let mut str = *g;
-                Cow::Owned(
-                    gaiji_to_char(&mut str)
-                        .unwrap_or(Cow::Borrowed("〓"))
-                        .to_string(),
-                )
+                Ok(Cow::Owned(gaiji_to_char(&mut str).ok_or(str)?.to_string()))
             }
-            GaijiOrStr::Str(s) => Cow::Borrowed(s),
+            GaijiOrStr::Str(s) => Ok(Cow::Borrowed(s)),
         }
     }
 }
@@ -44,23 +40,37 @@ fn parse_gaiji<'a>(input: &mut &'a str) -> Result<GaijiOrStr<'a>, ContextError> 
         .parse_next(input)
 }
 
-pub fn utf8tify_all_gaiji<'s>(input: &'s str) -> Cow<'s, str> {
+pub fn utf8tify_all_gaiji<'s>(input: &'s str) -> (Cow<'s, str>, Vec<&'s str>) {
     let mut input = input;
     let result: Vec<GaijiOrStr> = repeat(0.., alt((parse_gaiji, parse_text)))
         .parse_next(&mut input)
         .unwrap();
     if result.is_empty() {
-        Cow::Borrowed(input)
+        (Cow::Borrowed(input), vec![])
     } else if result.len() == 1 {
-        result.into_iter().next().unwrap().to_cow()
+        match result.into_iter().next().unwrap().to_cow() {
+            Ok(o) => (o, vec![]),
+            Err(e) => ("〓".into(), vec![e]),
+        }
     } else {
-        Cow::Owned(
-            result
-                .into_iter()
-                .fold(String::new(), |mut acc: String, r| {
-                    acc.push_str(r.to_cow().as_ref());
-                    acc
-                }),
+        let mut err = vec![];
+        (
+            Cow::Owned(
+                result
+                    .into_iter()
+                    .fold(String::new(), |mut acc: String, r| {
+                        let converted = match r.to_cow() {
+                            Ok(o) => o,
+                            Err(e) => {
+                                err.push(e);
+                                "〓".into()
+                            }
+                        };
+                        acc.push_str(converted.as_ref());
+                        acc
+                    }),
+            ),
+            err,
         )
     }
 }
