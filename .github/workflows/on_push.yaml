@@ -25,10 +25,10 @@ jobs:
       - name: Create result directory
         run: mkdir -p ./aozora-rs/aozora-rs-qa/result
 
-      - name: Install missing dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y pkg-config libfontconfig1-dev
+          sudo apt-get install -y pkg-config libfontconfig1-dev libfreetype6-dev
 
       - name: Run QA
         run: cargo run --bin qa

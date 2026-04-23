@@ -14,14 +14,6 @@ pub fn plot_result(
     ok_results: &HashMap<&str, WorkAnalyse>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let font = "Yu Gothic";
-    println!(
-        "{}",
-        match x_axis {
-            XAxis::WordCount => "文字数対処理時間のプロット図を作成中です……",
-            XAxis::DecoCount => "注記数対処理時間のプロット図を作成中です……",
-            XAxis::TokenCount => "トークン数対処理時間のプロット図を作成中です……",
-        }
-    );
     let path = base_path.join("result").join(match x_axis {
         XAxis::WordCount => "wordcount_vs_duration.png",
         XAxis::DecoCount => "notecount_vs_duration.png",
