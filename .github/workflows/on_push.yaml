@@ -8,6 +8,7 @@ permissions:
   id-token: write
 
 jobs:
+  # QAを実行
   qa:
     name: Run QA
     runs-on: ubuntu-latest
@@ -24,27 +25,24 @@ jobs:
       - name: Create result directory
         run: mkdir -p ./aozora-rs/aozora-rs-qa/result
 
+      - name: Install missing dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libfontconfig1-dev
+
       - name: Run QA
         run: cargo run --bin qa
-
-      - name: Zip QA results
-        run: |
-          cd aozora-rs/aozora-rs-qa
-          zip -r qa-result.zip result
 
       - name: Upload QA result
         uses: actions/upload-artifact@v4
         with:
           name: qa-result
-          path: aozora-rs/aozora-rs-qa/qa-result.zip
+          path: aozora-rs/aozora-rs-qa/result/
 
-  deploy-pages:
-    name: Deploy ayame-demo to GitHub Pages
+  # ayame-demo用のWASMビルド
+  build-demo:
+    name: Build ayame-demo
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -66,11 +64,59 @@ jobs:
         run: |
           wasm-pack build ./aozora-rs/aozora-rs-wasm --target web --out-dir ../../ayame/ayame-demo/pkg
 
+      - name: Upload demo artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-site
+          path: ./ayame/ayame-demo/
+
+  # QAジョブ完了後、TypstからPDFを生成しアップロード
+  build-typst:
+    name: Build Typst Document
+    runs-on: ubuntu-latest
+    needs: qa
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download QA result
+        uses: actions/download-artifact@v4
+        with:
+          name: qa-result
+          path: aozora-rs/aozora-rs-qa/result
+
       - name: Setup Typst
         uses: typst-community/setup-typst@v3
 
       - name: Compile Typst presentation
-        run: typst compile ./docs/typst/presentation.typ --root . ./ayame/ayame-demo/presentation.pdf
+        run: typst compile ./docs/typst/presentation.typ --root . ./presentation.pdf
+
+      - name: Upload PDF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: typst-pdf
+          path: ./presentation.pdf
+
+  # ayame-demoとTypstの結果を合成してデプロイ
+  deploy-pages:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: [build-demo, build-typst]
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download demo site
+        uses: actions/download-artifact@v4
+        with:
+          name: demo-site
+          path: ./pages-deploy
+
+      - name: Download Typst PDF
+        uses: actions/download-artifact@v4
+        with:
+          name: typst-pdf
+          path: ./pages-deploy
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -78,7 +124,7 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "./ayame/ayame-demo"
+          path: "./pages-deploy"
 
       - name: Deploy to GitHub Pages
         id: deployment
