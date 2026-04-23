@@ -66,6 +66,12 @@ jobs:
         run: |
           wasm-pack build ./aozora-rs/aozora-rs-wasm --target web --out-dir ../../ayame/ayame-demo/pkg
 
+      - name: Setup Typst
+        uses: typst-community/setup-typst@v3
+
+      - name: Compile Typst presentation
+        run: typst compile ./docs/typst/presentation.typ --root . ./ayame/ayame-demo/presentation.pdf
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 

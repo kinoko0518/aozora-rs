@@ -2,7 +2,6 @@ mod per_work;
 mod plot;
 
 use std::{
-    borrow::Cow,
     cmp::Ordering,
     collections::HashMap,
     fs::File,

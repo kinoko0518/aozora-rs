@@ -225,8 +225,8 @@ Retokenize層では、受け取ったスコープと平坦トークンからHTML
       [CPUアーキテクチャ], [#env.architecture],
       [CPU], [#env.cpu_name],
       [主記憶装置], [#sign-digits(env.memory_size / calc.pow(1024, 3), 4)GiB],
-      [rustcバージョン], [#env.rustc_version]
-    )
+      [rustcバージョン], [#env.rustc_version],
+    ),
   )
 }
 
@@ -253,7 +253,7 @@ Retokenize層では、受け取ったスコープと平坦トークンからHTML
       [変換失敗], [#qa_summary.total_failed;点],
       [スコープ化エラー], [#qa_summary.scopenize_warning_total;件],
       [再トークン化エラー], [#qa_summary.retokenize_warning_total;件],
-    )
+    ),
   )
 }
 
@@ -263,17 +263,17 @@ Retokenize層では、受け取ったスコープと平坦トークンからHTML
 
 #figure(
   caption: [文字数に対する処理時間のスケール],
-  image("../../aozora-rs/aozora-rs-qa/result/wordcount_vs_duration.png")
+  image("../../aozora-rs/aozora-rs-qa/result/wordcount_vs_duration.png"),
 )
 
 #figure(
   caption: [トークン数に対する処理時間のスケール],
-  image("../../aozora-rs/aozora-rs-qa/result/tokencount_vs_duration.png")
+  image("../../aozora-rs/aozora-rs-qa/result/tokencount_vs_duration.png"),
 )
 
 #figure(
   caption: [装飾数に対する処理時間のスケール],
-  image("../../aozora-rs/aozora-rs-qa/result/notecount_vs_duration.png")
+  image("../../aozora-rs/aozora-rs-qa/result/notecount_vs_duration.png"),
 )
 
 = 考察

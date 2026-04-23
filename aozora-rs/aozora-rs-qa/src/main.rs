@@ -6,7 +6,7 @@ pub const REPOSITORY: &str = "aozorabunko_text";
 
 use std::path::PathBuf;
 use std::time::Instant;
-use std::{fs::File, time::Duration};
+use std::{time::Duration};
 
 pub use map_cache::{MapCache, update_map};
 pub use sync::sync_repository;
