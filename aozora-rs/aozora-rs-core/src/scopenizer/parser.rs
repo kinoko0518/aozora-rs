@@ -1,3 +1,5 @@
+use std::collections::btree_map::OccupiedEntry;
+
 use super::definition::*;
 
 use crate::scopenizer::conversion::BackRefResult;
@@ -40,7 +42,7 @@ pub fn scopenize<'s>(
                         BackRefResult::ItWontBackRef => break,
                     }
                 }
-                flatten.push((FlatToken::Text(t), token.span));
+                flatten.push((FlatToken::Text(t), token.span.clone()));
             }
             AozoraTokenKind::RubyDelimiter => {
                 // ルビ区切りが出たら次のトークンがテキスト、次の次のトークンがルビであることを期待する
@@ -52,13 +54,15 @@ pub fn scopenize<'s>(
                     scopes.push(t.span, Deco::Ruby(ruby));
                 } else {
                     // 修復は難しいので無視
-                    azc.acc_err(ScopenizeError::InvalidRubyDelimiterUsage(token.span).into());
+                    azc.acc_err(
+                        ScopenizeError::InvalidRubyDelimiterUsage(token.span.clone()).into(),
+                    );
                 }
             }
             AozoraTokenKind::Note(c) => match c {
                 Note::Sandwiched(s) => match s {
                     Sandwiched::Begin(b) => {
-                        inline_stack.push((b, token.span));
+                        inline_stack.push((b, token.span.clone()));
                     }
                     Sandwiched::End(e) => {
                         if inline_stack.is_empty() {
@@ -79,7 +83,7 @@ pub fn scopenize<'s>(
                 },
                 Note::Multiline(m) => match m {
                     MultiLine::Begin(b) => {
-                        stack.push((b, token.span));
+                        stack.push((b, token.span.clone()));
                     }
                     MultiLine::End(e) => {
                         if stack.is_empty() {
@@ -98,11 +102,11 @@ pub fn scopenize<'s>(
                     }
                 },
                 Note::Single(s) => {
-                    flatten.push((s.into_flat_token(), token.span));
+                    flatten.push((s.into_flat_token(), token.span.clone()));
                 }
                 Note::BackRef(_) => {
                     // 前方参照型の注記はTextのアームで処理されるため、ここに到達した時点で不正
-                    azc.acc_err(ScopenizeError::BackRefFailed(token.span).into());
+                    azc.acc_err(ScopenizeError::BackRefFailed(token.span.clone()).into());
                 }
                 Note::WholeLine(w) => {
                     wholeline.push((w, token.span.clone()));
@@ -112,7 +116,7 @@ pub fn scopenize<'s>(
             // ルビも前方参照型なのでTextのアームで処理されていることを期待するため
             // このアームに到達した時点で不正
             AozoraTokenKind::Ruby(_) => {
-                azc.acc_err(ScopenizeError::BackRefFailed(token.span).into());
+                azc.acc_err(ScopenizeError::BackRefFailed(token.span.clone()).into());
             }
             AozoraTokenKind::Br => {
                 flatten.push((FlatToken::Break(Break::BreakLine), token.span.clone()));
@@ -134,9 +138,17 @@ pub fn scopenize<'s>(
                 }
             }
             AozoraTokenKind::Odoriji(o) => {
-                flatten.push((FlatToken::Odoriji(o), token.span));
+                flatten.push((FlatToken::Odoriji(o), token.span.clone()));
+            }
+        }
+        if let None = peekable.peek() {
+            // 行全体注記の範囲を確定
+            while let Some(note) = wholeline.pop() {
+                let scope = note.1.end..token.span.end;
+                scopes.push(scope, note.0.into_deco());
             }
         }
     }
+
     azc.finally((scopes, flatten))
 }
