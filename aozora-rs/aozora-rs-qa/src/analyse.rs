@@ -1,4 +1,8 @@
+mod per_work;
+mod plot;
+
 use std::{
+    borrow::Cow,
     cmp::Ordering,
     collections::HashMap,
     fs::File,
@@ -7,193 +11,123 @@ use std::{
     time::{Duration, Instant},
 };
 
-use aozora_rs::{
-    AozoraError, Dependencies,
-    internal::{
-        AozoraTokenKind, EpubSetting, Note, from_aozora_zip, parse_meta, retokenize,
-        retokenized_to_xhtml, scopenize, tokenize,
-    },
-    utf8tify_all_gaiji,
-};
-use encoding_rs::SHIFT_JIS;
-use plotters::prelude::*;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::iter::{Either, ParallelIterator};
 use serde::Serialize;
-use winnow::LocatingSlice;
 
-use crate::MapCache;
+pub use per_work::{WorkAnalyse, analyse_per_work};
+use sysinfo::{Disks, System};
 
-#[derive(Debug, Serialize, Clone)]
-pub struct WorkAnalyse {
-    // 作品メタデータ
-    pub title: String,
-    pub author: String,
-    // 作品サイズ
-    pub word_count: usize,
-    pub byte_count: usize,
-    pub token_count: usize,
-    pub note_count: usize,
-    // 変換エラー
-    pub scopenize_errors: Vec<String>,
-    pub retokenize_errors: Vec<String>,
-    // 解析エラー
-    pub invalid_gaiji: Vec<String>,
-    pub invalid_notes: Vec<String>,
-    // 各段階の所要時間
-    pub read: Duration,
-    pub gaiji_convert: Duration,
-    pub get_meta: Duration,
-    pub tokenize: Duration,
-    pub scopenize: Duration,
-    pub retokenize: Duration,
-    pub xhtml_gen: Duration,
-    pub epub_gen: Duration,
-}
-
-impl WorkAnalyse {
-    pub fn pure_parsetime(&self) -> Duration {
-        self.gaiji_convert + self.get_meta + self.tokenize + self.scopenize + self.retokenize
-    }
-
-    pub fn total_parsetime(&self) -> Duration {
-        self.read
-            + self.gaiji_convert
-            + self.get_meta
-            + self.tokenize
-            + self.scopenize
-            + self.retokenize
-            + self.xhtml_gen
-            + self.epub_gen
-    }
-}
-
-fn analyse_per_work(s: &str, base_path: &Path) -> Result<WorkAnalyse, AozoraError> {
-    let read_instant = Instant::now();
-    let decode = |bytes: &[u8]| -> String {
-        let (cow, _, _) = SHIFT_JIS.decode(bytes);
-        cow.replace("\r\n", "\n")
-    };
-    let original_text = decode(&std::fs::read(s).map_err(|e| e.into())?);
-    let read_duration = read_instant.elapsed();
-
-    let gaiji_instant = Instant::now();
-    let gaiji_converted = utf8tify_all_gaiji(original_text.as_str());
-    let gaiji_duration = gaiji_instant.elapsed();
-    let (s, invalid_gaijis) = gaiji_converted;
-    let mut s_slice = s.as_ref();
-
-    let meta_instant = Instant::now();
-    let meta = parse_meta(&mut s_slice).map_err(|e| e.into())?;
-    let meta_duration = meta_instant.elapsed();
-
-    let title_owned = meta.title.to_string();
-    let author_owned = meta.author.to_string();
-
-    let tokenize_instant = Instant::now();
-    let tokenized = tokenize(&mut LocatingSlice::new(s_slice)).map_err(|e| e.into())?;
-    let tokenize_duration = tokenize_instant.elapsed();
-
-    let invalid_notes: Vec<String> = tokenized
-        .iter()
-        .filter_map(|t| match &t.kind {
-            AozoraTokenKind::Note(n) => match n {
-                Note::Unknown(unknown) => Some(unknown),
-                _ => None,
-            },
-            _ => None,
-        })
-        .map(|s| s.to_string())
-        .collect();
-    let note_count: usize = tokenized
-        .iter()
-        .filter_map(|s| match s.kind {
-            AozoraTokenKind::Note(_) => Some(()),
-            _ => None,
-        })
-        .count();
-    let token_count: usize = tokenized.len();
-
-    let scopenize_instant = Instant::now();
-    let ((deco, flat), scopenize_errors) = scopenize(tokenized).into_tuple();
-    let scopenized_duration = scopenize_instant.elapsed();
-
-    let retokenize_instant = Instant::now();
-    let (retokenized, retokenize_errors) = retokenize(flat, deco).into_tuple();
-    let retokenized_duration = retokenize_instant.elapsed();
-
-    let xhtmlnize_instant = Instant::now();
-    let xhtmlnized = retokenized_to_xhtml(retokenized);
-    let xhtmlnize_duration = xhtmlnize_instant.elapsed();
-
-    let epub_instant = Instant::now();
-    let epub_base_path = base_path.join("result/epubs");
-    std::fs::create_dir_all(&epub_base_path).map_err(|e| e.into())?;
-    from_aozora_zip(
-        File::create(epub_base_path.join(format!("{}.epub", title_owned))).map_err(|e| e.into())?,
-        &Dependencies::default(),
-        &xhtmlnized,
-        &EpubSetting {
-            styles: vec![
-                include_str!("../../aozora-rs/css/prelude.css"),
-                include_str!("../../aozora-rs/css/vertical.css"),
-                include_str!("../../../ayame/ayame/assets/miyabi.css"),
-            ],
-            ..Default::default()
-        },
-        &meta,
-        &aozora_rs::PageInjectors::default(),
-    )
-    .map_err(|e| e.into())?;
-    let epub_duration = epub_instant.elapsed();
-
-    Ok(WorkAnalyse {
-        title: title_owned,
-        author: author_owned,
-
-        word_count: s.chars().count(),
-        note_count,
-        token_count,
-        byte_count: s.as_bytes().len(),
-
-        scopenize_errors: scopenize_errors
-            .iter()
-            .map(|s| s.display(s_slice))
-            .collect(),
-        retokenize_errors: retokenize_errors.iter().map(|s| s.to_string()).collect(),
-        invalid_gaiji: invalid_gaijis.iter().map(|s| s.to_string()).collect(),
-        invalid_notes,
-
-        read: read_duration,
-        gaiji_convert: gaiji_duration,
-        get_meta: meta_duration,
-        tokenize: tokenize_duration,
-        scopenize: scopenized_duration,
-        retokenize: retokenized_duration,
-        xhtml_gen: xhtmlnize_duration,
-        epub_gen: epub_duration,
-    })
-}
+use crate::{
+    MapCache,
+    analyse::plot::{XAxis, plot_result},
+};
 
 const RANKING_LEN: usize = 10;
 
 #[derive(Serialize)]
 struct QASummary {
+    // 統計
+    total_works: usize,
+    total_succeed: usize,
+    total_failed: usize,
+    scopenize_warning_total: usize,
+    retokenize_warning_total: usize,
+    total_bytes: usize,
+    total_wordcount: usize,
     // トータル処理時間
-    total_duration: Duration,
-    total_pure_parsetime: Duration,
+    duration_every_thread_total: Duration,
+    duration_total: Duration,
     // ランキング
     duration_top: [WorkAnalyse; RANKING_LEN],
-    pure_parsetime_top: [WorkAnalyse; RANKING_LEN],
-    wordcount_top: [WorkAnalyse; RANKING_LEN],
-    tokencount_top: [WorkAnalyse; RANKING_LEN],
-    notecount_top: [WorkAnalyse; RANKING_LEN],
-    // 処理速度毎秒
-    bytes_per_sec: f32,
-    wordcount_per_sec: f32,
-    // 良品率
-    fault_percent: f32,
-    warning_perwork: f32,
+}
+
+pub fn write_to_json(
+    manifest: &str,
+    ok_results: &HashMap<&str, WorkAnalyse>,
+    err_results: &HashMap<&str, String>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    // JSON出力
+    let mut succeed_log = File::create(format!("{}/result/succeed.json", manifest))?;
+    let mut failed_log = File::create(format!("{}/result/failed.json", manifest))?;
+
+    write!(
+        &mut succeed_log,
+        "{}",
+        serde_json::to_string_pretty(&ok_results).unwrap()
+    )?;
+    write!(
+        &mut failed_log,
+        "{}",
+        serde_json::to_string_pretty(&err_results).unwrap()
+    )?;
+
+    Ok(())
+}
+
+#[derive(Serialize)]
+struct SysInfo {
+    os_name: String,
+    os_version: String,
+    kernel: String,
+    architecture: String,
+
+    cpu_name: String,
+    memory_size: u64,
+    disk_info: Vec<(u64, String, String)>,
+
+    rustc_version: String,
+}
+
+fn get_sysinfo() -> SysInfo {
+    let mut sys = System::new_all();
+    sys.refresh_all();
+
+    // OS情報
+    let os_name = System::name().unwrap_or_else(|| "Unknown".to_string());
+    let os_version = System::os_version().unwrap_or_else(|| "Unknown".to_string());
+    let kernel = System::kernel_version().unwrap_or_else(|| "Unknown".to_string());
+    let architecture = System::cpu_arch();
+
+    // CPU情報
+    let cpus = sys.cpus();
+    let cpu_name = if let Some(cpu) = cpus.first() {
+        cpu.brand()
+    } else {
+        "None"
+    }
+    .to_string();
+
+    // メモリ情報
+    let memory_size = sys.total_memory();
+
+    // ドライブ情報
+    println!("\n[Drive Information]");
+    let disks = Disks::new_with_refreshed_list();
+    let disk_info: Vec<_> = disks
+        .list()
+        .iter()
+        .map(|disk| {
+            let size_gb = disk.total_space();
+            let mount_point = disk.mount_point().to_string_lossy().to_string();
+            let fs_type = disk.file_system().to_string_lossy().to_string();
+
+            (size_gb, mount_point, fs_type)
+        })
+        .collect();
+
+    let rustc_version = env!("RUSTC_VERSION").to_string();
+
+    SysInfo {
+        os_name,
+        os_version,
+        kernel,
+        architecture,
+        cpu_name,
+        memory_size,
+        disk_info,
+        rustc_version,
+    }
 }
 
 pub async fn analyse_works(
@@ -201,6 +135,7 @@ pub async fn analyse_works(
     base_path: &Path,
     path_map: &MapCache,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let total_duration = Instant::now();
     let (ok_results, err_results): (HashMap<_, _>, HashMap<_, _>) = path_map
         .paths
         .par_iter()
@@ -213,82 +148,23 @@ pub async fn analyse_works(
             Ok(val) => Either::Left(val),
             Err((s, err)) => Either::Right((s, err.to_string())),
         });
+    let total_elapsed = total_duration.elapsed();
 
-    // JSON出力
-    let mut succeed_log = File::create(format!("{}/result/succeed.json", manifest))?;
-    let mut failed_log = File::create(format!("{}/result/failed.json", manifest))?;
-
+    // JSONに結果を書き出し
     println!("JSONに解析を書き込み中です……");
-    write!(
-        &mut succeed_log,
-        "{}",
-        serde_json::to_string_pretty(&ok_results).unwrap()
-    )?;
-    write!(
-        &mut failed_log,
-        "{}",
-        serde_json::to_string_pretty(&err_results).unwrap()
-    )?;
+    write_to_json(manifest, &ok_results, &err_results)?;
 
-    // スケールするようすをプロット
-    enum XAxis {
-        WordCount,
-        NoteCount,
-        TokenCount,
-    }
-    for x_axis in [XAxis::WordCount, XAxis::NoteCount, XAxis::TokenCount].iter() {
+    // プロット図を描画
+    for x_axis in [XAxis::WordCount, XAxis::TokenCount, XAxis::DecoCount].iter() {
         println!(
             "{}",
             match x_axis {
                 XAxis::WordCount => "文字数対処理時間のプロット図を作成中です……",
-                XAxis::NoteCount => "注記数対処理時間のプロット図を作成中です……",
+                XAxis::DecoCount => "注記数対処理時間のプロット図を作成中です……",
                 XAxis::TokenCount => "トークン数対処理時間のプロット図を作成中です……",
             }
         );
-        let path = base_path.join("result").join(match x_axis {
-            XAxis::WordCount => "wordcount_vs_duration.png",
-            XAxis::NoteCount => "notecount_vs_duration.png",
-            XAxis::TokenCount => "tokencount_vs_duration.png",
-        });
-        let root = BitMapBackend::new(&path, (1920, 1080)).into_drawing_area();
-        root.fill(&WHITE)?;
-
-        let caption = match x_axis {
-            XAxis::WordCount => "文字数に対する処理時間の増加",
-            XAxis::NoteCount => "注記数に対する処理時間の増加",
-            XAxis::TokenCount => "トークン数に対する処理時間の増加",
-        };
-        let mut chart = ChartBuilder::on(&root)
-            .caption(caption, ("sans-serif", 30).into_font())
-            .x_label_area_size(30)
-            .y_label_area_size(40)
-            .build_cartesian_2d(
-                0f32..match x_axis {
-                    XAxis::WordCount => 120_0000f32,
-                    XAxis::NoteCount => 1_0000f32,
-                    XAxis::TokenCount => 20_0000f32,
-                },
-                0f32..5f32,
-            )?;
-
-        chart.configure_mesh().draw()?;
-
-        chart.draw_series(ok_results.iter().map(|(_, ok)| {
-            Circle::new(
-                (
-                    match x_axis {
-                        XAxis::WordCount => ok.word_count,
-                        XAxis::NoteCount => ok.note_count,
-                        XAxis::TokenCount => ok.token_count,
-                    } as f32,
-                    ok.pure_parsetime().as_secs_f32(),
-                ),
-                6,
-                RED.mix(0.5).filled(),
-            )
-        }))?;
-
-        root.present()?;
+        plot_result(x_axis, base_path, &ok_results)?;
     }
 
     // サマリーを作成
@@ -303,62 +179,47 @@ pub async fn analyse_works(
     };
 
     let duration_top: [WorkAnalyse; RANKING_LEN] = get_ranking_top(
-        Box::new(|a, b| a.total_parsetime().cmp(&b.total_parsetime())),
-        &mut ok_results,
-    );
-    let pure_parsetime_top: [WorkAnalyse; RANKING_LEN] = get_ranking_top(
-        Box::new(|a, b| a.pure_parsetime().cmp(&b.pure_parsetime())),
-        &mut ok_results,
-    );
-    let wordcount_top: [WorkAnalyse; RANKING_LEN] = get_ranking_top(
-        Box::new(|a, b| a.word_count.cmp(&b.word_count)),
-        &mut ok_results,
-    );
-    let tokencount_top: [WorkAnalyse; RANKING_LEN] = get_ranking_top(
-        Box::new(|a, b| a.token_count.cmp(&b.token_count)),
-        &mut ok_results,
-    );
-    let notecount_top: [WorkAnalyse; RANKING_LEN] = get_ranking_top(
-        Box::new(|a, b| a.note_count.cmp(&b.note_count)),
+        Box::new(|a, b| a.total_parsetime().cmp(&b.total_parsetime()).reverse()),
         &mut ok_results,
     );
 
     let total_duration: Duration = ok_results.iter().map(|o| o.total_parsetime()).sum();
-    let total_pure_parsetime: Duration = ok_results.iter().map(|o| o.pure_parsetime()).sum();
 
     let total_bytes: usize = ok_results.iter().map(|o| o.byte_count).sum();
-    let bytes_per_sec: f32 = (total_bytes as f32) / total_duration.as_secs_f32();
-
     let total_wordcount: usize = ok_results.iter().map(|o| o.word_count).sum();
-    let wordcount_per_sec: f32 = (total_wordcount as f32) / total_duration.as_secs_f32();
 
-    let fault_percent: f32 = (err_results.iter().count() as f32) / (ok_results.len() as f32);
-    let warning_total: usize = ok_results
-        .iter()
-        .map(|o| o.scopenize_errors.len() + o.retokenize_errors.len())
-        .sum();
-    let warning_perwork: f32 = (warning_total as f32) / (ok_results.len() as f32);
+    let scopenize_warning_total: usize = ok_results.iter().map(|o| o.scopenize_errors.len()).sum();
+    let retokenize_warning_total: usize =
+        ok_results.iter().map(|o| o.retokenize_errors.len()).sum();
 
     let summary = QASummary {
-        total_duration,
-        total_pure_parsetime,
+        total_works: path_map.paths.len(),
+        total_succeed: ok_results.len(),
+        total_failed: err_results.len(),
+        scopenize_warning_total,
+        retokenize_warning_total,
+
+        total_bytes,
+        total_wordcount,
+
+        duration_every_thread_total: total_duration,
+        duration_total: total_elapsed,
 
         duration_top,
-        pure_parsetime_top,
-        wordcount_top,
-        tokencount_top,
-        notecount_top,
-
-        bytes_per_sec,
-        wordcount_per_sec,
-
-        fault_percent,
-        warning_perwork,
     };
     writeln!(
         &mut summary_file,
         "{}",
         serde_json::to_string_pretty(&summary).unwrap()
+    )?;
+
+    // 実行環境の取得
+    println!("実行環境を取得しています……");
+    let mut enviroment_file = File::create(format!("{}/result/enviroment.json", manifest))?;
+    write!(
+        &mut enviroment_file,
+        "{}",
+        serde_json::to_string(&get_sysinfo()).unwrap()
     )?;
 
     Ok(())

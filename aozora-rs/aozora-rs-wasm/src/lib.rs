@@ -29,7 +29,7 @@ pub fn warnings_to_string(errors: Vec<AozoraWarning>, original: impl AsRef<str>)
 
 #[wasm_bindgen]
 pub fn generate_embedding_xhtml(from: &str, delimiter: &str) -> Result<StandaloneXHTML, JsError> {
-    let converted = utf8tify_all_gaiji(from);
+    let (converted, _) = utf8tify_all_gaiji(from);
     let doc = AozoraDocument::from_str_and_meta(
         AozoraMeta {
             title: "MOCK_TITLE",
@@ -59,7 +59,7 @@ pub struct BookData {
 
 #[wasm_bindgen]
 pub fn parse_to_book_data(from: &str) -> Result<BookData, JsError> {
-    let converted = utf8tify_all_gaiji(from);
+    let (converted, _) = utf8tify_all_gaiji(from);
     let doc = AozoraDocument::from_str(&converted, None)?;
     let (xhtml, errors) = doc.xhtml()?;
     Ok(BookData {
@@ -89,7 +89,8 @@ pub fn build_epub_bytes(
         .map_err(|_| JsError::new("ZipからのAozoraDocumentの構築に失敗しました"))?;
 
     let txt = if consider_gaiji {
-        utf8tify_all_gaiji(&azz.txt).into_owned()
+        let (utf8ified, _) = utf8tify_all_gaiji(&azz.txt);
+        utf8ified.into_owned()
     } else {
         azz.txt.clone()
     };

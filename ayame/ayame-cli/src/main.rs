@@ -140,7 +140,8 @@ fn read_source(source: &Path, encoding: &Encoding, gaiji: bool) -> Result<(Strin
         (txt, Dependencies::default())
     };
     let text = if gaiji {
-        aozora_rs::utf8tify_all_gaiji(&text).into_owned()
+        let (converted, _) = aozora_rs::utf8tify_all_gaiji(&text);
+        converted.into_owned()
     } else {
         text
     };

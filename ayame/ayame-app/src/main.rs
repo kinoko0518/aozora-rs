@@ -115,7 +115,8 @@ impl AyameApp {
                         (txt, Dependencies::default())
                     };
                     let text = if view.consider_gaiji {
-                        ayame::utf8tify_all_gaiji(&text).into_owned()
+                        let (converted, _) = ayame::utf8tify_all_gaiji(&text);
+                        converted.into_owned()
                     } else {
                         text
                     };
