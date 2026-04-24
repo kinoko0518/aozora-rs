@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-aozora-rs-gaiji = { workspace = true }
-colored = "3.1.1"
-memchr = "2.8.0"
-winnow = { workspace = true }
+colored.workspace = true
+memchr.workspace = true
+winnow.workspace = true

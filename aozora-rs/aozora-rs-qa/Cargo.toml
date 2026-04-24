@@ -4,19 +4,17 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-aozora-rs = { workspace = true }
-encoding_rs = { workspace = true }
-rkyv = { workspace = true }
-tokio = { workspace = true }
-walkdir = { workspace = true }
-winnow = { workspace = true }
-unicode-width = { workspace = true }
-rayon = { workspace = true }
-miette = { workspace = true }
+aozora-rs.workspace = true
+encoding_rs.workspace = true
+rkyv.workspace = true
+tokio.workspace = true
+walkdir.workspace = true
+winnow.workspace = true
+rayon.workspace = true
 serde.workspace = true
-serde_json = "1.0.149"
-plotters = "0.3.7"
-sysinfo = "0.38.4"
+serde_json.workspace = true
+plotters.workspace = true
+sysinfo.workspace = true
 
 [[bin]]
 name = "qa"

@@ -7,7 +7,5 @@ edition = "2024"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-aozora-rs-core = { workspace = true }
-itertools = { workspace = true }
-miette = { workspace = true }
-winnow = { workspace = true }
+aozora-rs-core.workspace = true
+itertools.workspace = true

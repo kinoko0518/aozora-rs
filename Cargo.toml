@@ -14,24 +14,21 @@ resolver = "3"
 
 [workspace.dependencies]
 # aozora-rs
-aozora-rs = { path = "./aozora-rs/aozora-rs" }
-aozora-rs-core = { path = "./aozora-rs/aozora-rs-core" }
-aozora-rs-gaiji = { path = "./aozora-rs/aozora-rs-gaiji" }
-aozora-rs-xhtml = { path = "./aozora-rs/aozora-rs-xhtml" }
-aozora-rs-epub = { path = "./aozora-rs/aozora-rs-epub" }
-aozora-rs-wasm = { path = "./aozora-rs/aozora-rs-wasm" }
-aozora-rs-zip = { path = "./aozora-rs/aozora-rs-zip" }
-gaiji-chuki-parser = { path = "./aozora-rs/aozora-rs-gaiji/gaiji-chuki-parser" }
+aozora-rs.path = "./aozora-rs/aozora-rs"
+aozora-rs-core.path = "./aozora-rs/aozora-rs-core"
+aozora-rs-gaiji.path = "./aozora-rs/aozora-rs-gaiji"
+aozora-rs-xhtml.path = "./aozora-rs/aozora-rs-xhtml"
+aozora-rs-epub.path = "./aozora-rs/aozora-rs-epub"
+aozora-rs-zip.path = "./aozora-rs/aozora-rs-zip"
+gaiji-chuki-parser.path = "./aozora-rs/aozora-rs-gaiji/gaiji-chuki-parser"
 
 # ayame
-ayame = { path = "./ayame/ayame" }
+ayame.path = "./ayame/ayame"
 
 # external crates
 encoding_rs = "0.8.35"
 winnow = "0.7.14"
 serde = { version = "1", features = ["derive"] }
-miette = { version = "7.6.0", features = ["fancy"] }
-thiserror = "2.0.18"
 itertools = "0.14.0"
 time = { version = "0.3", features = ["wasm-bindgen"] }
 chrono = { version = "0.4", features = ["wasmbind"] }
@@ -39,18 +36,21 @@ uuid = { version = "1.20.0", features = ["v5", "fast-rng", "macro-diagnostics", 
 zip = { version = "2.2.0", default-features = false, features = ["deflate", "time"] }
 wasm-bindgen = "0.2.108"
 clap = { version = "4.5", features = ["derive"] }
-tokio = { version = "1.49.0", features = ["full"] }
+tokio = { version = "1.49.0", features = ["rt-multi-thread", "macros"] }
 reqwest = { version = "0.11", features = ["blocking"] }
-futures = "0.3.31"
 rkyv = "0.8"
 walkdir = "2.5.0"
-ratatui = "0.29"
-crossterm = "0.28"
-unicode-width = "0.1"
 rayon = "1.11.0"
-ansi-to-tui = "7.0.0"
-bimap = "0.6.3"
 pdfium-render = "0.8"
 flate2 = "1.0"
 tar = "0.4"
-enum_dispatch = "0.3.13"
+gpui = "0.2.2"
+gpui-component = "0.5.1"
+rfd = "0.17.2"
+colored = "3.1.1"
+memchr = "2.8.0"
+serde_json = "1.0.149"
+plotters = "0.3.7"
+sysinfo = "0.38.4"
+web-sys = { version = "0.3", features = ["console"] }
+console_error_panic_hook = "0.1.7"

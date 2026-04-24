@@ -1,5 +1,3 @@
-use std::collections::btree_map::OccupiedEntry;
-
 use super::definition::*;
 
 use crate::scopenizer::conversion::BackRefResult;

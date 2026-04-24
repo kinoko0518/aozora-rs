@@ -4,10 +4,12 @@ use ayame::{
     AozoraDocument, AozoraZip, Dependencies, Encoding, PageInjectors, Style, WritingDirection,
 };
 use clap::{Args, Parser, Subcommand};
-use miette::{IntoDiagnostic, Result, miette};
 use rayon::prelude::*;
 use std::fs;
 use std::path::{Path, PathBuf};
+
+// mietteの代わりに標準のResultとBox<dyn std::error::Error>を使用します
+type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 #[derive(Parser)]
 #[command(name = "ayame")]
@@ -81,11 +83,11 @@ fn get_output_dir(output: &Option<PathBuf>) -> Result<PathBuf> {
     match output {
         Some(path) => {
             if !path.exists() {
-                fs::create_dir_all(path).into_diagnostic()?;
+                fs::create_dir_all(path)?;
             }
             Ok(path.clone())
         }
-        None => std::env::current_dir().into_diagnostic(),
+        None => Ok(std::env::current_dir()?),
     }
 }
 
@@ -94,7 +96,7 @@ fn get_file_stem(source: &Path) -> Result<String> {
         .file_stem()
         .and_then(|s| s.to_str())
         .map(|s| s.to_string())
-        .ok_or_else(|| miette!("ファイル名を取得できませんでした: {}", source.display()))
+        .ok_or_else(|| format!("ファイル名を取得できませんでした: {}", source.display()).into())
 }
 
 fn to_encoding(utf8: bool) -> Encoding {
@@ -118,9 +120,9 @@ fn read_extra_css(extra_css: &[PathBuf]) -> Result<Vec<String>> {
         .iter()
         .map(|path| {
             if path.exists() {
-                fs::read_to_string(path).into_diagnostic()
+                fs::read_to_string(path).map_err(|e| e.into())
             } else {
-                Err(miette!("CSSファイルが見つかりません: {}", path.display()))
+                Err(format!("CSSファイルが見つかりません: {}", path.display()).into())
             }
         })
         .collect()
@@ -128,15 +130,13 @@ fn read_extra_css(extra_css: &[PathBuf]) -> Result<Vec<String>> {
 
 /// ソースファイルを読み込み、テキストと画像依存を返す
 fn read_source(source: &Path, encoding: &Encoding, gaiji: bool) -> Result<(String, Dependencies)> {
-    let bytes = fs::read(source).into_diagnostic()?;
+    let bytes = fs::read(source)?;
     let (text, deps) = if is_zip(source) {
         let azz =
-            AozoraZip::read_from_zip(Cursor::new(bytes), encoding).map_err(|e| miette!("{}", e))?;
+            AozoraZip::read_from_zip(Cursor::new(bytes), encoding).map_err(|e| e.to_string())?;
         (azz.txt, azz.images)
     } else {
-        let txt = encoding
-            .bytes_to_string(bytes)
-            .map_err(|e| miette!("{}", e))?;
+        let txt = encoding.bytes_to_string(bytes).map_err(|e| e.to_string())?;
         (txt, Dependencies::default())
     };
     let text = if gaiji {
@@ -153,15 +153,15 @@ fn handle_xhtml(source: &Path, args: &CommonArgs, style: &Style, output_dir: &Pa
     let file_stem = get_file_stem(source)?;
 
     let (text, deps) = read_source(source, &to_encoding(args.utf8), !args.no_gaiji)?;
-    let doc = AozoraDocument::from_str(&text, Some(&deps)).map_err(|e| miette!("{}", e))?;
+    let doc = AozoraDocument::from_str(&text, Some(&deps)).map_err(|e| e.to_string())?;
 
-    let (xhtml, errors) = ayame::to_browser_xhtml(&doc, style).map_err(|e| miette!("{}", e))?;
+    let (xhtml, errors) = ayame::to_browser_xhtml(&doc, style).map_err(|e| e.to_string())?;
     for error in &errors {
         eprintln!("警告 ({}): {}", source.display(), error.display(&text));
     }
 
     let output_path = output_dir.join(format!("{}.xhtml", file_stem));
-    fs::write(&output_path, xhtml).into_diagnostic()?;
+    fs::write(&output_path, xhtml)?;
 
     println!(
         "生成完了 [{:?}] -> {}",
@@ -175,10 +175,10 @@ fn handle_epub(source: &Path, args: &CommonArgs, style: &Style, output_dir: &Pat
     let timer = std::time::Instant::now();
 
     let (text, deps) = read_source(source, &to_encoding(args.utf8), !args.no_gaiji)?;
-    let doc = AozoraDocument::from_str(&text, Some(&deps)).map_err(|e| miette!("{}", e))?;
+    let doc = AozoraDocument::from_str(&text, Some(&deps)).map_err(|e| e.to_string())?;
 
     let output_path = output_dir.join(format!("[{}] {}.epub", doc.meta.author, doc.meta.title));
-    let mut file = fs::File::create(&output_path).into_diagnostic()?;
+    let mut file = fs::File::create(&output_path)?;
 
     let injectors = PageInjectors {
         title_page: Some(ayame::title_page_writer()),
@@ -187,7 +187,7 @@ fn handle_epub(source: &Path, args: &CommonArgs, style: &Style, output_dir: &Pat
 
     let warnings = doc
         .epub(&mut file, style, &injectors)
-        .map_err(|e| miette!("{}", e))?;
+        .map_err(|e| e.to_string())?;
     for w in &warnings {
         eprintln!("警告 ({}): {}", source.display(), w.display(&text));
     }

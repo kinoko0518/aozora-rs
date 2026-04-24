@@ -4,13 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-chrono = { workspace = true }
-encoding_rs = { workspace = true }
-uuid = { workspace = true }
-zip = { workspace = true }
-aozora-rs-core = { workspace = true }
-aozora-rs-xhtml = { workspace = true }
-miette = { workspace = true }
-thiserror = { workspace = true }
-winnow = { workspace = true }
-aozora-rs-zip = { workspace = true }
+chrono.workspace = true
+uuid.workspace = true
+zip.workspace = true
+aozora-rs-core.workspace = true
+aozora-rs-xhtml.workspace = true
+aozora-rs-zip.workspace = true
