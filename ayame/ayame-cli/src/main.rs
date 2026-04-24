@@ -8,7 +8,6 @@ use rayon::prelude::*;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-// mietteの代わりに標準のResultとBox<dyn std::error::Error>を使用します
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 #[derive(Parser)]

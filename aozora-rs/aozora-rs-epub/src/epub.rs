@@ -18,7 +18,7 @@ use std::{
 use aozora_rs_core::{AZResult, AZResultC, AozoraMeta};
 use aozora_rs_xhtml::{Chapter, XHTMLResult};
 use aozora_rs_zip::{Dependencies, ImgExtension};
-use chrono::Local;
+use time::OffsetDateTime;
 use uuid::Uuid;
 
 use zip::{ZipWriter, result::ZipError, write::SimpleFileOptions};
@@ -77,7 +77,7 @@ pub(crate) struct EpubWriter<'s> {
     image: &'s HashMap<String, (ImgExtension, Vec<u8>)>,
     setting: &'s EpubSetting<'s>,
     injectors: &'s PageInjectors,
-    lud: chrono::DateTime<Local>,
+    lud: time::OffsetDateTime,
 }
 
 impl EpubWriter<'_> {
@@ -222,7 +222,7 @@ pub fn from_aozora_zip(
         image: &dependencies.images,
         setting,
         injectors,
-        lud: Local::now(),
+        lud: OffsetDateTime::now_utc(),
     };
     let stored = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
 
