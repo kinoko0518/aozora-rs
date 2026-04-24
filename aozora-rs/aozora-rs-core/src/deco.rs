@@ -1,17 +1,6 @@
 use std::borrow::Cow;
 
 #[derive(Debug, Clone, Copy)]
-pub struct Odoriji {
-    pub has_dakuten: bool,
-}
-
-impl std::fmt::Display for Odoriji {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}〵", if self.has_dakuten { "〴" } else { "〳" })
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
 pub struct BlockIndent {
     pub level: usize,
 }

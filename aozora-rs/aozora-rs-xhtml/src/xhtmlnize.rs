@@ -108,10 +108,6 @@ pub fn retokenized_to_xhtml<'s>(from: Vec<Retokenized<'s>>) -> XHTMLResult {
                     XHTMLTag::from_kind(XHTMLKind::SupEnd),
                 ]);
             }
-            Retokenized::Odoriji(o) => {
-                let text = if o.has_dakuten { "〴〵" } else { "〳〵" };
-                buff.push(XHTMLTag::from_kind(XHTMLKind::Text(text)));
-            }
             Retokenized::Figure(f) => {
                 let size = f
                     .size

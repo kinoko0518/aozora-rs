@@ -1,6 +1,6 @@
 use winnow::{
     Parser,
-    combinator::{alt, delimited, not, opt, peek, repeat},
+    combinator::{alt, delimited, not, peek, repeat},
     token::{any, take_till, take_until},
 };
 
@@ -10,14 +10,6 @@ use crate::{tokenizer::note::command, *};
 fn ruby<'s>(input: &mut Input<'s>) -> Result<&'s str, WinnowError> {
     const END: char = '》';
     delimited('《', take_until(1.., END), END).parse_next(input)
-}
-
-fn odoriji<'s>(input: &mut Input<'s>) -> Result<Odoriji, WinnowError> {
-    ("／", opt('″'), "＼")
-        .map(|(_, dakuten, _)| Odoriji {
-            has_dakuten: dakuten.is_some(),
-        })
-        .parse_next(input)
 }
 
 fn special<'s>(input: &mut Input<'s>) -> Result<AozoraTokenKind<'s>, WinnowError> {
@@ -33,7 +25,6 @@ fn special<'s>(input: &mut Input<'s>) -> Result<AozoraTokenKind<'s>, WinnowError
             "］",
         ),
         ruby.map(AozoraTokenKind::Ruby),
-        odoriji.map(AozoraTokenKind::Odoriji),
     ))
     .parse_next(input)
 }

@@ -135,9 +135,6 @@ pub fn scopenize<'s>(
                     scopes.push(scope, note.0.into_deco());
                 }
             }
-            AozoraTokenKind::Odoriji(o) => {
-                flatten.push((FlatToken::Odoriji(o), token.span.clone()));
-            }
         }
         if let None = peekable.peek() {
             // 行全体注記の範囲を確定

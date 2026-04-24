@@ -8,7 +8,6 @@ use crate::{scopenizer::Break, *};
 #[derive(Debug, Clone)]
 pub enum Retokenized<'s> {
     Text(&'s str),
-    Odoriji(Odoriji),
     Kunten(&'s str),
     Okurigana(&'s str),
     Break(Break),

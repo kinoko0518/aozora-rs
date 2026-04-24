@@ -6,7 +6,6 @@ pub enum AozoraTokenKind<'s> {
     Note(Note<'s>),
     Ruby(&'s str),
     RubyDelimiter,
-    Odoriji(Odoriji),
     Text(&'s str),
     Br,
 }

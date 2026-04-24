@@ -52,7 +52,6 @@ pub enum Break {
 pub enum FlatToken<'s> {
     Text(&'s str),
     Break(Break),
-    Odoriji(Odoriji),
     Kunten(&'s str),
     Okurigana(&'s str),
     Figure(Figure<'s>),
@@ -83,7 +82,6 @@ impl<'s> Into<Retokenized<'s>> for FlatToken<'s> {
             FlatToken::Break(b) => Retokenized::Break(b),
             FlatToken::Figure(f) => Retokenized::Figure(f),
             FlatToken::Kunten(k) => Retokenized::Kunten(k),
-            FlatToken::Odoriji(o) => Retokenized::Odoriji(o),
             FlatToken::Text(t) => Retokenized::Text(t),
             FlatToken::Okurigana(o) => Retokenized::Okurigana(o),
         }
