@@ -2,7 +2,7 @@ use std::{
     collections::HashMap,
     fs::{self, File},
     hash::{DefaultHasher, Hash, Hasher},
-    io::{Cursor, Write},
+    io::{Read, Write},
     path::Path,
 };
 
@@ -11,6 +11,7 @@ use gaiji_chuki_parser::{GaijiChuki, parse_tag};
 use pdfium_render::prelude::{Pdfium, PdfiumError};
 use rkyv::{rancor::Error, to_bytes};
 use tar::Archive;
+use ureq::Agent;
 use winnow::{Parser, ascii::*, combinator::*, error::ContextError, token::take_until};
 
 use crate::{ignore_rest_of_line, menkuten::MenkutenTable};
@@ -32,7 +33,7 @@ impl GaijiChukiLine<'_> {
     }
 }
 
-pub async fn satisfy_pdfium(out_dir: &Path) -> Result<Pdfium, Box<dyn std::error::Error>> {
+pub fn satisfy_pdfium(out_dir: &Path) -> Result<Pdfium, Box<dyn std::error::Error>> {
     let pdfium_url = if cfg!(target_os = "windows") {
         "https://github.com/bblanchon/pdfium-binaries/releases/latest/download/pdfium-v8-win-x64.tgz"
     } else if cfg!(target_os = "macos") {
@@ -40,8 +41,11 @@ pub async fn satisfy_pdfium(out_dir: &Path) -> Result<Pdfium, Box<dyn std::error
     } else {
         "https://github.com/bblanchon/pdfium-binaries/releases/latest/download/pdfium-v8-linux-x64.tgz"
     };
-    let tgz = Cursor::new(reqwest::get(pdfium_url).await?.bytes().await?);
-    let tar = GzDecoder::new(tgz);
+
+    let response = ureq::get(pdfium_url).call()?;
+    let reader = response.into_body().into_reader();
+    let tar = GzDecoder::new(reader);
+
     let mut archive = Archive::new(tar);
     let os_binname = if cfg!(target_os = "windows") {
         "pdfium.dll"
@@ -113,16 +117,23 @@ fn collect_all_gaiji_chuki_line<'s>(
         )
 }
 
-pub async fn get_latest_gaiji_chuki(
+pub fn get_latest_gaiji_chuki(
     pdfium: Pdfium,
     menkuten: &MenkutenTable,
     out_dir: &Path,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let url = "https://www.aozora.gr.jp/gaiji_chuki/gaiji_chuki.pdf";
-    let client = reqwest::Client::builder()
-            .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
-            .build()?;
-    let gaiji_chuki_pdf = client.get(url).send().await?.bytes().await?;
+    let agent: Agent = Agent::config_builder()
+        .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
+        .build().into();
+
+    let response = agent.get(url).call()?;
+    let mut gaiji_chuki_pdf = Vec::new();
+    response
+        .into_body()
+        .into_reader()
+        .read_to_end(&mut gaiji_chuki_pdf)?;
+
     let new_hash = {
         let mut hasher = DefaultHasher::new();
         gaiji_chuki_pdf.hash(&mut hasher);
@@ -153,7 +164,7 @@ pub async fn get_latest_gaiji_chuki(
                     });
             tx?
         };
-        File::create(out_dir.join("read.txt"))?.write(txt.as_bytes())?;
+        File::create(out_dir.join("read.txt"))?.write_all(txt.as_bytes())?;
 
         let gaiji_to_char = collect_all_gaiji_chuki_line(&mut txt.as_str(), menkuten);
         let char_to_gaiji: HashMap<String, String> = gaiji_to_char

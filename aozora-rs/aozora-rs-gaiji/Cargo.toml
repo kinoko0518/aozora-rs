@@ -10,10 +10,9 @@ gaiji-chuki-parser.workspace = true
 
 [build-dependencies]
 pdfium-render.workspace = true
-reqwest.workspace = true
 flate2.workspace = true
 tar.workspace = true
-tokio.workspace = true
 rkyv.workspace = true
 winnow.workspace = true
 gaiji-chuki-parser.workspace = true
+ureq.workspace = true

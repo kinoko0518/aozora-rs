@@ -1,13 +1,12 @@
-use gaiji_chuki_parser::Menkuten;
-use gaiji_chuki_parser::unicode;
-use rkyv::rancor::Error;
-use rkyv::to_bytes;
-use rkyv::util::AlignedVec;
-use std::fs::File;
-use std::hash::Hash;
-use std::hash::Hasher;
-use std::io::Write;
-use std::{collections::HashMap, hash::DefaultHasher, path::Path};
+use gaiji_chuki_parser::{Menkuten, unicode};
+use rkyv::{rancor::Error, to_bytes, util::AlignedVec};
+use std::{
+    collections::HashMap,
+    fs::File,
+    hash::{DefaultHasher, Hash, Hasher},
+    io::Write,
+    path::Path,
+};
 use winnow::{Parser, ascii::*, combinator::*, error::ContextError, token::any};
 
 use crate::ignore_rest_of_line;
@@ -56,13 +55,13 @@ fn parse_menkuten<'s>(input: &mut &'s str) -> MenkutenTable {
         .collect()
 }
 
-pub async fn satisfy_latest_menkuten(
+pub fn satisfy_latest_menkuten(
     out_dir: &Path,
 ) -> Result<MenkutenTable, Box<dyn std::error::Error>> {
-    let menkuten: String = reqwest::get("http://x0213.org/codetable/jisx0213-2004-std.txt")
-        .await?
-        .text()
-        .await?;
+    let menkuten: String = ureq::get("http://x0213.org/codetable/jisx0213-2004-std.txt")
+        .call()?
+        .body_mut()
+        .read_to_string()?;
 
     let txt_path = out_dir.join("jisx0213-2004-std.txt");
     let map_path = out_dir.join("menkuten_to_unicode.map");
