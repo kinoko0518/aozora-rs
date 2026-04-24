@@ -16,3 +16,10 @@ aozora-rs-zip.workspace = true
 ayame.workspace = true
 wasm-bindgen.workspace = true
 console_error_panic_hook.workspace = true
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
