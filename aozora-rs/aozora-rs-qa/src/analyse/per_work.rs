@@ -122,8 +122,25 @@ pub fn analyse_per_work(s: &str, base_path: &Path) -> Result<WorkAnalyse, Aozora
     let epub_instant = Instant::now();
     let epub_base_path = base_path.join("result/epubs");
     std::fs::create_dir_all(&epub_base_path).map_err(|e| e.into())?;
+    fn sanitize(original: &str) -> String {
+        original
+            .replace("\"", "")
+            .replace(":", "：")
+            .replace("<", "＜")
+            .replace(">", "＞")
+            .replace("|", "｜")
+            .replace("*", "＊")
+            .replace("?", "？")
+            .replace("\r", " ")
+            .replace("\n", " ")
+    }
     from_aozora_zip(
-        File::create(epub_base_path.join(format!("{}.epub", title_owned))).map_err(|e| e.into())?,
+        File::create(epub_base_path.join(format!(
+            "[{}] {}.epub",
+            sanitize(&author_owned),
+            sanitize(&title_owned)
+        )))
+        .map_err(|e| e.into())?,
         &Dependencies::default(),
         &xhtmlnized,
         &EpubSetting {
