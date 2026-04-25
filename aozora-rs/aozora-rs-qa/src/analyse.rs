@@ -101,7 +101,6 @@ fn get_sysinfo() -> SysInfo {
     let memory_size = sys.total_memory();
 
     // ドライブ情報
-    println!("\n[Drive Information]");
     let disks = Disks::new_with_refreshed_list();
     let disk_info: Vec<_> = disks
         .list()
