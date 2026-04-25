@@ -25,12 +25,6 @@ jobs:
       - name: Create result directory
         run: mkdir -p ./aozora-rs/aozora-rs-qa/result
 
-      - name: Install system dependencies
-        run: |
-          echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | sudo debconf-set-selections;
-          sudo apt-get update;
-          sudo apt-get install ttf-mscorefonts-installer libfontconfig-dev;
-
       - name: Run QA
         run: cargo run --bin qa
 
@@ -90,7 +84,7 @@ jobs:
         uses: typst-community/setup-typst@v3
 
       - name: Compile Typst presentation
-        run: typst compile ./docs/typst/presentation.typ --root . ./presentation.pdf
+        run: typst compile --input commit=${{ github.sha }} docs/typst/presentation.typ --root . ./presentation.pdf
 
       - name: Upload PDF artifact
         uses: actions/upload-artifact@v4
