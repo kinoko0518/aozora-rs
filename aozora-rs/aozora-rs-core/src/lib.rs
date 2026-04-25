@@ -1,3 +1,6 @@
+#![warn(missing_docs)]
+#![doc = include_str!("../README.md")]
+
 mod deco;
 mod error;
 mod meta;
@@ -7,10 +10,11 @@ pub mod retokenizer;
 pub mod scopenizer;
 pub mod tokenizer;
 
-use winnow::LocatingSlice;
-
-pub type Input<'s> = LocatingSlice<&'s str>;
+/// トークナイズに用いるパーサーが受け取るテキストの型です。
+pub type Input<'s> = winnow::LocatingSlice<&'s str>;
+/// トークナイザで切り出すスパン情報の型です。
 pub type Span = std::ops::Range<usize>;
+/// トークナイズに用いるパーサーに共通のエラー型です。
 pub type WinnowError = ();
 
 pub use crate::deco::*;

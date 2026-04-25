@@ -6,9 +6,11 @@ use crate::scopenizer::error::ScopenizeError;
 use crate::tokenizer::*;
 use crate::*;
 
+/// ルビや注記などの装飾指定トークンとその周囲のトークンの情報から
+/// 注記の適用範囲を確定、どのように記述されていたかの情報を単純化します。
 pub fn scopenize<'s>(
     tokens: Vec<Tokenized<'s>>,
-) -> AZResult<(Scopenized<'s>, Vec<(FlatToken<'s>, Span)>), ScopenizeError> {
+) -> AZResult<(ScopeAccumulator<'s>, Vec<(FlatToken<'s>, Span)>), ScopenizeError> {
     // 改行などのBreakをまたがない注記用のスタック
     let mut inline_stack = Vec::new();
     // Breakをまたぐ注記用のスタック
@@ -16,7 +18,7 @@ pub fn scopenize<'s>(
     // 行全体に影響する注記用
     let mut wholeline: Vec<(WholeLine, Span)> = Vec::new();
     // 最終出力用のベクタ
-    let mut scopes = Scopenized::default();
+    let mut scopes = ScopeAccumulator::default();
     let mut flatten: Vec<(FlatToken, Span)> = Vec::new();
     // エラー蓄積用
     let mut azc = AZResultC::default();
@@ -70,7 +72,7 @@ pub fn scopenize<'s>(
                         while let Some(s) = inline_stack.pop() {
                             let range = s.1.end..token.span.start;
                             if s.0.do_match(&e) {
-                                scopes.push(range, s.0.into_deco());
+                                scopes.push(range, s.0.into());
                             } else {
                                 // 交差タグは本来HTMLではエラーであるためエラーを蓄積する
                                 // ブラウザ側が自動修復を試みるのでaozora-rs側では特に処理を行わない
@@ -100,7 +102,7 @@ pub fn scopenize<'s>(
                     }
                 },
                 Note::Single(s) => {
-                    flatten.push((s.into_flat_token(), token.span.clone()));
+                    flatten.push((s.into(), token.span.clone()));
                 }
                 Note::BackRef(_) => {
                     // 前方参照型の注記はTextのアームで処理されるため、ここに到達した時点で不正
@@ -123,7 +125,7 @@ pub fn scopenize<'s>(
                     let last = inline_stack.last().unwrap().clone();
                     // inline_stackが空になるまですべて閉じて修復を試みる
                     while let Some(tag) = inline_stack.pop() {
-                        scopes.push(tag.1.end..token.span.start, tag.0.into_deco());
+                        scopes.push(tag.1.end..token.span.start, tag.0.into());
                     }
                     azc.acc_err(
                         ScopenizeError::UnclosedInlineNote(last.1.start..token.span.end).into(),
@@ -132,7 +134,7 @@ pub fn scopenize<'s>(
                 // 行全体注記の範囲を確定
                 while let Some(note) = wholeline.pop() {
                     let scope = note.1.end..token.span.start;
-                    scopes.push(scope, note.0.into_deco());
+                    scopes.push(scope, note.0.into());
                 }
             }
         }
@@ -140,7 +142,7 @@ pub fn scopenize<'s>(
             // 行全体注記の範囲を確定
             while let Some(note) = wholeline.pop() {
                 let scope = note.1.end..token.span.end;
-                scopes.push(scope, note.0.into_deco());
+                scopes.push(scope, note.0.into());
             }
         }
     }

@@ -20,5 +20,3 @@ aozora-rs
 ```bash
 cargo add aozora-rs --git https://github.com/kinoko0518/aozora-rs/
 ```
-# 使い方
-基本的な使い方としては文字列やzipなどから`AozoraDocument`を生成し、`epub()`や`xhtml()`などのメソッドを呼び出す形になります。

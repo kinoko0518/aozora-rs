@@ -1,39 +1,32 @@
 use crate::*;
-use std::collections::{HashMap, hash_map::Entry};
+use std::collections::HashMap;
 
+/// /// 開始地点と[`Scope`]の[`HashMap`]を内部に持ち、[`retokenize`]のために[`Scope`]を蓄積します。
 #[derive(Debug, Default)]
-pub struct Scopenized<'s>(pub HashMap<usize, Vec<ScopeKind<'s>>>);
+pub struct ScopeAccumulator<'s>(pub HashMap<usize, Vec<Scope<'s>>>);
 
-impl<'s> Scopenized<'s> {
-    pub fn push_s(&mut self, scope: ScopeKind<'s>) {
+impl<'s> ScopeAccumulator<'s> {
+    /// [`Scope`]の`start`を開始地点として挿入します。
+    pub fn push_s(&mut self, scope: Scope<'s>) {
         self.0.entry(scope.span.start).or_default().push(scope)
     }
 
+    /// [`Scope`]に加え、開始地点を手動で指定して挿入します。
     pub fn push(&mut self, index: Span, deco: Deco<'s>) {
-        self.push_s(ScopeKind { deco, span: index });
-    }
-
-    pub fn pop(&mut self, index: usize) -> Option<ScopeKind<'s>> {
-        match self.0.entry(index) {
-            Entry::Occupied(mut entry) => {
-                let vec = entry.get_mut();
-                let val = vec.pop();
-                if vec.is_empty() {
-                    entry.remove();
-                }
-                val
-            }
-            Entry::Vacant(_) => None,
-        }
+        self.push_s(Scope { deco, span: index });
     }
 }
 
+/// 装飾と装飾がかかる範囲を表す構造体です。
 #[derive(Debug)]
-pub struct ScopeKind<'s> {
+pub struct Scope<'s> {
+    /// 装飾の種類、およびその固有情報を格納します。
     pub deco: Deco<'s>,
+    /// 装飾の影響範囲です。
     pub span: Span,
 }
 
+/// 改行、改ページなどの直和です。
 #[derive(Debug, Clone)]
 pub enum Break {
     /// 改行に対応
@@ -48,12 +41,18 @@ pub enum Break {
     ColumnBreak,
 }
 
+/// ルビや注記など、[`Scope`]になるトークンを含まない純粋な単一表現の直和です。
 #[derive(Clone, Debug)]
 pub enum FlatToken<'s> {
+    /// 切り出したテキストに対応します。
     Text(&'s str),
+    /// 改行、改ページなどに対応します。
     Break(Break),
+    /// 漢文における訓点に対応します。
     Kunten(&'s str),
+    /// 漢文における送り仮名に対応します。
     Okurigana(&'s str),
+    /// 挿絵や図などに対応します。
     Figure(Figure<'s>),
 }
 

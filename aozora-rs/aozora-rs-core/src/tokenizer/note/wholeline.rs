@@ -1,3 +1,5 @@
+#![doc = include_str!("../../../docs/note/wholeline.md")]
+
 use winnow::{
     Parser,
     combinator::{alt, opt},
@@ -5,6 +7,9 @@ use winnow::{
 
 use crate::{nihongo::japanese_num, *};
 
+/// 行頭型注記の直和です。
+///
+/// 行の頭に置き、行末まで影響を及ぼす注記が分類されます。
 #[derive(Debug, Clone)]
 pub enum WholeLine {
     /// 「N字下げ」に対応
@@ -17,8 +22,8 @@ pub enum WholeLine {
     VHCentre,
 }
 
-impl WholeLine {
-    pub fn into_deco<'s>(self) -> Deco<'s> {
+impl Into<Deco<'static>> for WholeLine {
+    fn into(self) -> Deco<'static> {
         match self {
             Self::Indent(n) => Deco::Indent(n),
             Self::Grounded => Deco::Grounded,
@@ -28,7 +33,7 @@ impl WholeLine {
     }
 }
 
-pub fn wholeline(input: &mut Input) -> Result<WholeLine, WinnowError> {
+pub(crate) fn wholeline(input: &mut Input) -> Result<WholeLine, WinnowError> {
     alt((
         (opt("天から"), japanese_num, "字下げ").map(|(_, n, _)| WholeLine::Indent(n)),
         "地付き".value(WholeLine::Grounded),

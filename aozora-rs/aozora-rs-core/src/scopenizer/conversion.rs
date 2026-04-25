@@ -1,12 +1,12 @@
 use crate::{
     nihongo::is_kanji,
-    scopenizer::definition::{Break, FlatToken, ScopeKind},
+    scopenizer::definition::{Break, FlatToken, Scope},
     tokenizer::*,
     *,
 };
 
-impl<'s> Single<'s> {
-    pub fn into_flat_token(self) -> FlatToken<'s> {
+impl<'s> Into<FlatToken<'s>> for Single<'s> {
+    fn into(self) -> FlatToken<'s> {
         match self {
             Self::ColumnBreak => FlatToken::Break(Break::ColumnBreak),
             Self::PageBreak => FlatToken::Break(Break::PageBreak),
@@ -22,7 +22,7 @@ impl<'s> Single<'s> {
 pub enum BackRefResult<'s> {
     ItWontBackRef,
     BackRefFailed,
-    ScopeConfirmed(ScopeKind<'s>),
+    ScopeConfirmed(Scope<'s>),
 }
 
 pub fn backref_to_scope<'s>(
@@ -30,7 +30,7 @@ pub fn backref_to_scope<'s>(
     target: (&str, Span),
 ) -> BackRefResult<'s> {
     match backref_maybe {
-        AozoraTokenKind::Ruby(ruby) => BackRefResult::ScopeConfirmed(ScopeKind {
+        AozoraTokenKind::Ruby(ruby) => BackRefResult::ScopeConfirmed(Scope {
             deco: Deco::Ruby(ruby),
             span: {
                 // 漢字であり続けるバイト数を取得
@@ -71,7 +71,7 @@ pub fn backref_to_scope<'s>(
                     };
                     span.map(|s| (deco, s))
                 }) {
-                    Some((deco, span)) => BackRefResult::ScopeConfirmed(ScopeKind { deco, span }),
+                    Some((deco, span)) => BackRefResult::ScopeConfirmed(Scope { deco, span }),
                     None => BackRefResult::BackRefFailed,
                 }
             } else {

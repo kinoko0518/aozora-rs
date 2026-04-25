@@ -1,25 +1,31 @@
-use std::{
-    collections::{HashMap, hash_map::Entry},
-    usize,
-};
-
 use crate::{scopenizer::Break, *};
 
+/// 開始タグ・要素・終了タグで構成される、HTMLライクな中間表現です。
 #[derive(Debug, Clone)]
 pub enum Retokenized<'s> {
+    /// 切り出したテキストに対応します。
     Text(&'s str),
+    /// 漢文における訓点に対応します。
     Kunten(&'s str),
+    /// 漢文における送り仮名に対応します。
     Okurigana(&'s str),
+    /// 改行、改ページなどに対応します。
     Break(Break),
+    /// 挿絵、図などに対応します。
     Figure(Figure<'s>),
+    /// 装飾の開始に対応します。
     DecoBegin(Deco<'s>),
+    /// 装飾の終了に対応します。
     DecoEnd(Deco<'s>),
 }
 
+/// 再トークン化時に発生しうるエラーの直和です。
 #[derive(Default, Debug)]
 pub enum RetokenizeError {
+    /// トークンを閉じろという命令が出た際、閉じるトークンがなければこのエラーが生じます。
     #[default]
     InvalidEndOfToken,
+    /// スコープを閉じろという命令が出た際、閉じるスコープがなければこのエラーが生じます。
     InvalidEndOfScope,
 }
 
@@ -37,6 +43,7 @@ impl std::fmt::Display for RetokenizeError {
 }
 
 impl Retokenized<'_> {
+    /// 要素が可視要素かを真理値で返却します。
     pub fn is_visible(&self) -> bool {
         match self {
             Self::Kunten(k) => !k.is_empty(),
@@ -48,32 +55,3 @@ impl Retokenized<'_> {
         }
     }
 }
-
-#[derive(Default)]
-pub struct IndexedStacks<T>(HashMap<usize, Vec<T>>);
-
-impl<T> IndexedStacks<T> {
-    pub fn push(&mut self, index: usize, deco: T) {
-        self.0.entry(index).or_default().push(deco)
-    }
-
-    pub fn pop(&mut self, index: usize) -> Option<T> {
-        match self.0.entry(index) {
-            Entry::Occupied(mut entry) => {
-                let vec = entry.get_mut();
-                let val = vec.pop();
-                if vec.is_empty() {
-                    entry.remove();
-                }
-                val
-            }
-            Entry::Vacant(_) => None,
-        }
-    }
-
-    pub fn into_iter(self) -> impl Iterator<Item = (usize, Vec<T>)> {
-        self.0.into_iter()
-    }
-}
-
-pub type DecoQueue<'s> = IndexedStacks<Deco<'s>>;

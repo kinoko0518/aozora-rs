@@ -1,14 +1,4 @@
-//! 独自の分類に基づく、複数行を以下のようなスタイルで囲む種類の注記をパースします。
-//! [ブロックでの字下げ](https://www.aozora.gr.jp/annotation/layout_2.html#jisage)
-//! などが該当します。
-//!
-//! ```
-//! ［＃注記］
-//! 一行目
-//! 二行目
-//! 三行目…
-//! ［＃注記閉じ］
-//! ```
+#![doc = include_str!("../../../docs/note/multiline.md")]
 
 use winnow::{
     Parser,
@@ -38,19 +28,19 @@ pub struct LowFlying {
 
 #[derive(Debug, Clone, Copy)]
 pub enum MultiLineBegins {
-    /// 参照：https://www.aozora.gr.jp/annotation/layout_2.html#jisage
+    /// ここからN字下げに対応
     BlockIndent(BlockIndent),
-    /// 参照：https://www.aozora.gr.jp/annotation/layout_2.html#ototsu
+    /// ここからN字下げ、折り返してM字下げに対応
     HangingIndent(HangingIndent),
-    /// 参照：https://www.aozora.gr.jp/annotation/layout_2.html#chitsuki
+    /// ここから地付きに対応
     Grounded(Grounded),
-    /// 参照：https://www.aozora.gr.jp/annotation/layout_2.html#chiyose
+    /// ここから地からN字上げ
     LowFlying(LowFlying),
-    /// 参照：https://www.aozora.gr.jp/annotation/etc.html#moji_size
+    /// ここからN段階小さな文字
     Smaller(usize),
-    /// 参照：https://www.aozora.gr.jp/annotation/etc.html#moji_size
+    /// ここからN段階大きな文字
     Bigger(usize),
-    /// 参照：https://www.aozora.gr.jp/annotation/etc.html#jizume
+    /// ここからN字詰め
     Kerning(usize),
 }
 
@@ -92,9 +82,19 @@ pub enum MultiLineEnds {
     Kerning,
 }
 
+/// 以下のような形式で記述する複数行挟み込み型の注記に対応します。
+/// ```aozorabunko
+/// ［＃ここから……］
+/// 一行目
+/// 二行目
+/// ……
+/// ［＃ここまで……］
+/// ```
 #[derive(Debug, Clone, Copy)]
 pub enum MultiLine {
+    /// 一部例外と［＃ここから……］のパターンで記述される複数行挟み込み型の開始注記です。
     Begin(MultiLineBegins),
+    /// 一部例外と［＃ここまで……］のパターンで記述される複数行挟み込み型の終了注記です。
     End(MultiLineEnds),
 }
 
@@ -174,8 +174,8 @@ fn multiline_ends<'s>(input: &mut Input<'s>) -> Result<MultiLineEnds, WinnowErro
         "ここで",
         alt((
             "字下げ".value(MultiLineEnds::BlockIndentEnd),
-            "字寄せ".value(MultiLineEnds::LowFlyingEnd),
-            "地付け".value(MultiLineEnds::GroundedEnd),
+            "字上げ".value(MultiLineEnds::LowFlyingEnd),
+            "地付き".value(MultiLineEnds::GroundedEnd),
             "小さな文字".value(MultiLineEnds::SmallEnd),
             "大きな文字".value(MultiLineEnds::BigEnd),
             "字詰め".value(MultiLineEnds::Kerning),

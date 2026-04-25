@@ -45,6 +45,7 @@ fn take_until_special<'s>(input: &mut Input<'s>) -> Result<&'s str, WinnowError>
         .parse_next(input)
 }
 
+#[doc = include_str!("../../docs/tokenize.md")]
 pub fn tokenize<'s>(input: &mut Input<'s>) -> Result<Vec<Tokenized<'s>>, WinnowError> {
     let mut result: Vec<Tokenized> = repeat(
         0..,

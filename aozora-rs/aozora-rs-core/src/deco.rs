@@ -1,7 +1,11 @@
+//! 装飾の型定義を行うモジュールです。
+
 use std::borrow::Cow;
 
+/// 段落（HTMLで云うところの<p>などのブロック要素）に対する字下げを表現する型です。
 #[derive(Debug, Clone, Copy)]
 pub struct BlockIndent {
+    /// N字下げのNに対応します。
     pub level: usize,
 }
 
@@ -85,27 +89,49 @@ impl std::fmt::Display for BosenKind {
 #[derive(Debug, Clone, Default)]
 pub enum Deco<'s> {
     #[default]
+    /// 太字に対応します。
     Bold,
+    /// 斜体に対応します。
     Italic,
+    /// ルビに対応します。
     Ruby(&'s str),
+    /// 傍線に対応します。
     Bosen(BosenKind),
+    /// 傍点に対応します。
     Boten(BotenKind),
+    /// 字下げに対応します。
     Indent(usize),
+    /// N字下げ、折り返してM字下げに対応します。
     Hanging((usize, usize)),
+    /// 地付きに対応します。
     Grounded,
+    /// 地からN地上げに対応します。
     LowFlying(usize),
+    /// 大見出しに対応します。
     AHead,
+    /// 中見出しに対応します。
     BHead,
+    /// 小見出しに対応します。
     CHead,
+    /// 縦中横に対応します。
     HinV,
+    /// 「ママ」注記に対応します。
     Mama,
+    /// N段階小さな文字に対応します。
     Smaller(usize),
+    /// N段階大きな文字に対応します。
     Bigger(usize),
+    /// ページ左右中央に対応します。
     VHCentre,
+    /// 割り注に対応します。
     Warichu,
+    ///　横組みに対応します。
     HorizontalLayout,
+    /// 字詰めに対応します。
     Kerning(usize),
+    /// 下付き小書き文字に対応します。
     Sub,
+    /// 上付き小書き文字に対応します。
     Sup,
 }
 
@@ -144,8 +170,15 @@ impl std::fmt::Display for Deco<'_> {
 /// aozora-rs-coreの時点ではIO操作を行わず、パス、キャプション、サイズ指定の情報のみを保持しています。
 #[derive(Debug, Clone)]
 pub struct Figure<'s> {
+    /// 指定された画像のパスを表します。
+    ///
+    /// 青空文庫で配布されているような.zip形式ならルートディレクトリが.zipのルートになります。
     pub path: &'s str,
+    /// 画像に付加されているキャプションを表します。
     pub caption: &'s str,
+    /// 画像のサイズを表します。単位はpxです。
+    ///
+    /// 実際の画像サイズではなく、実際に表示される段階でこのサイズで表示されることを要求するためのものです。
     pub size: Option<(usize, usize)>,
 }
 

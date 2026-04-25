@@ -1,3 +1,5 @@
+#![doc = include_str!("../docs/retokenize.md")]
+
 mod definitions;
 mod processor;
 

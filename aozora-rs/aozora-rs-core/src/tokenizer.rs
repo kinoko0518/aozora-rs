@@ -1,4 +1,6 @@
-pub mod definition;
+#![doc = include_str!("../docs/tokenize.md")]
+
+mod definition;
 mod note;
 mod parser;
 

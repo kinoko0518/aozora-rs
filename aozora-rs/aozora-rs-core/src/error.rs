@@ -1,3 +1,5 @@
+//! エラー関連の定義を行うモジュールです。
+
 mod azerror;
 mod decolated;
 

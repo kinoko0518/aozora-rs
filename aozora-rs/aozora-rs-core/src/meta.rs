@@ -1,14 +1,24 @@
+//! メタデータを扱うためのモジュールです。
+//!
+//! タイトル、著者、【テキスト中に現れる記号について】といったファイルの先頭に記述される情報がメタデータに対応します。
+
 use winnow::{Parser, combinator::delimited, error::ContextError, token::take_until};
 
+/// 青空文庫で記述されたテキストのメタデータをまとめた型です。
 #[derive(Debug, Clone)]
 pub struct AozoraMeta<'s> {
+    /// タイトルです。
     pub title: &'s str,
+    /// 著者です。
     pub author: &'s str,
 }
 
+/// メタデータ取得中に発生しうるエラーの直和です。
 #[derive(Debug)]
 pub enum MetaError {
+    /// タイトルの記述が見つからなかったときのエラーです。
     NoTitleFound,
+    /// 著者の記述が見つからなかったときのエラーです。
     NoAuthorFound,
 }
 

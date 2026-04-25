@@ -1,11 +1,9 @@
-//! aozorahackの青空文庫書式のドキュメントに記載されているところの、開始/終了型のパースを行うモジュールです。
-//!　ドキュメントは[こちら](https://github.com/aozorahack/specs/blob/master/aozora-text.md#%E5%89%8D%E6%96%B9%E5%8F%82%E7%85%A7%E5%9E%8B%E3%81%A8%E9%96%8B%E5%A7%8B%E7%B5%82%E4%BA%86%E5%9E%8B)
-//! から確認できます。
+#![doc = include_str!("../../../docs/note/sandwiched.md")]
 
 use winnow::{Parser, combinator::alt};
 
 use crate::nihongo::japanese_num;
-use crate::tokenizer::note::{SandwichedBegin, definitions::*};
+use crate::tokenizer::{definition::*, note::SandwichedBegin};
 use crate::*;
 
 #[derive(Debug, Clone, Copy)]
@@ -24,8 +22,8 @@ pub enum SandwichedBegins {
     Sup,
 }
 
-impl SandwichedBegins {
-    pub fn into_deco(self) -> Deco<'static> {
+impl Into<Deco<'static>> for SandwichedBegins {
+    fn into(self) -> Deco<'static> {
         match self {
             Self::BoldBegin => Deco::Bold,
             Self::ItalicBegin => Deco::Italic,
@@ -82,9 +80,12 @@ pub enum SandwichedEnds {
     Sup,
 }
 
+/// 開始タグと終了タグの直和です。
 #[derive(Debug, Clone, Copy)]
 pub enum Sandwiched {
+    /// 開始タグ
     Begin(SandwichedBegins),
+    ///　終了タグ
     End(SandwichedEnds),
 }
 
@@ -128,7 +129,7 @@ fn sandwiched_end(input: &mut Input<'_>) -> Result<SandwichedEnds, WinnowError> 
         .parse_next(input)
 }
 
-pub fn sandwiched(input: &mut Input<'_>) -> Result<Sandwiched, WinnowError> {
+pub(crate) fn sandwiched(input: &mut Input<'_>) -> Result<Sandwiched, WinnowError> {
     alt((
         sandwiched_end.map(Sandwiched::End),
         sandwiched_begin.map(Sandwiched::Begin),

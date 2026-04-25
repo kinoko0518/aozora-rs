@@ -1,3 +1,5 @@
+#![doc = include_str!("../../../docs/note/single.md")]
+
 use winnow::{
     Parser,
     combinator::{alt, delimited, opt},
@@ -6,6 +8,9 @@ use winnow::{
 
 use crate::{nihongo::japanese_num, *};
 
+/// 注記分類のうちの1つ、単一表現型注記の直和です。
+///
+/// それ単体で完結して表示できる注記が分類されます。
 #[derive(Debug, Clone)]
 pub enum Single<'s> {
     /// 「改ページ」に対応
@@ -36,7 +41,7 @@ fn figure_size(input: &mut Input) -> Result<(usize, usize), WinnowError> {
         .parse_next(input)
 }
 
-pub fn single<'s>(input: &mut Input<'s>) -> Result<Single<'s>, WinnowError> {
+pub(crate) fn single<'s>(input: &mut Input<'s>) -> Result<Single<'s>, WinnowError> {
     let path_and_size = (
         take_until(1.., "、"),
         opt(("、", figure_size).map(|(_, size)| size)),

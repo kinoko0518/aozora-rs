@@ -10,7 +10,6 @@ use crate::tokenizer::*;
 use crate::*;
 
 pub mod backref;
-pub mod definitions;
 #[macro_use]
 pub mod multiline;
 #[macro_use]
@@ -18,17 +17,26 @@ pub mod sandwiched;
 pub mod single;
 pub mod wholeline;
 
+#[doc = include_str!("../../docs/note/note.md")]
 #[derive(Debug, Clone)]
 pub enum Note<'s> {
+    #[doc = "../../docs/note/backref.md"]
     BackRef(BackRef<'s>),
+    #[doc = "../../docs/note/sandwitched.md"]
     Sandwiched(Sandwiched),
+    #[doc = "../../docs/note/multiline.md"]
     Multiline(MultiLine),
+    #[doc = "../../docs/note/single.md"]
     Single(Single<'s>),
+    #[doc = "../../docs/note/wholeline.md"]
     WholeLine(WholeLine),
+    /// いずれのパターンにもマッチしなかった注記が分類されます。
     Unknown(&'s str),
 }
 
+/// 開始/終了で構成されるたぐいの注記のためのトレイトです。開始注記に対して実装します。
 pub trait SandwichedBegin<E> {
+    /// 引数で与えられた終了タグによって自身が閉じられるかを真理値で返却します。
     fn do_match(&self, rhs: &E) -> bool;
 }
 

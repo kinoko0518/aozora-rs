@@ -1,10 +1,12 @@
+//! 日本語表現のためのユーティリティパーサーを定義するモジュールです。
+
 use std::char::from_u32;
 
 use winnow::{Parser, combinator::alt, token::take_while};
 
 use crate::*;
 
-pub fn is_kanji(c: char) -> bool {
+pub(crate) fn is_kanji(c: char) -> bool {
     match c {
         '々' | '〆' | '〇' | 'ヶ' | '仝' | '〓' => true,
         c if ('\u{4E00}'..='\u{9FFF}').contains(&c) => true,
@@ -39,6 +41,6 @@ fn hw_digit(input: &mut Input) -> Result<usize, WinnowError> {
         .parse_next(input)
 }
 
-pub fn japanese_num(input: &mut Input) -> Result<usize, WinnowError> {
+pub(crate) fn japanese_num(input: &mut Input) -> Result<usize, WinnowError> {
     alt((fw_digit, hw_digit)).parse_next(input)
 }
