@@ -1,8 +1,8 @@
 use std::cmp::Ordering;
 
 use crate::{
-    AZResult, AZResultC, Deco, RetokenizeError, Retokenized, ScopeAccumulator, Span,
-    scopenizer::FlatToken,
+    scopenizer::FlatToken, AZResult, AZResultC, Deco, RetokenizeError, Retokenized,
+    ScopeAccumulator, Span,
 };
 
 #[derive(Default, Debug)]
@@ -39,11 +39,11 @@ pub fn extract_events<'s>(
         let cmp = a.0.cmp(&b.0);
         if let Ordering::Equal = cmp {
             match (&a.1, &b.1) {
-                // 開始と終了が同じ場所にあった場合、開始が必ず先に来るようにする
-                (RetokenizeEvent::DecoBegin(_), RetokenizeEvent::DecoEnd) => Ordering::Less,
-                (RetokenizeEvent::DecoEnd, RetokenizeEvent::DecoBegin(_)) => Ordering::Greater,
-                (RetokenizeEvent::FlatTBegin(_), RetokenizeEvent::FlatTEnd) => Ordering::Less,
-                (RetokenizeEvent::FlatTEnd, RetokenizeEvent::FlatTBegin(_)) => Ordering::Greater,
+                // 開始と終了が同じ場所にあった場合、終了が必ず先に来るようにする
+                (RetokenizeEvent::DecoBegin(_), RetokenizeEvent::DecoEnd) => Ordering::Greater,
+                (RetokenizeEvent::DecoEnd, RetokenizeEvent::DecoBegin(_)) => Ordering::Less,
+                (RetokenizeEvent::FlatTBegin(_), RetokenizeEvent::FlatTEnd) => Ordering::Greater,
+                (RetokenizeEvent::FlatTEnd, RetokenizeEvent::FlatTBegin(_)) => Ordering::Less,
                 _ => Ordering::Equal,
             }
         } else {
