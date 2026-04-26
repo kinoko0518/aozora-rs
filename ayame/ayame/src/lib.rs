@@ -19,14 +19,25 @@ pub fn to_browser_xhtml(
     style: &Style,
 ) -> Result<(String, Vec<AozoraWarning>), AozoraError> {
     let (xhtml_result, warnings) = doc.xhtml()?;
-    let css = style.css();
+    let css = style
+        .clone()
+        .add_css(include_str!("../assets/xhtml.css"))
+        .css();
     let css_combined = css.join("\n");
     let body = xhtml_result.xhtmls.join("\n<hr>\n");
 
     let result = include_str!("../assets/base.xhtml")
         .replace("［＃タイトル］", doc.meta.title)
         .replace("［＃スタイル］", &css_combined)
-        .replace("［＃本文］", &body);
+        .replace("［＃本文］", &body)
+        .replace(
+            "［＃スクリプト］",
+            if matches!(style.direction, WritingDirection::Vertical) {
+                include_str!("../assets/h_scroll.js")
+            } else {
+                ""
+            },
+        );
 
     Ok((result, warnings))
 }

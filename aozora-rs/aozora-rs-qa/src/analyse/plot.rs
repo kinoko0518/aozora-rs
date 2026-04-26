@@ -16,7 +16,7 @@ pub fn plot_result(
 ) -> Result<(), Box<dyn std::error::Error>> {
     std::fs::create_dir_all(RESULT_OUT_PATH)?;
 
-    let font_data = include_bytes!("../../NotoSansCJKjp-Regular.otf");
+    let font_data = include_bytes!("../../assets/NotoSansCJKjp-Regular.otf");
     let font =
         Font::try_from_bytes(font_data as &[u8]).ok_or("フォントの読み込みに失敗しました")?;
 

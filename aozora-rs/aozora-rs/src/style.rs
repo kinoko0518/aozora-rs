@@ -15,7 +15,8 @@ pub enum WritingDirection {
 /// ビルダーパターンを採用していますが、たいていの場合は[`Style::default`]で事足りると思います。
 #[derive(Debug, Clone)]
 pub struct Style<'s> {
-    direction: WritingDirection,
+    /// テキストの記述方向です。
+    pub direction: WritingDirection,
     use_prelude: bool,
     css: Vec<&'s str>,
     language: &'s str,
