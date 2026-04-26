@@ -17,6 +17,7 @@ sysinfo.workspace = true
 image.workspace = true
 imageproc.workspace = true
 rusttype.workspace = true
+const_format.workspace = true
 
 [[bin]]
 name = "qa"

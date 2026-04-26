@@ -1,8 +1,8 @@
-use crate::analyse::WorkAnalyse;
+use crate::{RESULT_OUT_PATH, analyse::WorkAnalyse};
 use image::{Pixel, Rgba, RgbaImage};
 use imageproc::drawing::{draw_line_segment_mut, draw_text_mut};
 use rusttype::{Font, Scale};
-use std::{collections::HashMap, path::Path};
+use std::collections::HashMap;
 
 pub enum XAxis {
     WordCount,
@@ -12,9 +12,10 @@ pub enum XAxis {
 
 pub fn plot_result(
     x_axis: &XAxis,
-    base_path: &Path,
     ok_results: &HashMap<&str, WorkAnalyse>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    std::fs::create_dir_all(RESULT_OUT_PATH)?;
+
     let font_data = include_bytes!("../../NotoSansCJKjp-Regular.otf");
     let font =
         Font::try_from_bytes(font_data as &[u8]).ok_or("フォントの読み込みに失敗しました")?;
@@ -158,15 +159,15 @@ pub fn plot_result(
         }
     }
 
-    let path = base_path.join("result").join(match x_axis {
-        XAxis::WordCount => "wordcount_vs_duration.png",
-        XAxis::DecoCount => "notecount_vs_duration.png",
-        XAxis::TokenCount => "tokencount_vs_duration.png",
-    });
-
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)?;
-    }
+    let path = format!(
+        "{}/{}",
+        RESULT_OUT_PATH,
+        match x_axis {
+            XAxis::WordCount => "wordcount_vs_duration.png",
+            XAxis::DecoCount => "notecount_vs_duration.png",
+            XAxis::TokenCount => "tokencount_vs_duration.png",
+        }
+    );
 
     image.save(&path)?;
 

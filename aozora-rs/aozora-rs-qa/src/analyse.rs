@@ -6,10 +6,10 @@ use std::{
     collections::HashMap,
     fs::File,
     io::Write,
-    path::Path,
     time::{Duration, Instant},
 };
 
+use const_format::concatcp;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::iter::{Either, ParallelIterator};
 use serde::Serialize;
@@ -18,7 +18,7 @@ pub use per_work::{WorkAnalyse, analyse_per_work};
 use sysinfo::{Disks, System};
 
 use crate::{
-    MapCache,
+    MapCache, RESULT_OUT_PATH,
     analyse::plot::{XAxis, plot_result},
 };
 
@@ -42,13 +42,13 @@ struct QASummary {
 }
 
 pub fn write_to_json(
-    manifest: &str,
     ok_results: &HashMap<&str, WorkAnalyse>,
     err_results: &HashMap<&str, String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    std::fs::create_dir_all(RESULT_OUT_PATH)?;
     // JSON出力
-    let mut succeed_log = File::create(format!("{}/result/succeed.json", manifest))?;
-    let mut failed_log = File::create(format!("{}/result/failed.json", manifest))?;
+    let mut succeed_log = File::create(concatcp!(RESULT_OUT_PATH, "/succeed.json"))?;
+    let mut failed_log = File::create(concatcp!(RESULT_OUT_PATH, "/failed.json"))?;
 
     write!(
         &mut succeed_log,
@@ -128,17 +128,13 @@ fn get_sysinfo() -> SysInfo {
     }
 }
 
-pub async fn analyse_works(
-    manifest: &str,
-    base_path: &Path,
-    path_map: &MapCache,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn analyse_works(path_map: &MapCache) -> Result<(), Box<dyn std::error::Error>> {
     let total_duration = Instant::now();
     let (ok_results, err_results): (HashMap<_, _>, HashMap<_, _>) = path_map
         .paths
         .par_iter()
         .map(|s| {
-            analyse_per_work(s, base_path)
+            analyse_per_work(s)
                 .map(|o| (s.as_str(), o))
                 .map_err(|e| (s.as_str(), e))
         })
@@ -146,11 +142,12 @@ pub async fn analyse_works(
             Ok(val) => Either::Left(val),
             Err((s, err)) => Either::Right((s, err.to_string())),
         });
+
     let total_elapsed = total_duration.elapsed();
 
     // JSONに結果を書き出し
     println!("JSONに解析を書き込み中です……");
-    write_to_json(manifest, &ok_results, &err_results)?;
+    write_to_json(&ok_results, &err_results)?;
 
     // プロット図を描画
     for x_axis in [XAxis::WordCount, XAxis::TokenCount, XAxis::DecoCount].iter() {
@@ -162,18 +159,24 @@ pub async fn analyse_works(
                 XAxis::TokenCount => "トークン数対処理時間のプロット図を作成中です……",
             }
         );
-        plot_result(x_axis, base_path, &ok_results)?;
+        plot_result(x_axis, &ok_results)?;
     }
 
     // サマリーを作成
     println!("サマリーを作成中……");
-    let mut summary_file = File::create(format!("{}/result/summary.json", manifest))?;
+    let mut summary_file = File::create(concatcp!(RESULT_OUT_PATH, "/summary.json"))?;
     let mut ok_results: Vec<_> = ok_results.into_iter().map(|(_, a)| a).collect();
 
     let get_ranking_top = |sort_by: Box<dyn FnMut(&WorkAnalyse, &WorkAnalyse) -> Ordering>,
                            ok_results: &mut Vec<_>| {
         ok_results.sort_by(sort_by);
-        std::array::from_fn(|i| ok_results[i].clone())
+        std::array::from_fn(|i| {
+            if i < ok_results.len() {
+                ok_results[i].clone()
+            } else {
+                WorkAnalyse::default()
+            }
+        })
     };
 
     let duration_top: [WorkAnalyse; RANKING_LEN] = get_ranking_top(
@@ -213,7 +216,7 @@ pub async fn analyse_works(
 
     // 実行環境の取得
     println!("実行環境を取得しています……");
-    let mut enviroment_file = File::create(format!("{}/result/enviroment.json", manifest))?;
+    let mut enviroment_file = File::create(concatcp!(RESULT_OUT_PATH, "/enviroment.json"))?;
     write!(
         &mut enviroment_file,
         "{}",

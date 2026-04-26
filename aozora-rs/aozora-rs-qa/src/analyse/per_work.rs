@@ -1,6 +1,5 @@
 use std::{
     fs::File,
-    path::Path,
     time::{Duration, Instant},
 };
 
@@ -16,7 +15,9 @@ use encoding_rs::SHIFT_JIS;
 use serde::Serialize;
 use winnow::LocatingSlice;
 
-#[derive(Debug, Serialize, Clone)]
+use crate::EPUB_OUT_PATH;
+
+#[derive(Debug, Serialize, Clone, Default)]
 pub struct WorkAnalyse {
     // 作品メタデータ
     pub title: String,
@@ -60,7 +61,7 @@ impl WorkAnalyse {
     }
 }
 
-pub fn analyse_per_work(s: &str, base_path: &Path) -> Result<WorkAnalyse, AozoraError> {
+pub fn analyse_per_work(s: &str) -> Result<WorkAnalyse, AozoraError> {
     let read_instant = Instant::now();
     let decode = |bytes: &[u8]| -> String {
         let (cow, _, _) = SHIFT_JIS.decode(bytes);
@@ -120,8 +121,7 @@ pub fn analyse_per_work(s: &str, base_path: &Path) -> Result<WorkAnalyse, Aozora
     let xhtmlnize_duration = xhtmlnize_instant.elapsed();
 
     let epub_instant = Instant::now();
-    let epub_base_path = base_path.join("epubs");
-    std::fs::create_dir_all(&epub_base_path).map_err(|e| e.into())?;
+    std::fs::create_dir_all(EPUB_OUT_PATH).map_err(|e| e.into())?;
     fn sanitize(original: &str) -> String {
         original
             .replace("\"", "")
@@ -135,11 +135,12 @@ pub fn analyse_per_work(s: &str, base_path: &Path) -> Result<WorkAnalyse, Aozora
             .replace("\n", " ")
     }
     from_aozora_zip(
-        File::create(epub_base_path.join(format!(
-            "[{}] {}.epub",
+        File::create(format!(
+            "{}/[{}] {}.epub",
+            EPUB_OUT_PATH,
             sanitize(&author_owned),
             sanitize(&title_owned)
-        )))
+        ))
         .map_err(|e| e.into())?,
         &Dependencies::default(),
         &xhtmlnized,

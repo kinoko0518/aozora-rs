@@ -214,7 +214,7 @@ Retokenize層では、受け取ったスコープと平坦トークンからHTML
 = 評価
 == 実験環境
 #{
-  let env = json("../../aozora-rs/aozora-rs-qa/result/enviroment.json")
+  let env = json("../../aozora-rs/aozora-rs-qa/out/result/enviroment.json")
 
   figure(
     caption: [実験に用いたコンピュータの性能],
@@ -238,7 +238,7 @@ Retokenize層では、受け取ったスコープと平坦トークンからHTML
 
 よって、合計処理時間はすべてのスレッドでの処理時間の計測結果を結合したもの、総合処理時間は解析開始から全量のEPUBへの変換と書き出しが終わるまでの時間を指すと区別する。
 
-#let qa_summary = json("../../aozora-rs/aozora-rs-qa/result/summary.json");
+#let qa_summary = json("../../aozora-rs/aozora-rs-qa/out/result/summary.json");
 #let total_megabyte = qa_summary.total_bytes / 1024 / 1024
 #{
   figure(
@@ -264,17 +264,17 @@ Retokenize層では、受け取ったスコープと平坦トークンからHTML
 
 #figure(
   caption: [文字数に対する処理時間のスケール],
-  image("../../aozora-rs/aozora-rs-qa/result/wordcount_vs_duration.png"),
+  image("../../aozora-rs/aozora-rs-qa/out/result/wordcount_vs_duration.png"),
 )
 
 #figure(
   caption: [トークン数に対する処理時間のスケール],
-  image("../../aozora-rs/aozora-rs-qa/result/tokencount_vs_duration.png"),
+  image("../../aozora-rs/aozora-rs-qa/out/result/tokencount_vs_duration.png"),
 )
 
 #figure(
   caption: [装飾数に対する処理時間のスケール],
-  image("../../aozora-rs/aozora-rs-qa/result/notecount_vs_duration.png"),
+  image("../../aozora-rs/aozora-rs-qa/out/result/notecount_vs_duration.png"),
 )
 
 = 考察

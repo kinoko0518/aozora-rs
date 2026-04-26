@@ -1,0 +1,140 @@
+# Harano Aji Fonts ver. 20250811
+
+https://github.com/trueroad/HaranoAjiFonts
+
+Harano Aji Fonts (Harano Aji Mincho and Harano Aji Gothic)
+are fonts obtained by replacing Adobe-Identity-0 (AI0) CIDs
+of Source Han fonts (Source Han Serif and Source Han Sans)
+with Adobe-Japan1 (AJ1) CIDs.
+
+There are 14 fonts, 7 weights each for Mincho and Gothic.
+
+* Harano Aji Mincho (based on Source Han Serif)
+    + HaranoAjiMincho-ExtraLight
+    + HaranoAjiMincho-Light
+    + HaranoAjiMincho-Regular
+    + HaranoAjiMincho-Medium
+    + HaranoAjiMincho-SemiBold
+    + HaranoAjiMincho-Bold
+    + HaranoAjiMincho-Heavy
+* Harano Aji Gothic (based on Source Han Sans)
+    + HaranoAjiGothic-ExtraLight
+    + HaranoAjiGothic-Light
+    + HaranoAjiGothic-Normal
+    + HaranoAjiGothic-Regular
+    + HaranoAjiGothic-Medium
+    + HaranoAjiGothic-Bold
+    + HaranoAjiGothic-Heavy
+
+# Packages
+
+There are 2 packages.
+
+* haranoaji package
+    + HaranoAjiMincho-Light
+    + HaranoAjiMincho-Regular
+    + HaranoAjiMincho-Bold
+    + HaranoAjiGothic-Regular
+    + HaranoAjiGothic-Medium
+    + HaranoAjiGothic-Bold
+    + HaranoAjiGothic-Heavy
+* haranoaji-extra package
+    + HaranoAjiMincho-ExtraLight
+    + HaranoAjiMincho-Medium
+    + HaranoAjiMincho-SemiBold
+    + HaranoAjiMincho-Heavy
+    + HaranoAjiGothic-ExtraLight
+    + HaranoAjiGothic-Light
+    + HaranoAjiGothic-Normal
+
+haranoaji package contains the major 7 fonts used in the preset settings
+in the following packages.
+haranoaji-extra package contains the remaining 7 fonts.
+
+* The packages
+    + https://www.ctan.org/pkg/ptex-fontmaps
+    + https://www.ctan.org/pkg/luatexja
+    + https://www.ctan.org/pkg/zxjafont
+    + https://www.ctan.org/pkg/pxchfon
+
+# Examples
+
+## LuaLaTeX
+
+luatexja package ver. 20191117.0 or above is required.
+
+### Single weight
+
+```
+\documentclass{ltjsarticle}
+\usepackage[haranoaji,nfssonly]{luatexja-preset}
+
+\begin{document}
+
+\section{吾輩は猫である}
+吾輩は猫である。名前はまだ無い。
+
+\end{document}
+```
+
+### Multi weight
+
+```
+\documentclass{ltjsarticle}
+\usepackage[haranoaji,deluxe,match,nfssonly]{luatexja-preset}
+
+\begin{document}
+
+\section{吾輩は\textbf{猫}である}
+吾輩は\textbf{猫}である。名前はまだ\textbf{無い}。
+
+\end{document}
+```
+
+## XeLaTeX
+
+zxjafont package ver. 0.6 or above is required.
+
+### Single weight
+
+```
+\documentclass{article}
+\usepackage[haranoaji,,oneweight]{zxjafont}
+
+\begin{document}
+
+\section{吾輩は猫である}
+吾輩は猫である。名前はまだ無い。
+
+\end{document}
+```
+
+### Multi weight
+
+```
+\documentclass{article}
+\usepackage[haranoaji]{zxjafont}
+
+\begin{document}
+
+\section{\sffamily\mdseries 吾輩は\textbf{猫}である}
+吾輩は\textbf{猫}である。名前はまだ\textbf{無い}。
+
+\end{document}
+```
+
+# LICENSE
+
+Copyright (C) 2019-2025
+Masamichi Hosoda, with Reserved Font Name 'Harano Aji'.
+
+Copyright 2014-2025 Adobe (http://www.adobe.com/),
+with Reserved Font Name 'Source'.
+
+Copyright 2017-2024 Adobe (http://www.adobe.com/),
+with Reserved Font Name 'Source'.
+
+Source is a trademark of Adobe in the United States and/or other countries.
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+See LICENSE.

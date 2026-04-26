@@ -1,22 +1,24 @@
-use std::{
-    path::{Path, PathBuf},
-    process::Command,
-};
+use std::path::Path;
+use std::process::Command;
 
 use crate::REPOSITORY;
 
-pub fn sync_repository(base_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
-    let target: PathBuf = base_path.join(REPOSITORY);
-
+pub fn sync_repository(repo_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let repo = Path::new(repo_path);
     let mut git = Command::new("git");
-    let update_aozora = if !std::fs::exists(&target)? {
+    let update_aozora = if !repo.exists() {
+        let parent = repo
+            .parent()
+            .ok_or("リポジトリパスの親ディレクトリが取得できません")?;
+        std::fs::create_dir_all(parent)?;
         git.arg("clone")
             .arg("--depth")
             .arg("1")
             .arg(format!("https://github.com/aozorahack/{}.git", REPOSITORY))
-            .current_dir(base_path)
+            .arg(repo_path)
+            .current_dir(parent)
     } else {
-        git.current_dir(&target)
+        git.current_dir(repo_path)
             .arg("pull")
             .arg("origin")
             .arg("master")

@@ -2,11 +2,19 @@ mod analyse;
 mod map_cache;
 mod sync;
 
-pub const REPOSITORY: &str = "aozorabunko_text";
+pub const MANIFEST: &'static str = env!("CARGO_MANIFEST_DIR");
+pub const REPOSITORY: &'static str = "aozorabunko_text";
 
-use std::path::PathBuf;
+pub const AOZORABUNKO_TEXT_PATH: &str = concatcp!(MANIFEST, "/assets/", REPOSITORY);
+pub const EPUB_OUT_PATH: &str = concatcp!(MANIFEST, "/out/epubs");
+pub const RESULT_OUT_PATH: &str = concatcp!(MANIFEST, "/out/result");
+
+pub const CACHE_BIN_PATH: &str = concatcp!(MANIFEST, "/cache.bin");
+
+use const_format::concatcp;
+
+use std::time::Duration;
 use std::time::Instant;
-use std::{time::Duration};
 
 pub use map_cache::{MapCache, update_map};
 pub use sync::sync_repository;
@@ -21,13 +29,9 @@ pub struct AnalysedSummary {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let manifest = env!("CARGO_MANIFEST_DIR");
-    let base_path = PathBuf::from(manifest);
-    let az_base_path = PathBuf::from(format!("{}/{}", manifest, REPOSITORY));
-
     println!("aozora.rs品質保証プログラムへようこそ！");
     println!("最新の青空文庫へ同期しています……");
-    if let Err(e) = sync::sync_repository(&base_path) {
+    if let Err(e) = sync::sync_repository(AOZORABUNKO_TEXT_PATH) {
         println!(
             "青空文庫へのアクセスに失敗しました。スキップして続行します……\n\t{}",
             e
@@ -35,11 +39,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     println!("マップを更新しています……");
-    let map = map_cache::update_map(&base_path, &az_base_path)?;
+    let map = map_cache::update_map(CACHE_BIN_PATH, AOZORABUNKO_TEXT_PATH)?;
 
     let analyse_duration = Instant::now();
     println!("解析を実行中です……");
-    analyse_works(manifest, &base_path, &map).await?;
+    analyse_works(&map).await?;
     println!("解析が終了しました！（{:?}）", analyse_duration.elapsed());
 
     println!("すべて終了しました！");

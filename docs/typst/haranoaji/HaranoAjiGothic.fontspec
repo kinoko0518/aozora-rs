@@ -1,0 +1,8 @@
+\defaultfontfeatures[HaranoAjiGothic]
+  {
+    Extension = .otf,
+    UprightFont = *-Regular,
+    BoldFont = *-Bold,
+    FontFace = {l}{\shapedefault}{ *-Regular },
+    FontFace = {eb}{\shapedefault}{ *-Heavy }
+  }
