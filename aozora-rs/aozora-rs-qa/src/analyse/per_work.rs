@@ -120,7 +120,7 @@ pub fn analyse_per_work(s: &str, base_path: &Path) -> Result<WorkAnalyse, Aozora
     let xhtmlnize_duration = xhtmlnize_instant.elapsed();
 
     let epub_instant = Instant::now();
-    let epub_base_path = base_path.join("result/epubs");
+    let epub_base_path = base_path.join("epubs");
     std::fs::create_dir_all(&epub_base_path).map_err(|e| e.into())?;
     fn sanitize(original: &str) -> String {
         original
