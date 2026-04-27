@@ -6,7 +6,7 @@ use crate::nihongo::japanese_num;
 use crate::tokenizer::{definition::*, note::SandwichedBegin};
 use crate::*;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SandwichedBegins {
     BoldBegin,
     ItalicBegin,
@@ -64,7 +64,7 @@ impl SandwichedBegin<SandwichedEnds> for SandwichedBegins {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SandwichedEnds {
     BoldEnd,
     ItalicEnd,
@@ -81,7 +81,7 @@ pub enum SandwichedEnds {
 }
 
 /// 開始タグと終了タグの直和です。
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Sandwiched {
     /// 開始タグ
     Begin(SandwichedBegins),

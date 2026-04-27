@@ -3,7 +3,7 @@ use crate::*;
 use winnow::{Parser, combinator::alt};
 
 /// トークンの種類、およびその固有情報構造の直和です。
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AozoraTokenKind<'s> {
     /// 注記（［＃……］）に対応します。
     Note(Note<'s>),

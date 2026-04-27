@@ -18,7 +18,7 @@ pub mod single;
 pub mod wholeline;
 
 #[doc = include_str!("../../docs/note/note.md")]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Note<'s> {
     #[doc = "../../docs/note/backref.md"]
     BackRef(BackRef<'s>),

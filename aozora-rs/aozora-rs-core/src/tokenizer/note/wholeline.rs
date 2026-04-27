@@ -10,7 +10,7 @@ use crate::{nihongo::japanese_num, *};
 /// 行頭型注記の直和です。
 ///
 /// 行の頭に置き、行末まで影響を及ぼす注記が分類されます。
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WholeLine {
     /// 「N字下げ」に対応
     Indent(usize),
@@ -30,6 +30,12 @@ impl Into<Deco<'static>> for WholeLine {
             Self::LowFlying(n) => Deco::LowFlying(n),
             Self::VHCentre => Deco::VHCentre,
         }
+    }
+}
+
+impl Into<AozoraTokenKind<'static>> for WholeLine {
+    fn into(self) -> AozoraTokenKind<'static> {
+        AozoraTokenKind::Note(Note::WholeLine(self))
     }
 }
 

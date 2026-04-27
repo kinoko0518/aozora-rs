@@ -2,8 +2,10 @@
 
 use std::borrow::Cow;
 
+use crate::{AozoraTokenKind, Note, Single};
+
 /// 段落（HTMLで云うところの<p>などのブロック要素）に対する字下げを表現する型です。
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BlockIndent {
     /// N字下げのNに対応します。
     pub level: usize,
@@ -168,7 +170,7 @@ impl std::fmt::Display for Deco<'_> {
 /// 青空文庫書式形式で挿入される図表の意味を純化したものです。
 ///
 /// aozora-rs-coreの時点ではIO操作を行わず、パス、キャプション、サイズ指定の情報のみを保持しています。
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Figure<'s> {
     /// 指定された画像のパスを表します。
     ///
@@ -195,5 +197,11 @@ impl std::fmt::Display for Figure<'_> {
                 "".to_string()
             }
         )
+    }
+}
+
+impl<'s> Into<AozoraTokenKind<'s>> for Figure<'s> {
+    fn into(self) -> AozoraTokenKind<'s> {
+        AozoraTokenKind::Note(Note::Single(Single::Figure(self)))
     }
 }

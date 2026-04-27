@@ -3,6 +3,8 @@
 mod definition;
 mod note;
 mod parser;
+#[cfg(test)]
+mod test;
 
 pub use definition::{AozoraTokenKind, Tokenized};
 pub use note::{

@@ -12,28 +12,25 @@ use crate::{
     tokenizer::note::{Input, SandwichedBegin},
 };
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct HangingIndent {
     fst_lvl: usize,
     snd_lvl: usize,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct Grounded;
-
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LowFlying {
     level: usize,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MultiLineBegins {
     /// ここからN字下げに対応
     BlockIndent(BlockIndent),
     /// ここからN字下げ、折り返してM字下げに対応
     HangingIndent(HangingIndent),
     /// ここから地付きに対応
-    Grounded(Grounded),
+    Grounded,
     /// ここから地からN字上げ
     LowFlying(LowFlying),
     /// ここからN段階小さな文字
@@ -48,7 +45,7 @@ impl SandwichedBegin<MultiLineEnds> for MultiLineBegins {
     fn do_match(&self, rhs: &MultiLineEnds) -> bool {
         match self {
             Self::BlockIndent(_) => matches!(rhs, MultiLineEnds::BlockIndentEnd),
-            Self::Grounded(_) => matches!(rhs, MultiLineEnds::GroundedEnd),
+            Self::Grounded => matches!(rhs, MultiLineEnds::GroundedEnd),
             Self::HangingIndent(_) => matches!(rhs, MultiLineEnds::BlockIndentEnd),
             Self::LowFlying(_) => matches!(rhs, MultiLineEnds::LowFlyingEnd),
             Self::Smaller(_) => matches!(rhs, MultiLineEnds::SmallEnd),
@@ -63,7 +60,7 @@ impl MultiLineBegins {
         match self {
             Self::BlockIndent(b) => Deco::Indent(b.level),
             Self::HangingIndent(h) => Deco::Hanging((h.fst_lvl, h.snd_lvl)),
-            Self::Grounded(_) => Deco::Grounded,
+            Self::Grounded => Deco::Grounded,
             Self::LowFlying(l) => Deco::LowFlying(l.level),
             Self::Smaller(s) => Deco::Smaller(s),
             Self::Bigger(b) => Deco::Bigger(b),
@@ -72,7 +69,7 @@ impl MultiLineBegins {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MultiLineEnds {
     BlockIndentEnd,
     GroundedEnd,
@@ -90,7 +87,7 @@ pub enum MultiLineEnds {
 /// ……
 /// ［＃ここまで……］
 /// ```
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MultiLine {
     /// 一部例外と［＃ここから……］のパターンで記述される複数行挟み込み型の開始注記です。
     Begin(MultiLineBegins),
@@ -118,9 +115,7 @@ fn block_indent_begins(input: &mut Input) -> Result<MultiLineBegins, WinnowError
 }
 
 fn chitsuki_begins(input: &mut Input) -> Result<MultiLineBegins, WinnowError> {
-    "地付き"
-        .value(MultiLineBegins::Grounded(Grounded))
-        .parse_next(input)
+    "地付き".value(MultiLineBegins::Grounded).parse_next(input)
 }
 
 fn chiyose<'s>(input: &mut Input<'s>) -> Result<usize, WinnowError> {

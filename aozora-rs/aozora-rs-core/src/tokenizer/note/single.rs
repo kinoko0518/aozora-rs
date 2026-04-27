@@ -11,7 +11,7 @@ use crate::{nihongo::japanese_num, *};
 /// 注記分類のうちの1つ、単一表現型注記の直和です。
 ///
 /// それ単体で完結して表示できる注記が分類されます。
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Single<'s> {
     /// 「改ページ」に対応
     PageBreak,

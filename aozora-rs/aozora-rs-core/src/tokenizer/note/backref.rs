@@ -8,13 +8,13 @@ use winnow::{
 
 use crate::{nihongo::japanese_num, tokenizer::definition::*, *};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BackRefSpec<'s>(pub &'s str);
 
 /// 前方参照型注記の直和です。
 ///
 /// ［＃「……」は……］というように、直接影響範囲を記述する形式に対応します。
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BackRefKind<'s> {
     /// 太字
     Bold,
@@ -48,10 +48,16 @@ pub enum BackRefKind<'s> {
     Sup,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BackRef<'s> {
     pub kind: BackRefKind<'s>,
     pub range: BackRefSpec<'s>,
+}
+
+impl<'s> Into<AozoraTokenKind<'s>> for BackRef<'s> {
+    fn into(self) -> AozoraTokenKind<'s> {
+        AozoraTokenKind::Note(Note::BackRef(self))
+    }
 }
 
 pub fn backref<'s>(input: &mut Input<'s>) -> Result<BackRef<'s>, WinnowError> {
