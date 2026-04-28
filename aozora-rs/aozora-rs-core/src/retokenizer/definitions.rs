@@ -1,7 +1,7 @@
 use crate::{scopenizer::Break, *};
 
 /// 開始タグ・要素・終了タグで構成される、HTMLライクな中間表現です。
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Retokenized<'s> {
     /// 切り出したテキストに対応します。
     Text(&'s str),

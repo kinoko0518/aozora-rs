@@ -27,7 +27,7 @@ pub struct Scope<'s> {
 }
 
 /// 改行、改ページなどの直和です。
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Break {
     /// 改行に対応
     BreakLine,
