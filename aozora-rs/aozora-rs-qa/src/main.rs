@@ -19,7 +19,7 @@ use std::time::Instant;
 pub use map_cache::{MapCache, update_map};
 pub use sync::sync_repository;
 
-use crate::analyse::analyse_works;
+use crate::analyse::analyse_all_works;
 
 pub struct AnalysedSummary {
     pub success: usize,
@@ -42,9 +42,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let map = map_cache::update_map(CACHE_BIN_PATH, AOZORABUNKO_TEXT_PATH)?;
 
     let analyse_duration = Instant::now();
-    println!("解析を実行中です……");
-    analyse_works(&map).await?;
-    println!("解析が終了しました！（{:?}）", analyse_duration.elapsed());
+    println!("全量解析を実行中です……");
+    analyse_all_works(&map).await?;
+    println!(
+        "全量解析が終了しました！（{:?}）",
+        analyse_duration.elapsed()
+    );
 
     println!("すべて終了しました！");
 

@@ -182,6 +182,7 @@ name = "aozora-rs-qa"
 version = "0.1.0"
 dependencies = [
  "aozora-rs",
+ "colored",
  "const_format",
  "encoding_rs",
  "image 0.24.9",

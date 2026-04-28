@@ -4,6 +4,7 @@
 
 #show: document => prelude.prelude(document)
 
+#let crime_and_punishment = json("../../aozora-rs/aozora-rs-qa/out/result/remarkable.json").罪と罰
 #doorpage.doorpage(
   [Rustを用いた高速青空文庫書式パーサーの開発],
   (
@@ -12,7 +13,7 @@
   ),
   [
     既存のパーサーはインタプリタ言語やVMを必要とする言語で書かれていたり、一つのアプリケーションとして閉じているなどライブラリとしての利用に適さないものが多かった。
-    そこで、コンパイル言語であるRustを用いて独自の三層構造からなる青空文庫書式パーサーを構築した結果、ドストエフスキー著『罪と罰』を16.1ミリ秒で中間表現へ変換することができた。
+    そこで、コンパイル言語であるRustを用いて独自の三層構造からなる青空文庫書式パーサーを構築した結果、ドストエフスキー著『罪と罰』を#sign-digits(rustmd(crime_and_punishment.total_pure), 2);ミリ秒で中間表現へ変換することができた。
   ],
   ([青空文庫], [パーサー], [ゼロコピー設計]),
 )

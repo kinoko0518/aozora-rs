@@ -1,5 +1,6 @@
 mod per_work;
 mod plot;
+mod sysinfo;
 
 use std::{
     cmp::Ordering,
@@ -15,11 +16,13 @@ use rayon::iter::{Either, ParallelIterator};
 use serde::Serialize;
 
 pub use per_work::{WorkAnalyse, analyse_per_work};
-use sysinfo::{Disks, System};
 
 use crate::{
     MapCache, RESULT_OUT_PATH,
-    analyse::plot::{XAxis, plot_result},
+    analyse::{
+        plot::{XAxis, plot_result},
+        sysinfo::get_sysinfo,
+    },
 };
 
 const RANKING_LEN: usize = 10;
@@ -64,71 +67,7 @@ pub fn write_to_json(
     Ok(())
 }
 
-#[derive(Serialize)]
-struct SysInfo {
-    os_name: String,
-    os_version: String,
-    kernel: String,
-    architecture: String,
-
-    cpu_name: String,
-    memory_size: u64,
-    disk_info: Vec<(u64, String, String)>,
-
-    rustc_version: String,
-}
-
-fn get_sysinfo() -> SysInfo {
-    let mut sys = System::new_all();
-    sys.refresh_all();
-
-    // OS情報
-    let os_name = System::name().unwrap_or_else(|| "Unknown".to_string());
-    let os_version = System::os_version().unwrap_or_else(|| "Unknown".to_string());
-    let kernel = System::kernel_version().unwrap_or_else(|| "Unknown".to_string());
-    let architecture = System::cpu_arch();
-
-    // CPU情報
-    let cpus = sys.cpus();
-    let cpu_name = if let Some(cpu) = cpus.first() {
-        cpu.brand()
-    } else {
-        "None"
-    }
-    .to_string();
-
-    // メモリ情報
-    let memory_size = sys.total_memory();
-
-    // ドライブ情報
-    let disks = Disks::new_with_refreshed_list();
-    let disk_info: Vec<_> = disks
-        .list()
-        .iter()
-        .map(|disk| {
-            let size_gb = disk.total_space();
-            let mount_point = disk.mount_point().to_string_lossy().to_string();
-            let fs_type = disk.file_system().to_string_lossy().to_string();
-
-            (size_gb, mount_point, fs_type)
-        })
-        .collect();
-
-    let rustc_version = env!("RUSTC_VERSION").to_string();
-
-    SysInfo {
-        os_name,
-        os_version,
-        kernel,
-        architecture,
-        cpu_name,
-        memory_size,
-        disk_info,
-        rustc_version,
-    }
-}
-
-pub async fn analyse_works(path_map: &MapCache) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn analyse_all_works(path_map: &MapCache) -> Result<(), Box<dyn std::error::Error>> {
     let total_duration = Instant::now();
     let (ok_results, err_results): (HashMap<_, _>, HashMap<_, _>) = path_map
         .paths
@@ -148,6 +87,20 @@ pub async fn analyse_works(path_map: &MapCache) -> Result<(), Box<dyn std::error
     // JSONに結果を書き出し
     println!("JSONに解析を書き込み中です……");
     write_to_json(&ok_results, &err_results)?;
+
+    // 例をJSONに書き出し
+    let remarkables: HashMap<&str, &WorkAnalyse> = ok_results
+        .iter()
+        .filter(|(_, v)| ["罪と罰", "春と修羅", "桜桃"].contains(&v.title.as_str()))
+        .map(|(_, v)| (v.title.as_str(), v))
+        .collect();
+
+    let mut remarkables_json = File::create(concatcp!(RESULT_OUT_PATH, "/remarkable.json"))?;
+    writeln!(
+        &mut remarkables_json,
+        "{}",
+        serde_json::to_string_pretty(&remarkables)?
+    )?;
 
     // プロット図を描画
     for x_axis in [XAxis::WordCount, XAxis::TokenCount, XAxis::DecoCount].iter() {
@@ -180,11 +133,11 @@ pub async fn analyse_works(path_map: &MapCache) -> Result<(), Box<dyn std::error
     };
 
     let duration_top: [WorkAnalyse; RANKING_LEN] = get_ranking_top(
-        Box::new(|a, b| a.total_parsetime().cmp(&b.total_parsetime()).reverse()),
+        Box::new(|a, b| a.total_parsetime.cmp(&b.total_parsetime).reverse()),
         &mut ok_results,
     );
 
-    let total_duration: Duration = ok_results.iter().map(|o| o.total_parsetime()).sum();
+    let total_duration: Duration = ok_results.iter().map(|o| o.total_parsetime).sum();
 
     let total_bytes: usize = ok_results.iter().map(|o| o.byte_count).sum();
     let total_wordcount: usize = ok_results.iter().map(|o| o.word_count).sum();

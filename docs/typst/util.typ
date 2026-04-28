@@ -34,3 +34,7 @@
 #let rustd((secs, nanos)) = {
   secs + nanos * 1e-9
 }
+
+#let rustmd((secs, nanos)) = {
+  rustd((secs, nanos)) * 1000
+}

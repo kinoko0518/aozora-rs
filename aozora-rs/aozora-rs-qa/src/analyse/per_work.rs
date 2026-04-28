@@ -42,23 +42,8 @@ pub struct WorkAnalyse {
     pub retokenize: Duration,
     pub xhtml_gen: Duration,
     pub epub_gen: Duration,
-}
-
-impl WorkAnalyse {
-    pub fn pure_parsetime(&self) -> Duration {
-        self.gaiji_convert + self.get_meta + self.tokenize + self.scopenize + self.retokenize
-    }
-
-    pub fn total_parsetime(&self) -> Duration {
-        self.read
-            + self.gaiji_convert
-            + self.get_meta
-            + self.tokenize
-            + self.scopenize
-            + self.retokenize
-            + self.xhtml_gen
-            + self.epub_gen
-    }
+    pub total_parsetime: Duration,
+    pub total_pure: Duration,
 }
 
 pub fn analyse_per_work(s: &str) -> Result<WorkAnalyse, AozoraError> {
@@ -183,5 +168,15 @@ pub fn analyse_per_work(s: &str) -> Result<WorkAnalyse, AozoraError> {
         retokenize: retokenized_duration,
         xhtml_gen: xhtmlnize_duration,
         epub_gen: epub_duration,
+
+        total_parsetime: read_duration
+            + gaiji_duration
+            + meta_duration
+            + tokenize_duration
+            + scopenized_duration
+            + retokenized_duration
+            + xhtmlnize_duration
+            + epub_duration,
+        total_pure: meta_duration + tokenize_duration + scopenized_duration + retokenized_duration,
     })
 }

@@ -127,7 +127,7 @@ pub fn plot_result(
             XAxis::DecoCount => ok.deco_count as f32,
             XAxis::TokenCount => ok.token_count as f32,
         };
-        let y_val = ok.pure_parsetime().as_secs_f32();
+        let y_val = ok.total_pure.as_secs_f32();
 
         if x_val > max_x || y_val > max_y {
             continue;
