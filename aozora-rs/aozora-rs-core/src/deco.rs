@@ -88,7 +88,7 @@ impl std::fmt::Display for BosenKind {
 }
 
 /// 青空文庫書式で扱われる装飾のEnumです。
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub enum Deco<'s> {
     #[default]
     /// 太字に対応します。

@@ -91,7 +91,7 @@ pub fn scopenize<'s>(
                             azc.acc_err(ScopenizeError::IsolatedEndNote(token.span.clone()).into());
                         }
                         while let Some((kind, span)) = stack.pop() {
-                            let range = span.end..token.span.start;
+                            let range = (span.end + 1)..(token.span.start - 1);
                             if kind.do_match(&e) {
                                 scopes.push(range, kind.into_deco());
                             } else {

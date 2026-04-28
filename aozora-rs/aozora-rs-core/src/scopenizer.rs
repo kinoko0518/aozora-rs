@@ -5,6 +5,8 @@ mod conversion;
 mod definition;
 mod error;
 mod parser;
+#[cfg(test)]
+mod test;
 
 pub use crate::scopenizer::definition::*;
 pub use crate::scopenizer::error::ScopenizeError;

@@ -18,7 +18,7 @@ impl<'s> ScopeAccumulator<'s> {
 }
 
 /// 装飾と装飾がかかる範囲を表す構造体です。
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Scope<'s> {
     /// 装飾の種類、およびその固有情報を格納します。
     pub deco: Deco<'s>,

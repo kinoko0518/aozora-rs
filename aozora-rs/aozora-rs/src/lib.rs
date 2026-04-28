@@ -138,7 +138,7 @@ impl<'s> AozoraDocument<'s> {
     /// use aozora_rs::AozoraDocument;
     ///
     /// let azz = AozoraZip::read_from_zip(
-    ///     Cursor::new(include_bytes!("../../example/anausa_peterno_hanasi.zip")),
+    ///     Cursor::new(include_bytes!("../example/anausa_peterno_hanasi.zip")),
     ///     &Encoding::ShiftJIS
     /// ).unwrap();
     /// AozoraDocument::from_zip(&azz).unwrap();

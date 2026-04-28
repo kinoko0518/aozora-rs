@@ -175,7 +175,7 @@ fn multiline_ends<'s>(input: &mut Input<'s>) -> Result<MultiLineEnds, WinnowErro
             "大きな文字".value(MultiLineEnds::BigEnd),
             "字詰め".value(MultiLineEnds::Kerning),
         )),
-        alt(("終わり", "おわり")),
+        alt(("終わり", "おわり", "終り")),
     )
     .parse_next(input)
 }
