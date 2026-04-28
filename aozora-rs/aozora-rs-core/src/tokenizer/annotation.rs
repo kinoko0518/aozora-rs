@@ -1,12 +1,13 @@
 use winnow::{Parser, combinator::alt};
 
-use crate::tokenizer::annotation::backref::BackRef;
-use crate::tokenizer::annotation::backref::backref;
-use crate::tokenizer::annotation::multiline::multiline;
-use crate::tokenizer::annotation::sandwiched::sandwiched;
-use crate::tokenizer::annotation::single::single;
-use crate::tokenizer::annotation::wholeline::{WholeLine, wholeline};
-use crate::tokenizer::*;
+use crate::tokenizer::annotation::{
+    backref::{BackRef, backref},
+    multiline::multiline,
+    pagedef::pagedef,
+    sandwiched::sandwiched,
+    single::single,
+    wholeline::{WholeLine, wholeline},
+};
 use crate::*;
 
 pub mod backref;
@@ -14,6 +15,7 @@ pub mod backref;
 pub mod multiline;
 #[macro_use]
 pub mod sandwiched;
+pub mod pagedef;
 pub mod single;
 pub mod wholeline;
 
@@ -30,6 +32,8 @@ pub enum Annotation<'s> {
     Single(Single<'s>),
     #[doc = "../../docs/note/wholeline.md"]
     WholeLine(WholeLine),
+    /// ページ全体を定義する注記が分類されます。
+    PageDef(PageDef),
     /// いずれのパターンにもマッチしなかった注記が分類されます。
     Unknown(&'s str),
 }
@@ -50,6 +54,7 @@ pub fn command<'s>(input: &mut Input<'s>) -> RNote<'s> {
         multiline.map(Annotation::Multiline),
         wholeline.map(Annotation::WholeLine),
         single.map(Annotation::Single),
+        pagedef.map(Annotation::PageDef),
     ))
     .parse_next(input)
 }

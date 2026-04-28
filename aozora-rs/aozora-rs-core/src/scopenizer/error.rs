@@ -1,7 +1,7 @@
 use crate::*;
 
 /// [`scopenize`]の過程で発生するエラーの直和です。
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ScopenizeError {
     /// 行内挟み込み型の注記が閉じられなかったときに発生するエラーです。
     UnclosedInlineNote(Span),

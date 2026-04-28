@@ -24,7 +24,7 @@ pub fn to_browser_xhtml(
         .add_css(include_str!("../assets/xhtml.css"))
         .css();
     let css_combined = css.join("\n");
-    let body = xhtml_result.xhtmls.join("\n<hr>\n");
+    let body = xhtml_result.xhtmls.join("\n");
 
     let result = include_str!("../assets/base.xhtml")
         .replace("［＃タイトル］", doc.meta.title)

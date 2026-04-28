@@ -98,7 +98,7 @@ pub fn analyse_per_work(s: &str) -> Result<WorkAnalyse, AozoraError> {
     let scopenized_duration = scopenize_instant.elapsed();
 
     let retokenize_instant = Instant::now();
-    let (retokenized, retokenize_errors) = retokenize(flat, deco).into_tuple();
+    let (retokenized, retokenize_errors) = retokenize(flat, deco);
     let retokenized_duration = retokenize_instant.elapsed();
 
     let xhtmlnize_instant = Instant::now();

@@ -1,20 +1,20 @@
 use crate::{
     nihongo::is_kanji,
-    scopenizer::definition::{Break, FlatToken, Scope},
+    scopenizer::definition::{Element, PageBreak, Scope},
     tokenizer::*,
     *,
 };
 
-impl<'s> Into<FlatToken<'s>> for Single<'s> {
-    fn into(self) -> FlatToken<'s> {
+impl<'s> Into<Expression<'s>> for Single<'s> {
+    fn into(self) -> Expression<'s> {
         match self {
-            Self::ColumnBreak => FlatToken::Break(Break::ColumnBreak),
-            Self::PageBreak => FlatToken::Break(Break::PageBreak),
-            Self::RectoBreak => FlatToken::Break(Break::RectoBreak),
-            Self::SpreadBreak => FlatToken::Break(Break::SpreadBreak),
-            Self::Kundoku(k) => FlatToken::Kunten(k),
-            Self::Okurigana(o) => FlatToken::Okurigana(o),
-            Self::Figure(i) => FlatToken::Figure(i),
+            Self::ColumnBreak => Expression::PageBreak(PageBreak::ColumnBreak),
+            Self::PageBreak => Expression::PageBreak(PageBreak::PageBreak),
+            Self::RectoBreak => Expression::PageBreak(PageBreak::RectoBreak),
+            Self::SpreadBreak => Expression::PageBreak(PageBreak::SpreadBreak),
+            Self::Kundoku(k) => Expression::Element(Element::Kunten(k)),
+            Self::Okurigana(o) => Expression::Element(Element::Okurigana(o)),
+            Self::Figure(i) => Expression::Element(Element::Figure(i)),
         }
     }
 }
@@ -30,20 +30,24 @@ pub fn backref_to_scope<'s>(
     target: (&str, Span),
 ) -> BackRefResult<'s> {
     match backref_maybe {
-        AozoraTokenKind::Ruby(ruby) => BackRefResult::ScopeConfirmed(Scope {
-            deco: Deco::Ruby(ruby),
-            span: {
-                // 漢字であり続けるバイト数を取得
-                let length: usize = target
-                    .0
-                    .chars()
-                    .rev()
-                    .take_while(|c| is_kanji(*c))
-                    .map(|c| c.len_utf8())
-                    .sum();
-                (target.1.end - length)..(target.1.end)
-            },
-        }),
+        AozoraTokenKind::Ruby(ruby) => {
+            // 漢字、またはアルファベットであり続けるバイト数を取得
+            let length: usize = target
+                .0
+                .chars()
+                .rev()
+                .take_while(|c| is_kanji(*c) || c.is_ascii_alphabetic())
+                .map(|c| c.len_utf8())
+                .sum();
+            if length > 0 {
+                BackRefResult::ScopeConfirmed(Scope {
+                    deco: Deco::Ruby(ruby),
+                    span: (target.1.end - length)..(target.1.end),
+                })
+            } else {
+                BackRefResult::BackRefFailed
+            }
+        }
         AozoraTokenKind::Annotation(c) => {
             if let Annotation::BackRef(b) = c {
                 match match b.kind {

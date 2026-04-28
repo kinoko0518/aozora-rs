@@ -4,9 +4,9 @@ use crate::{BotenKind, Deco, Scope, ScopenizeError, scopenize, tokenize};
 
 fn easy_scopenize<'s>(input: &'s str) -> (Scope<'s>, Vec<ScopenizeError>) {
     let tokenized = tokenize(&mut LocatingSlice::new(input)).unwrap();
-    let ((scopenized, _), err) = scopenize(tokenized).into_tuple();
-    let (_, scope) = scopenized.0.into_iter().next().unwrap();
-    (scope.into_iter().next().unwrap(), err)
+    let ((mut scopenized, _), err) = scopenize(tokenized).into_tuple();
+    let scope = scopenized.pop().unwrap();
+    (scope, err)
 }
 
 #[test]

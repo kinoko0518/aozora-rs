@@ -82,7 +82,7 @@ fn str_to_xhtml(text: &str) -> Result<(XHTMLResult, Vec<AozoraWarning>), AozoraE
     let mut loc = LocatingSlice::new(text);
     let tokenized = tokenize(&mut loc).map_err(|e| e.into())?;
     let ((scopenized, flattoken), scopenized_err) = scopenize(tokenized).into_tuple();
-    let (retokenized, retokenized_err) = retokenize(flattoken, scopenized).into_tuple();
+    let (retokenized, retokenized_err) = retokenize(flattoken, scopenized);
     let xhtml_result = retokenized_to_xhtml(retokenized);
     let warn = scopenized_err
         .into_iter()

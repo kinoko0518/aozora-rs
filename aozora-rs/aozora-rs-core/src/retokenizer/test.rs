@@ -7,12 +7,13 @@ fn kyusoku() {
     let input = "［＃２字下げ］休息［＃「休息」は中見出し］";
 
     let tokenized = tokenize(&mut LocatingSlice::new(input)).unwrap();
-    let ((scope, flatt), serr) = scopenize(tokenized).into_tuple();
-    let (retokenized, rerr) = retokenize(flatt, scope).into_tuple();
+    let ((scope, exps), serr) = scopenize(tokenized).into_tuple();
+    let (pages, rerr) = retokenize(exps, scope);
 
-    assert!(serr.is_empty() && rerr.is_empty());
+    assert_eq!(serr, vec![]);
+    assert_eq!(rerr, vec![]);
     assert_eq!(
-        retokenized,
+        pages.first().unwrap().content,
         vec![
             Retokenized::DecoBegin(Deco::BHead),
             Retokenized::DecoBegin(Deco::Indent(2)),

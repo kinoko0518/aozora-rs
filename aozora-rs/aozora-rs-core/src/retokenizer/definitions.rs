@@ -1,4 +1,8 @@
-use crate::{scopenizer::Break, *};
+mod pages;
+
+use crate::*;
+
+pub use pages::Page;
 
 /// 開始タグ・要素・終了タグで構成される、HTMLライクな中間表現です。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -9,8 +13,8 @@ pub enum Retokenized<'s> {
     Kunten(&'s str),
     /// 漢文における送り仮名に対応します。
     Okurigana(&'s str),
-    /// 改行、改ページなどに対応します。
-    Break(Break),
+    /// 改行に対応します。
+    Br,
     /// 挿絵、図などに対応します。
     Figure(Figure<'s>),
     /// 装飾の開始に対応します。
@@ -20,7 +24,7 @@ pub enum Retokenized<'s> {
 }
 
 /// 再トークン化時に発生しうるエラーの直和です。
-#[derive(Default, Debug)]
+#[derive(Default, Debug, PartialEq, Eq, Clone, Copy)]
 pub enum RetokenizeError {
     /// トークンを閉じろという命令が出た際、閉じるトークンがなければこのエラーが生じます。
     #[default]
@@ -48,10 +52,19 @@ impl Retokenized<'_> {
         match self {
             Self::Kunten(k) => !k.is_empty(),
             Self::Okurigana(o) => !o.is_empty(),
-            Self::Break(_) => false,
             Self::DecoBegin(_) => false,
             Self::DecoEnd(_) => false,
             _ => true,
         }
     }
+}
+
+/// ページの要素が必ず左から開始する、右から開始するなどを指定します。
+pub enum PageBegin {
+    /// 要素は左ページから開始します。
+    Left,
+    /// 要素は右ページから開始します。
+    Right,
+    /// 特に指定を行いません。
+    Whatever,
 }

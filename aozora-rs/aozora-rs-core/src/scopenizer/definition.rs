@@ -1,21 +1,9 @@
 use crate::*;
-use std::collections::HashMap;
 
-/// /// 開始地点と[`Scope`]の[`HashMap`]を内部に持ち、[`retokenize`]のために[`Scope`]を蓄積します。
-#[derive(Debug, Default)]
-pub struct ScopeAccumulator<'s>(pub HashMap<usize, Vec<Scope<'s>>>);
-
-impl<'s> ScopeAccumulator<'s> {
-    /// [`Scope`]の`start`を開始地点として挿入します。
-    pub fn push_s(&mut self, scope: Scope<'s>) {
-        self.0.entry(scope.span.start).or_default().push(scope)
-    }
-
-    /// [`Scope`]に加え、開始地点を手動で指定して挿入します。
-    pub fn push(&mut self, index: Span, deco: Deco<'s>) {
-        self.push_s(Scope { deco, span: index });
-    }
-}
+/// [`Scope`]を束ねたものです。
+pub type ScopeAcc<'s> = Vec<Scope<'s>>;
+/// [`Expression`]を束ね、[`Span`]情報を付加したものです。
+pub type ExpAcc<'s> = Vec<(Expression<'s>, Span)>;
 
 /// 装飾と装飾がかかる範囲を表す構造体です。
 #[derive(Debug, PartialEq, Eq)]
@@ -28,9 +16,7 @@ pub struct Scope<'s> {
 
 /// 改行、改ページなどの直和です。
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Break {
-    /// 改行に対応
-    BreakLine,
+pub enum PageBreak {
     /// 「改ページ」に対応
     PageBreak,
     /// 「改丁」に対応
@@ -41,13 +27,23 @@ pub enum Break {
     ColumnBreak,
 }
 
+/// [`Scope`]ではない、先頭から順番に並んだ何らかの表現の直和です。
+pub enum Expression<'s> {
+    /// ページ内の要素に対応します。
+    Element(Element<'s>),
+    /// 改ページや改丁などに対応します。
+    PageBreak(PageBreak),
+    /// ページ定義に対応します。
+    PageDef(PageDef),
+}
+
 /// ルビや注記など、[`Scope`]になるトークンを含まない純粋な単一表現の直和です。
 #[derive(Clone, Debug)]
-pub enum FlatToken<'s> {
+pub enum Element<'s> {
     /// 切り出したテキストに対応します。
     Text(&'s str),
-    /// 改行、改ページなどに対応します。
-    Break(Break),
+    /// 改行に対応します。
+    Br,
     /// 漢文における訓点に対応します。
     Kunten(&'s str),
     /// 漢文における送り仮名に対応します。
@@ -56,18 +52,24 @@ pub enum FlatToken<'s> {
     Figure(Figure<'s>),
 }
 
-impl<'s> FlatToken<'s> {
+impl<'s> Into<Expression<'s>> for Element<'s> {
+    fn into(self) -> Expression<'s> {
+        Expression::Element(self)
+    }
+}
+
+impl<'s> Element<'s> {
     /// トークンを指定されたインデックスで分割します。
     ///
     /// トークンがインデックスで分割不能な場合、または分割位置がトークンのバイト長より大きい場合は直積の二番目はNoneが返ります。
-    pub fn split_at(self, at: usize) -> (FlatToken<'s>, Option<FlatToken<'s>>) {
-        if let FlatToken::Text(t) = self {
+    pub fn split_at(self, at: usize) -> (Element<'s>, Option<Element<'s>>) {
+        if let Element::Text(t) = self {
             if t.bytes().len() < at {
-                return (FlatToken::Text(t).into(), None);
+                return (Element::Text(t).into(), None);
             }
             return (
-                FlatToken::Text(&t[0..at]),
-                Some(FlatToken::Text(&t[at..t.len()])),
+                Element::Text(&t[0..at]),
+                Some(Element::Text(&t[at..t.len()])),
             );
         } else {
             return (self.into(), None);
@@ -75,14 +77,14 @@ impl<'s> FlatToken<'s> {
     }
 }
 
-impl<'s> Into<Retokenized<'s>> for FlatToken<'s> {
+impl<'s> Into<Retokenized<'s>> for Element<'s> {
     fn into(self) -> Retokenized<'s> {
         match self {
-            FlatToken::Break(b) => Retokenized::Break(b),
-            FlatToken::Figure(f) => Retokenized::Figure(f),
-            FlatToken::Kunten(k) => Retokenized::Kunten(k),
-            FlatToken::Text(t) => Retokenized::Text(t),
-            FlatToken::Okurigana(o) => Retokenized::Okurigana(o),
+            Element::Br => Retokenized::Br,
+            Element::Figure(f) => Retokenized::Figure(f),
+            Element::Kunten(k) => Retokenized::Kunten(k),
+            Element::Okurigana(o) => Retokenized::Okurigana(o),
+            Element::Text(t) => Retokenized::Text(t),
         }
     }
 }

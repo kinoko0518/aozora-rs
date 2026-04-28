@@ -167,6 +167,17 @@ impl std::fmt::Display for Deco<'_> {
     }
 }
 
+/// ページ全体に影響を及ぼす表現の直和です。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PageDef {
+    /// 「ページの左右中央」に対応
+    VHCentre,
+    /// 改丁注記などに見られる、必ず左ページから開始する宣言
+    FromLeft,
+    /// 改見開き等に見られる、必ず右ページから開始する宣言
+    FromRight,
+}
+
 /// 青空文庫書式形式で挿入される図表の意味を純化したものです。
 ///
 /// aozora-rs-coreの時点ではIO操作を行わず、パス、キャプション、サイズ指定の情報のみを保持しています。
