@@ -75,21 +75,20 @@ fn multiline_test() {
     let (scope, err) = easy_scopenize(
         "［＃ここから２字下げ］\n秋の田の\nかりほの庵の\n苫を荒み\nわがころも手は\n露に濡れつつ\n［＃ここで字下げ終わり］\n",
     );
-    let tag: usize = "［＃ここから２字下げ］\n"
+    let begin: usize = "［＃ここから２字下げ］".chars().map(|c| c.len_utf8()).sum();
+    let mainlen: usize = "\n秋の田の\nかりほの庵の\n苫を荒み\nわがころも手は\n露に濡れつつ"
         .chars()
         .map(|c| c.len_utf8())
         .sum();
-    let main: usize = "秋の田の\nかりほの庵の\n苫を荒み\nわがころも手は\n露に濡れつつ"
-        .chars()
-        .map(|c| c.len_utf8())
-        .sum();
+    // mainlen文字分のspanを作りたいから+1して終端分を確保
+    let end = begin + mainlen + 1;
 
     assert!(err.is_empty());
     assert_eq!(
         scope,
         Scope {
             deco: Deco::Indent(2),
-            span: tag..(tag + main)
+            span: begin..end
         }
     );
 }
