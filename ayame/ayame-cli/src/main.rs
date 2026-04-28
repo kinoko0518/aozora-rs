@@ -152,11 +152,13 @@ fn handle_xhtml(source: &Path, args: &CommonArgs, style: &Style, output_dir: &Pa
     let file_stem = get_file_stem(source)?;
 
     let (text, deps) = read_source(source, &to_encoding(args.utf8), !args.no_gaiji)?;
-    let doc = AozoraDocument::from_str(&text, Some(&deps)).map_err(|e| e.to_string())?;
+    let txt = &mut text.as_str();
+    let meta = aozora_rs::internal::parse_meta(txt).map_err(|e| e.to_string())?;
+    let doc = AozoraDocument::from_str_and_meta(meta, txt, Some(&deps));
 
     let (xhtml, errors) = ayame::to_browser_xhtml(&doc, style).map_err(|e| e.to_string())?;
     for error in &errors {
-        eprintln!("警告 ({}): {}", source.display(), error.display(&text));
+        eprintln!("警告 ({}): {}", source.display(), error.display(txt));
     }
 
     let output_path = output_dir.join(format!("{}.xhtml", file_stem));
@@ -174,7 +176,9 @@ fn handle_epub(source: &Path, args: &CommonArgs, style: &Style, output_dir: &Pat
     let timer = std::time::Instant::now();
 
     let (text, deps) = read_source(source, &to_encoding(args.utf8), !args.no_gaiji)?;
-    let doc = AozoraDocument::from_str(&text, Some(&deps)).map_err(|e| e.to_string())?;
+    let txt = &mut text.as_str();
+    let meta = aozora_rs::internal::parse_meta(txt).map_err(|e| e.to_string())?;
+    let doc = AozoraDocument::from_str_and_meta(meta, txt, Some(&deps));
 
     let output_path = output_dir.join(format!("[{}] {}.epub", doc.meta.author, doc.meta.title));
     let mut file = fs::File::create(&output_path)?;
@@ -188,7 +192,7 @@ fn handle_epub(source: &Path, args: &CommonArgs, style: &Style, output_dir: &Pat
         .epub(&mut file, style, &injectors)
         .map_err(|e| e.to_string())?;
     for w in &warnings {
-        eprintln!("警告 ({}): {}", source.display(), w.display(&text));
+        eprintln!("警告 ({}): {}", source.display(), w.display(txt));
     }
 
     println!(
