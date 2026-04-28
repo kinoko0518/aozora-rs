@@ -9,7 +9,7 @@ use crate::{
     WinnowError,
     deco::{BlockIndent, Deco},
     nihongo::japanese_num,
-    tokenizer::note::{Input, SandwichedBegin},
+    tokenizer::annotation::{Input, SandwichedBegin},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

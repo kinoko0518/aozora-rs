@@ -59,8 +59,8 @@ pub fn scopenize<'s>(
                     );
                 }
             }
-            AozoraTokenKind::Note(c) => match c {
-                Note::Sandwiched(s) => match s {
+            AozoraTokenKind::Annotation(c) => match c {
+                Annotation::Sandwiched(s) => match s {
                     Sandwiched::Begin(b) => {
                         inline_stack.push((b, token.span.clone()));
                     }
@@ -81,7 +81,7 @@ pub fn scopenize<'s>(
                         }
                     }
                 },
-                Note::Multiline(m) => match m {
+                Annotation::Multiline(m) => match m {
                     MultiLine::Begin(b) => {
                         stack.push((b, token.span.clone()));
                     }
@@ -101,17 +101,17 @@ pub fn scopenize<'s>(
                         }
                     }
                 },
-                Note::Single(s) => {
+                Annotation::Single(s) => {
                     flatten.push((s.into(), token.span.clone()));
                 }
-                Note::BackRef(_) => {
+                Annotation::BackRef(_) => {
                     // 前方参照型の注記はTextのアームで処理されるため、ここに到達した時点で不正
                     azc.acc_err(ScopenizeError::BackRefFailed(token.span.clone()).into());
                 }
-                Note::WholeLine(w) => {
+                Annotation::WholeLine(w) => {
                     wholeline.push((w, token.span.clone()));
                 }
-                Note::Unknown(_) => (), // 不明な注記は一旦無視
+                Annotation::Unknown(_) => (), // 不明な注記は一旦無視
             },
             // ルビも前方参照型なのでTextのアームで処理されていることを期待するため
             // このアームに到達した時点で不正

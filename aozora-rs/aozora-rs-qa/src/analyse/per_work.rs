@@ -6,7 +6,7 @@ use std::{
 use aozora_rs::{
     AozoraError, Dependencies,
     internal::{
-        AozoraTokenKind, EpubSetting, Note, from_aozora_zip, parse_meta, retokenize,
+        Annotation, AozoraTokenKind, EpubSetting, from_aozora_zip, parse_meta, retokenize,
         retokenized_to_xhtml, scopenize, tokenize,
     },
     utf8tify_all_gaiji,
@@ -75,8 +75,8 @@ pub fn analyse_per_work(s: &str) -> Result<WorkAnalyse, AozoraError> {
     let invalid_notes: Vec<String> = tokenized
         .iter()
         .filter_map(|t| match &t.kind {
-            AozoraTokenKind::Note(n) => match n {
-                Note::Unknown(unknown) => Some(unknown),
+            AozoraTokenKind::Annotation(n) => match n {
+                Annotation::Unknown(unknown) => Some(unknown),
                 _ => None,
             },
             _ => None,
@@ -86,7 +86,7 @@ pub fn analyse_per_work(s: &str) -> Result<WorkAnalyse, AozoraError> {
     let deco_count: usize = tokenized
         .iter()
         .filter_map(|s| match s.kind {
-            AozoraTokenKind::Note(_) => Some(()),
+            AozoraTokenKind::Annotation(_) => Some(()),
             AozoraTokenKind::Ruby(_) => Some(()),
             _ => None,
         })

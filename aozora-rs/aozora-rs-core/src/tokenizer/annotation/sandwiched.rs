@@ -3,7 +3,7 @@
 use winnow::{Parser, combinator::alt};
 
 use crate::nihongo::japanese_num;
-use crate::tokenizer::{definition::*, note::SandwichedBegin};
+use crate::tokenizer::{annotation::SandwichedBegin, definition::*};
 use crate::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

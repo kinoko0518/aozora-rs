@@ -2,7 +2,7 @@ use winnow::LocatingSlice;
 
 use crate::{
     AozoraTokenKind, BackRefKind, Figure, WholeLine, tokenize,
-    tokenizer::note::backref::{BackRef, BackRefSpec},
+    tokenizer::annotation::backref::{BackRef, BackRefSpec},
 };
 
 fn easy_tokenkind<'s>(input: &'s str) -> Vec<AozoraTokenKind<'s>> {

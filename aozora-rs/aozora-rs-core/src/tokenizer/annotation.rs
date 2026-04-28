@@ -1,11 +1,11 @@
 use winnow::{Parser, combinator::alt};
 
-use crate::tokenizer::note::backref::BackRef;
-use crate::tokenizer::note::backref::backref;
-use crate::tokenizer::note::multiline::multiline;
-use crate::tokenizer::note::sandwiched::sandwiched;
-use crate::tokenizer::note::single::single;
-use crate::tokenizer::note::wholeline::{WholeLine, wholeline};
+use crate::tokenizer::annotation::backref::BackRef;
+use crate::tokenizer::annotation::backref::backref;
+use crate::tokenizer::annotation::multiline::multiline;
+use crate::tokenizer::annotation::sandwiched::sandwiched;
+use crate::tokenizer::annotation::single::single;
+use crate::tokenizer::annotation::wholeline::{WholeLine, wholeline};
 use crate::tokenizer::*;
 use crate::*;
 
@@ -19,7 +19,7 @@ pub mod wholeline;
 
 #[doc = include_str!("../../docs/note/note.md")]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Note<'s> {
+pub enum Annotation<'s> {
     #[doc = "../../docs/note/backref.md"]
     BackRef(BackRef<'s>),
     #[doc = "../../docs/note/sandwitched.md"]
@@ -40,16 +40,16 @@ pub trait SandwichedBegin<E> {
     fn do_match(&self, rhs: &E) -> bool;
 }
 
-type RNote<'s> = Result<Note<'s>, WinnowError>;
+type RNote<'s> = Result<Annotation<'s>, WinnowError>;
 
 /// 注記にマッチするパーサーです。
 pub fn command<'s>(input: &mut Input<'s>) -> RNote<'s> {
     alt((
-        backref.map(Note::BackRef),
-        sandwiched.map(Note::Sandwiched),
-        multiline.map(Note::Multiline),
-        wholeline.map(Note::WholeLine),
-        single.map(Note::Single),
+        backref.map(Annotation::BackRef),
+        sandwiched.map(Annotation::Sandwiched),
+        multiline.map(Annotation::Multiline),
+        wholeline.map(Annotation::WholeLine),
+        single.map(Annotation::Single),
     ))
     .parse_next(input)
 }

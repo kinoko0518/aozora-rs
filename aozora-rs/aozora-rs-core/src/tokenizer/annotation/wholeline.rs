@@ -35,7 +35,7 @@ impl Into<Deco<'static>> for WholeLine {
 
 impl Into<AozoraTokenKind<'static>> for WholeLine {
     fn into(self) -> AozoraTokenKind<'static> {
-        AozoraTokenKind::Note(Note::WholeLine(self))
+        AozoraTokenKind::Annotation(Annotation::WholeLine(self))
     }
 }
 

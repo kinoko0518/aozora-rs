@@ -6,7 +6,7 @@ use winnow::{Parser, combinator::alt};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AozoraTokenKind<'s> {
     /// 注記（［＃……］）に対応します。
-    Note(Note<'s>),
+    Annotation(Annotation<'s>),
     /// ルビ（《……》）に対応します。
     Ruby(&'s str),
     /// ルビ区切り（｜）に対応します。

@@ -56,7 +56,7 @@ pub struct BackRef<'s> {
 
 impl<'s> Into<AozoraTokenKind<'s>> for BackRef<'s> {
     fn into(self) -> AozoraTokenKind<'s> {
-        AozoraTokenKind::Note(Note::BackRef(self))
+        AozoraTokenKind::Annotation(Annotation::BackRef(self))
     }
 }
 

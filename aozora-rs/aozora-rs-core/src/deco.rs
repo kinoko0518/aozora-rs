@@ -2,7 +2,7 @@
 
 use std::borrow::Cow;
 
-use crate::{AozoraTokenKind, Note, Single};
+use crate::{Annotation, AozoraTokenKind, Single};
 
 /// 段落（HTMLで云うところの<p>などのブロック要素）に対する字下げを表現する型です。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -202,6 +202,6 @@ impl std::fmt::Display for Figure<'_> {
 
 impl<'s> Into<AozoraTokenKind<'s>> for Figure<'s> {
     fn into(self) -> AozoraTokenKind<'s> {
-        AozoraTokenKind::Note(Note::Single(Single::Figure(self)))
+        AozoraTokenKind::Annotation(Annotation::Single(Single::Figure(self)))
     }
 }

@@ -44,8 +44,8 @@ pub fn backref_to_scope<'s>(
                 (target.1.end - length)..(target.1.end)
             },
         }),
-        AozoraTokenKind::Note(c) => {
-            if let Note::BackRef(b) = c {
+        AozoraTokenKind::Annotation(c) => {
+            if let Annotation::BackRef(b) = c {
                 match match b.kind {
                     BackRefKind::Bold => Some(Deco::Bold),
                     BackRefKind::Italic => Some(Deco::Italic),

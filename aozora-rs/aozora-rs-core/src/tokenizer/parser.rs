@@ -4,8 +4,8 @@ use winnow::{
     token::{any, take_till, take_until},
 };
 
-use crate::tokenizer::*;
-use crate::{tokenizer::note::command, *};
+use crate::tokenizer::{annotation::command, *};
+use crate::*;
 
 fn ruby<'s>(input: &mut Input<'s>) -> Result<&'s str, WinnowError> {
     const END: char = '》';
@@ -19,8 +19,8 @@ fn special<'s>(input: &mut Input<'s>) -> Result<AozoraTokenKind<'s>, WinnowError
         delimited(
             "［＃",
             alt((
-                command.map(AozoraTokenKind::Note),
-                take_until(1.., "］").map(|s| AozoraTokenKind::Note(Note::Unknown(s))),
+                command.map(AozoraTokenKind::Annotation),
+                take_until(1.., "］").map(|s| AozoraTokenKind::Annotation(Annotation::Unknown(s))),
             )),
             "］",
         ),
