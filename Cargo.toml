@@ -1,14 +1,14 @@
 [workspace]
 members = [
     # aozora-rs
-    "aozora-rs/aozora-rs-core", "aozora-rs/aozora-rs-qa",
-    "aozora-rs/aozora-rs-gaiji", "aozora-rs/aozora-rs-xhtml",
-    "aozora-rs/aozora-rs-epub", "aozora-rs/aozora-rs",
-    "aozora-rs/aozora-rs-wasm", "aozora-rs/aozora-rs-zip",
+    "aozora-rs/aozora-rs-core", "aozora-rs/aozora-rs-gaiji",
+    "aozora-rs/aozora-rs-xhtml", "aozora-rs/aozora-rs-epub",
+    "aozora-rs/aozora-rs","aozora-rs/aozora-rs-zip",
     "aozora-rs/aozora-rs-gaiji/gaiji-chuki-parser",
-    # ayame
-    "ayame/ayame", "ayame/ayame-cli",
-    "ayame/ayame-app",
+    # applications
+    "applications/wasm", "applications/qa",
+    "applications/ayame-core", "applications/ayame-cli",
+    "applications/ayame-app",
 ]
 resolver = "3"
 
@@ -23,7 +23,7 @@ aozora-rs-zip.path = "./aozora-rs/aozora-rs-zip"
 gaiji-chuki-parser.path = "./aozora-rs/aozora-rs-gaiji/gaiji-chuki-parser"
 
 # ayame
-ayame.path = "./ayame/ayame"
+ayame.path = "./applications/ayame-core"
 
 # external crates
 encoding_rs = "0.8.35"

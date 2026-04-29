@@ -13,8 +13,7 @@ aozora-rs
 ┣ aozora-rs-core  ... 青空文庫書式を中間表現に変換します
 ┣ aozora-rs-zip   ... 青空文庫で配布されている.zipを扱いやすい形に変換します
 ┣ aozora-rs-xhtml ... 中間表現をXHTMLに変換します
-┣ aozora-rs-epub  ... XHTMLとメタデータからEPUBファイルを構築します
-┗ aozora-rs-qa    ... aozora-rsの品質保証プログラムです
+┗ aozora-rs-epub  ... XHTMLとメタデータからEPUBファイルを構築します
 ```
 ご利用の際には、crate.ioにはアップロードされていないので、GitHubから追加してください。
 ```bash

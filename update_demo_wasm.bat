@@ -1,2 +1,2 @@
 @echo off
-wasm-pack build ./aozora-rs/aozora-rs-wasm --target web --out-dir ../../ayame/ayame-demo/pkg
+wasm-pack build ./applications/wasm --target web --out-dir ../demopage/pkg

@@ -119,18 +119,18 @@ jobs:
           version: "latest"
 
       - name: Build WASM
-        run: wasm-pack build ./aozora-rs/aozora-rs-wasm --target bundler
+        run: wasm-pack build ./applications/wasm --target bundler
 
       - name: Zip pkg directory
         run: |
-          cd aozora-rs/aozora-rs-wasm
-          zip -r aozora-rs-wasm-pkg.zip pkg
+          cd applications/wasm/pkg
+          zip -r ../aozora-rs-wasm-pkg.zip .
 
       - name: Upload WASM artifact
         uses: actions/upload-artifact@v4
         with:
           name: aozora-rs-wasm-pkg
-          path: aozora-rs/aozora-rs-wasm/aozora-rs-wasm-pkg.zip
+          path: applications/wasm/aozora-rs-wasm-pkg.zip
 
   build-and-upload:
     name: Upload Release

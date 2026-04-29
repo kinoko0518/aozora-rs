@@ -131,9 +131,9 @@ pub fn analyse_per_work(s: &str) -> Result<WorkAnalyse, AozoraError> {
         &xhtmlnized,
         &EpubSetting {
             styles: vec![
-                include_str!("../../../aozora-rs/css/prelude.css"),
-                include_str!("../../../aozora-rs/css/vertical.css"),
-                include_str!("../../../../ayame/ayame/assets/miyabi.css"),
+                include_str!("../../../../aozora-rs/aozora-rs/css/prelude.css"),
+                include_str!("../../../../aozora-rs/aozora-rs/css/vertical.css"),
+                include_str!("../../../ayame-core/assets/miyabi.css"),
             ],
             ..Default::default()
         },

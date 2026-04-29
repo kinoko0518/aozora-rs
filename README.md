@@ -7,14 +7,14 @@
 
 Pure-Rustな高速青空文庫書式パーサー
 
-[GUI版・CLI版](./ayame/README.md) / [ライブラリ利用](./aozora-rs/README.md) / [今すぐ試す](https://kinoko0518.github.io/aozora-rs/)
+[GUI版・CLI版](./docs/applications.md) / [ライブラリ利用](./docs/library.md) / [今すぐ試す](https://kinoko0518.github.io/aozora-rs/)
 
 </div>
 
 ## 概要
 Pure-Rust実装の高速青空文庫書式パーサーです。2026-4-18時点のreleaseビルドでは罪と罰を約0.04秒で変換可能です。角川文庫版の罪と罰の総ページ数が1008ページですので、2万5200ページ毎秒という計算になります。設計や原理、速度レポートなどは[こちら](https://kinoko0518.github.io/aozora-rs/presentation.pdf)をご覧ください。
 
-ライブラリとしての使いやすさはもちろん、アプリケーションとしての使いやすさも重視しています。ダウンロードや詳細は[GUI版・CLI版](./ayame/README.md)、[ライブラリ利用](./aozora-rs/README.md)からご覧ください。[今すぐ試す](https://kinoko0518.github.io/aozora-rs/)ではWASMビルドしたaozora.rsを使ったリアルタイムパースや変換などをお試しいただけます。
+ライブラリとしての使いやすさはもちろん、アプリケーションとしての使いやすさも重視しています。ダウンロードや詳細は[GUI版・CLI版](./docs/applications.md)、[ライブラリ利用](./docs/library.md)からご覧ください。[今すぐ試す](https://kinoko0518.github.io/aozora-rs/)ではWASMビルドしたaozora.rsを使ったリアルタイムパースや変換などをお試しいただけます。
 
 ## 利用について
 本プロジェクトは[Apache License 2.0]("./LICENCE")を採用しています。使用報告などは特に必要ありませんが、作者の[Twitter](https://x.com/6osciola/)までご一報いただけると喜びます。

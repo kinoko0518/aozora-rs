@@ -29,7 +29,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: qa-result
-          path: aozora-rs/aozora-rs-qa/out/result/
+          path: applications/qa/out/result/
 
   # ayame-demo用のWASMビルド
   build-demo:
@@ -54,13 +54,13 @@ jobs:
 
       - name: Build WASM for demo
         run: |
-          wasm-pack build ./aozora-rs/aozora-rs-wasm --target web --out-dir ../../ayame/ayame-demo/pkg
+          wasm-pack build ./applications/wasm --target web --out-dir ../demopage/pkg
 
       - name: Upload demo artifact
         uses: actions/upload-artifact@v4
         with:
           name: demo-site
-          path: ./ayame/ayame-demo/
+          path: ./applications/demopage/
 
   # QAジョブ完了後、TypstからPDFを生成しアップロード
   build-typst:
@@ -75,7 +75,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: qa-result
-          path: aozora-rs/aozora-rs-qa/out/result
+          path: applications/qa/out/result
 
       - name: Setup Typst
         uses: typst-community/setup-typst@v3
