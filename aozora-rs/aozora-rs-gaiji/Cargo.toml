@@ -3,6 +3,14 @@ name = "aozora-rs-gaiji"
 version = "0.1.0"
 edition = "2024"
 
+
+[features]
+default = ["gaiji", "menkuten"]
+
+gaiji = []
+menkuten = []
+gaiji_rev = []
+
 [dependencies]
 rkyv.workspace = true
 winnow.workspace = true

@@ -11,12 +11,17 @@ pub use gaiji_chuki_parser::{GaijiChuki, parse_tag};
 
 use rkyv::util::AlignedVec;
 
+#[cfg(feature = "gaiji")]
 pub type GaijiMap = HashMap<String, String>;
+#[cfg(feature = "gaiji_rev")]
 pub type RevGaijiMap = HashMap<String, String>;
 
+#[cfg(feature = "menkuten")]
 pub type MenkutenKey = (u8, u8, u8);
+#[cfg(feature = "menkuten")]
 pub type MenkutenToUnicodeMap = HashMap<MenkutenKey, String>;
 
+#[cfg(feature = "gaiji")]
 pub static GAIJI_TO_CHAR: LazyLock<GaijiMap> = LazyLock::new(|| {
     let bytes = include_bytes!(concat!(env!("OUT_DIR"), "/gaiji_to_char.map"));
     let mut aligned = AlignedVec::<16>::with_capacity(bytes.len());
@@ -26,6 +31,7 @@ pub static GAIJI_TO_CHAR: LazyLock<GaijiMap> = LazyLock::new(|| {
         .expect("gaiji_to_char.map data is corrupted")
 });
 
+#[cfg(feature = "gaiji_rev")]
 pub static CHAR_TO_GAIJI: LazyLock<RevGaijiMap> = LazyLock::new(|| {
     let bytes = include_bytes!(concat!(env!("OUT_DIR"), "/char_to_gaiji.map"));
     let mut aligned = AlignedVec::<16>::with_capacity(bytes.len());
@@ -35,6 +41,7 @@ pub static CHAR_TO_GAIJI: LazyLock<RevGaijiMap> = LazyLock::new(|| {
         .expect("char_to_gaiji.map data is corrupted")
 });
 
+#[cfg(feature = "menkuten")]
 pub static MENKUTEN_TO_UNICODE: LazyLock<MenkutenToUnicodeMap> = LazyLock::new(|| {
     let bytes = include_bytes!(concat!(env!("OUT_DIR"), "/menkuten_to_unicode.map"));
     let mut aligned = AlignedVec::<16>::with_capacity(bytes.len());
@@ -44,12 +51,14 @@ pub static MENKUTEN_TO_UNICODE: LazyLock<MenkutenToUnicodeMap> = LazyLock::new(|
         .expect("menkuten_to_unicode.map data is corrupted")
 });
 
+#[cfg(feature = "menkuten")]
 pub fn menkuten_to_unicode(plane: u8, row: u8, cell: u8) -> Option<&'static str> {
     MENKUTEN_TO_UNICODE
         .get(&(plane, row, cell))
         .map(|s| s.as_str())
 }
 
+#[cfg(feature = "gaiji")]
 pub fn gaiji_to_char(input: &mut &str) -> Option<Cow<'static, str>> {
     parse_tag
         .verify_map(|t| t.to_cow(&GAIJI_TO_CHAR, &MENKUTEN_TO_UNICODE))
