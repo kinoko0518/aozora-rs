@@ -44,13 +44,13 @@ pub fn parse_meta<'s>(input: &mut &'s str) -> Result<AozoraMeta<'s>, MetaError> 
         .map(|(s, _): (&str, char)| s.trim())
         .parse_next(input)
         .ok()
-        .ok_or(MetaError::NoTitleFound.into())?;
+        .ok_or(MetaError::NoTitleFound)?;
     // 著者をパース
     let author: &str = (take_until::<_, _, ContextError>(1.., "\n"), '\n')
         .map(|(s, _): (&str, char)| s.trim())
         .parse_next(input)
         .ok()
-        .ok_or(MetaError::NoAuthorFound.into())?;
+        .ok_or(MetaError::NoAuthorFound)?;
     // 【テキスト中に現れる記号について】をパース
     let about_symbol = "-------------------------------------------------------";
     let _: Result<(), _> = take_until::<_, _, ContextError>(0.., about_symbol)

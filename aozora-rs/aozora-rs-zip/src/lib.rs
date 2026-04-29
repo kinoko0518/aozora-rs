@@ -64,8 +64,8 @@ impl std::fmt::Display for AozoraZipError {
                 _ => "".into()
             },
             Self::EncodingError => "テキストデータの解釈に失敗しました。指定した文字コードが正しいことを確認してください".into(),
-            Self::ImgReadFailed(i) => format!("画像の読み込みに失敗しました：{}", i).into(),
-            Self::Io(i) => format!("I/Oに失敗しました：{}", i).into(),
+            Self::ImgReadFailed(i) => format!("画像の読み込みに失敗しました：{}", i),
+            Self::Io(i) => format!("I/Oに失敗しました：{}", i),
             Self::MultiTextFound => "Zipの中に複数のテキストファイルが見つかりました".into(),
             Self::NoTextFound => "Zipの中にテキストファイルが見つかりませんでした".into(),
             Self::TokenizeFailed(_) => "テキストのトークン化に失敗しました".into()

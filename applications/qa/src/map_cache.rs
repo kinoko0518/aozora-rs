@@ -51,7 +51,7 @@ pub fn update_map(
     repo_path: &str,
 ) -> Result<MapCache, Box<dyn std::error::Error>> {
     // キャッシュファイルの存在確認と読み込み
-    let cache_raw: Option<Vec<u8>> = fs::read(&cache_bin).ok();
+    let cache_raw: Option<Vec<u8>> = fs::read(cache_bin).ok();
 
     // キャッシュの検証または新規生成
     // (mapデータ, 保存が必要かどうかのフラグ) を返す
@@ -73,7 +73,7 @@ pub fn update_map(
 
     // 変更があった場合のみディスクに書き込む
     if needs_save {
-        let mut file = File::create(&cache_bin)?;
+        let mut file = File::create(cache_bin)?;
         let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&map)?;
         file.write_all(&bytes)?;
     }

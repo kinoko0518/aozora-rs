@@ -211,8 +211,8 @@ impl std::fmt::Display for Figure<'_> {
     }
 }
 
-impl<'s> Into<AozoraTokenKind<'s>> for Figure<'s> {
-    fn into(self) -> AozoraTokenKind<'s> {
-        AozoraTokenKind::Annotation(Annotation::Single(Single::Figure(self)))
+impl<'s> From<Figure<'s>> for AozoraTokenKind<'s> {
+    fn from(val: Figure<'s>) -> Self {
+        AozoraTokenKind::Annotation(Annotation::Single(Single::Figure(val)))
     }
 }

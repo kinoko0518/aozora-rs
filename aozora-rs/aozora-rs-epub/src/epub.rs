@@ -54,18 +54,10 @@ pub struct TocPageHyle<'a> {
 }
 
 /// EPUB生成時に注入可能なページ生成ロジック
+#[derive(Default)]
 pub struct PageInjectors {
     pub title_page: Option<Box<dyn Fn(&mut dyn Write, &TitlePageHyle) -> std::io::Result<()>>>,
     pub toc_page: Option<Box<dyn Fn(&mut dyn Write, &TocPageHyle) -> std::io::Result<()>>>,
-}
-
-impl Default for PageInjectors {
-    fn default() -> Self {
-        Self {
-            title_page: None,
-            toc_page: None,
-        }
-    }
 }
 
 /// epubの生成時に必要なデータをすべてまとめた構造体です。
@@ -165,15 +157,15 @@ pub enum AozoraEpubError {
     ZipError(ZipError),
 }
 
-impl Into<AozoraEpubError> for std::io::Error {
-    fn into(self) -> AozoraEpubError {
-        AozoraEpubError::IoFailed(self)
+impl From<std::io::Error> for AozoraEpubError {
+    fn from(val: std::io::Error) -> Self {
+        AozoraEpubError::IoFailed(val)
     }
 }
 
-impl Into<AozoraEpubError> for ZipError {
-    fn into(self) -> AozoraEpubError {
-        AozoraEpubError::ZipError(self)
+impl From<ZipError> for AozoraEpubError {
+    fn from(val: ZipError) -> Self {
+        AozoraEpubError::ZipError(val)
     }
 }
 
@@ -188,7 +180,7 @@ impl std::fmt::Display for AozoraEpubError {
                         ZipError::FileNotFound => "必要なファイルが見つかりませんでした".into(),
                         ZipError::InvalidArchive(_) => "無効なアーカイブです".into(),
                         ZipError::InvalidPassword => "Zipがパスワードで保護されています".into(),
-                        ZipError::Io(i) => format!("IOエラーが発生しました：{}", i).into(),
+                        ZipError::Io(i) => format!("IOエラーが発生しました：{}", i),
                         ZipError::UnsupportedArchive(_) => {
                             "サポートされていないアーカイブ形式です".into()
                         }
@@ -196,7 +188,7 @@ impl std::fmt::Display for AozoraEpubError {
                     };
                     err
                 }
-                Self::IoFailed(i) => format!("IOエラーが発生しました：{}", i).into(),
+                Self::IoFailed(i) => format!("IOエラーが発生しました：{}", i),
             }
         )
     }
@@ -226,83 +218,53 @@ pub fn from_aozora_zip(
     };
     let stored = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
 
-    writer
-        .start_file("mimetype", stored)
-        .map_err(|e| e.into())?;
-    writer
-        .write_all(b"application/epub+zip")
-        .map_err(|e| e.into())?;
+    writer.start_file("mimetype", stored)?;
+    writer.write_all(b"application/epub+zip")?;
 
-    writer
-        .start_file("META-INF/container.xml", options)
-        .map_err(|e| e.into())?;
-    writer
-        .write_all(include_str!("../assets/container.xml").as_bytes())
-        .map_err(|e| e.into())?;
+    writer.start_file("META-INF/container.xml", options)?;
+    writer.write_all(include_str!("../assets/container.xml").as_bytes())?;
 
-    writer
-        .start_file("item/standard.opf", options)
-        .map_err(|e| e.into())?;
-    epub_writer.write_opf(&mut writer).map_err(|e| e.into())?;
+    writer.start_file("item/standard.opf", options)?;
+    epub_writer.write_opf(&mut writer)?;
 
-    writer
-        .start_file("item/toc.ncx", options)
-        .map_err(|e| e.into())?;
-    epub_writer.write_ncx(&mut writer).map_err(|e| e.into())?;
+    writer.start_file("item/toc.ncx", options)?;
+    epub_writer.write_ncx(&mut writer)?;
 
-    writer
-        .start_file("item/nav.xhtml", options)
-        .map_err(|e| e.into())?;
-    epub_writer.write_nav(&mut writer).map_err(|e| e.into())?;
+    writer.start_file("item/nav.xhtml", options)?;
+    epub_writer.write_nav(&mut writer)?;
 
     if let Some(ref title_writer) = injectors.title_page {
-        writer
-            .start_file("item/xhtml/title.xhtml", options)
-            .map_err(|e| e.into())?;
+        writer.start_file("item/xhtml/title.xhtml", options)?;
         let hyle = TitlePageHyle {
             title: meta.title,
             author: meta.author,
         };
-        epub_writer
-            .write_injected_page(&mut writer, &hyle, title_writer.as_ref())
-            .map_err(|e| e.into())?;
+        epub_writer.write_injected_page(&mut writer, &hyle, title_writer.as_ref())?;
     }
 
     if let Some(ref toc_writer) = injectors.toc_page {
-        writer
-            .start_file("item/xhtml/toc.xhtml", options)
-            .map_err(|e| e.into())?;
+        writer.start_file("item/xhtml/toc.xhtml", options)?;
         let hyle = TocPageHyle {
             chapters: &xhtml.chapters,
         };
-        epub_writer
-            .write_injected_page(&mut writer, &hyle, toc_writer.as_ref())
-            .map_err(|e| e.into())?;
+        epub_writer.write_injected_page(&mut writer, &hyle, toc_writer.as_ref())?;
     }
 
     for (i, x) in epub_writer.nresult.xhtmls.iter().enumerate() {
-        writer
-            .start_file(format!("item/xhtml/sec{:>04}.xhtml", i), options)
-            .map_err(|e| e.into())?;
-        epub_writer
-            .write_xhtml(x, &mut writer)
-            .map_err(|e| e.into())?;
+        writer.start_file(format!("item/xhtml/sec{:>04}.xhtml", i), options)?;
+        epub_writer.write_xhtml(x, &mut writer)?;
     }
 
     for (i, css) in epub_writer.setting.styles.iter().enumerate() {
-        writer
-            .start_file(format!("item/style/style{:>04}.css", i), options)
-            .map_err(|e| e.into())?;
-        writer.write_all(css.as_bytes()).map_err(|e| e.into())?;
+        writer.start_file(format!("item/style/style{:>04}.css", i), options)?;
+        writer.write_all(css.as_bytes())?;
     }
 
     let mut azresult = AZResultC::default();
     for d in &epub_writer.nresult.dependency {
         if let Some(img) = epub_writer.image.get(d) {
-            writer
-                .start_file(format!("item/image/{}", d), options)
-                .map_err(|e| e.into())?;
-            writer.write(&img.1).map_err(|e| e.into())?;
+            writer.start_file(format!("item/image/{}", d), options)?;
+            writer.write(&img.1)?;
         } else {
             azresult.acc_err(EpubWarning::DependencieNotFound(d.clone()));
         }

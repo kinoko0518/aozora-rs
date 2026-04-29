@@ -2,8 +2,8 @@ mod analyse;
 mod map_cache;
 mod sync;
 
-pub const MANIFEST: &'static str = env!("CARGO_MANIFEST_DIR");
-pub const REPOSITORY: &'static str = "aozorabunko_text";
+pub const MANIFEST: &str = env!("CARGO_MANIFEST_DIR");
+pub const REPOSITORY: &str = "aozorabunko_text";
 
 pub const AOZORABUNKO_TEXT_PATH: &str = concatcp!(MANIFEST, "/assets/", REPOSITORY);
 pub const EPUB_OUT_PATH: &str = concatcp!(MANIFEST, "/out/epubs");

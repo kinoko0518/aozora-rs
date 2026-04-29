@@ -6,37 +6,50 @@ use crate::nihongo::japanese_num;
 use crate::tokenizer::{annotation::SandwichedBegin, definition::*};
 use crate::*;
 
+/// 行内挟み込み型注記の開始側に対応します。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SandwichedBegins {
+    /// 「太字」に対応
     BoldBegin,
+    /// 「斜体」に対応
     ItalicBegin,
+    /// 「傍点」に対応
     BotenBegin(BotenKind),
+    /// 「傍線」に対応
     BosenBegin(BosenKind),
+    /// 「大見出し」に対応
     AHeadBegin,
+    /// 「中見出し」に対応
     BHeadBegin,
+    /// 「小見出し」に対応
     CHeadBegin,
+    /// 「N段階小さな文字」に対応
     SmallerBegin(usize),
+    /// 「N段階大きな文字」に対応
     BiggerBegin(usize),
+    /// 「割り注」に対応
     Warichu,
+    /// 「横組み」に対応
     HorizontalLayout,
+    /// 「行右小書き」に対応
     Sup,
 }
 
-impl Into<Deco<'static>> for SandwichedBegins {
-    fn into(self) -> Deco<'static> {
-        match self {
-            Self::BoldBegin => Deco::Bold,
-            Self::ItalicBegin => Deco::Italic,
-            Self::BosenBegin(b) => Deco::Bosen(b),
-            Self::BotenBegin(b) => Deco::Boten(b),
-            Self::AHeadBegin => Deco::AHead,
-            Self::BHeadBegin => Deco::BHead,
-            Self::CHeadBegin => Deco::CHead,
-            Self::SmallerBegin(b) => Deco::Smaller(b),
-            Self::BiggerBegin(b) => Deco::Bigger(b),
-            Self::Warichu => Deco::Warichu,
-            Self::HorizontalLayout => Deco::HorizontalLayout,
-            Self::Sup => Deco::Sup,
+impl From<SandwichedBegins> for Deco<'static> {
+    fn from(val: SandwichedBegins) -> Self {
+        match val {
+            SandwichedBegins::BoldBegin => Deco::Bold,
+            SandwichedBegins::ItalicBegin => Deco::Italic,
+            SandwichedBegins::BosenBegin(b) => Deco::Bosen(b),
+            SandwichedBegins::BotenBegin(b) => Deco::Boten(b),
+            SandwichedBegins::AHeadBegin => Deco::AHead,
+            SandwichedBegins::BHeadBegin => Deco::BHead,
+            SandwichedBegins::CHeadBegin => Deco::CHead,
+            SandwichedBegins::SmallerBegin(b) => Deco::Smaller(b),
+            SandwichedBegins::BiggerBegin(b) => Deco::Bigger(b),
+            SandwichedBegins::Warichu => Deco::Warichu,
+            SandwichedBegins::HorizontalLayout => Deco::HorizontalLayout,
+            SandwichedBegins::Sup => Deco::Sup,
         }
     }
 }
@@ -64,19 +77,32 @@ impl SandwichedBegin<SandwichedEnds> for SandwichedBegins {
     }
 }
 
+/// 行内挟み込み型注記の終了側に対応します。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SandwichedEnds {
+    /// 「太字終わり」に対応
     BoldEnd,
+    /// 「斜体終わり」に対応
     ItalicEnd,
+    /// 「傍点終わり」に対応
     BotenEnd(BotenKind),
+    /// 「傍線終わり」に対応
     BosenEnd(BosenKind),
+    /// 「大見出し終わり」に対応
     AHeadEnd,
+    /// 「中見出し終わり」に対応
     BHeadEnd,
+    /// 「小見出し終わり」に対応
     CHeadEnd,
+    /// 「小さな文字終わり」に対応
     SmallerEnd,
+    /// 「大きな文字終わり」に対応
     BiggerEnd,
+    /// 「割り注終わり」に対応
     WarichuEnd,
+    /// 「横組み終わり」に対応
     HorizontalLayout,
+    /// 「行右小書き」に対応
     Sup,
 }
 
@@ -115,8 +141,8 @@ fn sandwiched_end(input: &mut Input<'_>) -> Result<SandwichedEnds, WinnowError> 
             "小見出し".value(SandwichedEnds::CHeadEnd),
             "太字".value(SandwichedEnds::BoldEnd),
             "斜体".value(SandwichedEnds::ItalicEnd),
-            boten.map(|bt| SandwichedEnds::BotenEnd(bt)),
-            bosen.map(|bs| SandwichedEnds::BosenEnd(bs)),
+            boten.map(SandwichedEnds::BotenEnd),
+            bosen.map(SandwichedEnds::BosenEnd),
             "小さな文字".value(SandwichedEnds::SmallerEnd),
             "大きな文字".value(SandwichedEnds::BiggerEnd),
             "割り注".value(SandwichedEnds::WarichuEnd),

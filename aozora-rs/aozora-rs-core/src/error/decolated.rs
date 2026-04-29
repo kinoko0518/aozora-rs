@@ -5,18 +5,18 @@ use crate::Span;
 
 fn extract_line_begins(original: &str, start_idx: usize) -> usize {
     let bytes = original.as_bytes();
-    let left = memrchr(b'\n', &bytes[..start_idx])
+    
+    memrchr(b'\n', &bytes[..start_idx])
         .map(|i| i + 1)
-        .unwrap_or(0);
-    left
+        .unwrap_or(0)
 }
 
 fn extract_line_ends(original: &str, start_idx: usize) -> usize {
     let bytes = original.as_bytes();
-    let right = memchr(b'\n', &bytes[start_idx..])
+    
+    memchr(b'\n', &bytes[start_idx..])
         .map(|i| start_idx + i)
-        .unwrap_or(bytes.len());
-    right
+        .unwrap_or(bytes.len())
 }
 
 fn count_newlines(text: &str, start_idx: usize, end_idx: usize) -> usize {

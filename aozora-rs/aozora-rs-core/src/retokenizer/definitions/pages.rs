@@ -48,7 +48,7 @@ impl<'s> Page<'s> {
             err.extend([RetokenizeError::InvalidEndOfScope].repeat(ud.len()));
         }
 
-        while let Some((i, event)) = events.next() {
+        for (i, event) in events.by_ref() {
             match event {
                 // 平坦トークン開始
                 RetokenizeEvent::FlatTBegin(f) => {
@@ -63,7 +63,7 @@ impl<'s> Page<'s> {
                     }
                     None => err.push(
                         // 開始されていないものを閉じたらエラーを蓄積
-                        RetokenizeError::InvalidEndOfToken.into(),
+                        RetokenizeError::InvalidEndOfToken,
                     ),
                 },
                 RetokenizeEvent::DecoBegin(d) => {
@@ -73,7 +73,7 @@ impl<'s> Page<'s> {
                         let (confirmed, unclosed) = t.split_at(i - unclosed_until);
                         // 分割以前を確定、開始タグを挿入、分割以後で未確定トークンを再開
                         self.push(confirmed.into());
-                        self.push(Retokenized::DecoBegin(d.clone()).into());
+                        self.push(Retokenized::DecoBegin(d.clone()));
                         unclosed_decos.push(d);
                         unclosed_token = (unclosed, i);
                     } else {
@@ -97,7 +97,7 @@ impl<'s> Page<'s> {
                             unclosed_token = (unclosed, i);
                         } else {
                             // 開始されなかったスコープを終了しようとしたらエラー
-                            err.push(RetokenizeError::InvalidEndOfScope.into());
+                            err.push(RetokenizeError::InvalidEndOfScope);
                             unclosed_token = (Some(t), unclosed_until);
                         }
                     } else {
@@ -107,7 +107,7 @@ impl<'s> Page<'s> {
                             self.push(Retokenized::DecoEnd(d));
                         } else {
                             // 閉じられていない装飾もなければエラー
-                            err.push(RetokenizeError::InvalidEndOfScope.into());
+                            err.push(RetokenizeError::InvalidEndOfScope);
                         }
                     }
                 }

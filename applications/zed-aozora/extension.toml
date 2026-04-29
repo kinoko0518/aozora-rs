@@ -1,0 +1,7 @@
+id = "aozora-rs"
+name = "Aozora Bunko"
+version = "0.0.1"
+schema_version = 1
+authors = ["kinoko0518"]
+description = "Aozora Bunko support for Zed, powered by aozora-lsp."
+repository = "https://github.com/kinoko0518/aozora-rs"

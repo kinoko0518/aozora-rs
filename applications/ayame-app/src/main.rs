@@ -98,7 +98,7 @@ impl AyameApp {
             .h(px(save_and_load_height))
             .flex_1()
             .label("ファイルを選択")
-            .custom(btn_colour.clone())
+            .custom(btn_colour)
             .on_click(cx.listener(|view, _, _, cx| {
                 if let Some(picked) = FileDialog::new()
                     .set_title("変換したいファイルを選択してください")
@@ -160,7 +160,8 @@ impl AyameApp {
 
     fn render_title_and_author(&mut self) -> impl IntoElement {
         let (title, author) = self.get_meta();
-        let title_and_author = div()
+        
+        div()
             .flex()
             .flex_col()
             .justify_center()
@@ -179,8 +180,7 @@ impl AyameApp {
                 div()
                     .text_color(rgb(Self::LIGHT_TEXT_COLOUR))
                     .child(author.clone()),
-            );
-        title_and_author
+            )
     }
 
     fn render_cover(&mut self, cx: &mut Context<Self>) -> impl IntoElement {
@@ -224,7 +224,9 @@ impl AyameApp {
                 }
             }));
 
-        let cover = if let Some((data, ext)) = self.cover.as_ref() {
+        
+
+        if let Some((data, ext)) = self.cover.as_ref() {
             let image = ImageSource::Image(Arc::new(Image::from_bytes(
                 img_ext_to_img_fmt(*ext),
                 data.clone(),
@@ -241,9 +243,7 @@ impl AyameApp {
                         .text_color(rgb(Self::LIGHT_TEXT_COLOUR))
                         .child("表紙を選択"),
                 )
-        };
-
-        cover
+        }
     }
 
     fn main_panel(&mut self, cx: &mut Context<Self>) -> impl IntoElement {

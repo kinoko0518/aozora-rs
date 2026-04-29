@@ -28,7 +28,7 @@ fn parse_single_menkuten(input: &mut &str) -> Result<Menkuten, ContextError> {
         .parse_next(input)
 }
 
-fn parse_line<'s>(input: &mut &'s str) -> Result<Option<(Menkuten, String)>, ContextError> {
+fn parse_line(input: &mut &str) -> Result<Option<(Menkuten, String)>, ContextError> {
     let data_line =
         (parse_single_menkuten, space1, unicode).map(|(menkuten, _, utf8)| Some((menkuten, utf8)));
 
@@ -37,10 +37,9 @@ fn parse_line<'s>(input: &mut &'s str) -> Result<Option<(Menkuten, String)>, Con
     alt((data_line, comment_or_empty)).parse_next(input)
 }
 
-fn parse_menkuten<'s>(input: &mut &'s str) -> MenkutenTable {
+fn parse_menkuten(input: &mut &str) -> MenkutenTable {
     input
         .lines()
-        .into_iter()
         .filter_map(|mut line| {
             (
                 opt((parse_line, space1).map(|(one, _)| one)),

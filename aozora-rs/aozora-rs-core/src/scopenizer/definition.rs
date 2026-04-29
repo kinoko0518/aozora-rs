@@ -52,9 +52,9 @@ pub enum Element<'s> {
     Figure(Figure<'s>),
 }
 
-impl<'s> Into<Expression<'s>> for Element<'s> {
-    fn into(self) -> Expression<'s> {
-        Expression::Element(self)
+impl<'s> From<Element<'s>> for Expression<'s> {
+    fn from(val: Element<'s>) -> Self {
+        Expression::Element(val)
     }
 }
 
@@ -64,22 +64,22 @@ impl<'s> Element<'s> {
     /// トークンがインデックスで分割不能な場合、または分割位置がトークンのバイト長より大きい場合は直積の二番目はNoneが返ります。
     pub fn split_at(self, at: usize) -> (Element<'s>, Option<Element<'s>>) {
         if let Element::Text(t) = self {
-            if t.bytes().len() < at {
-                return (Element::Text(t).into(), None);
+            if t.len() < at {
+                return (Element::Text(t), None);
             }
-            return (
+            (
                 Element::Text(&t[0..at]),
                 Some(Element::Text(&t[at..t.len()])),
-            );
+            )
         } else {
-            return (self.into(), None);
+            return (self, None);
         }
     }
 }
 
-impl<'s> Into<Retokenized<'s>> for Element<'s> {
-    fn into(self) -> Retokenized<'s> {
-        match self {
+impl<'s> From<Element<'s>> for Retokenized<'s> {
+    fn from(val: Element<'s>) -> Self {
+        match val {
             Element::Br => Retokenized::Br,
             Element::Figure(f) => Retokenized::Figure(f),
             Element::Kunten(k) => Retokenized::Kunten(k),

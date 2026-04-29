@@ -20,33 +20,33 @@ pub enum AozoraError {
     IoError(std::io::Error),
 }
 
-impl Into<AozoraError> for WinnowError {
-    fn into(self) -> AozoraError {
+impl From<WinnowError> for AozoraError {
+    fn from(_val: WinnowError) -> Self {
         AozoraError::TokenizeError
     }
 }
 
-impl Into<AozoraError> for AozoraEpubError {
-    fn into(self) -> AozoraError {
-        AozoraError::Epub(self)
+impl From<AozoraEpubError> for AozoraError {
+    fn from(val: AozoraEpubError) -> Self {
+        AozoraError::Epub(val)
     }
 }
 
-impl Into<AozoraError> for MetaError {
-    fn into(self) -> AozoraError {
-        AozoraError::Meta(self)
+impl From<MetaError> for AozoraError {
+    fn from(val: MetaError) -> Self {
+        AozoraError::Meta(val)
     }
 }
 
-impl Into<AozoraError> for AozoraZipError {
-    fn into(self) -> AozoraError {
-        AozoraError::Zip(self)
+impl From<AozoraZipError> for AozoraError {
+    fn from(val: AozoraZipError) -> Self {
+        AozoraError::Zip(val)
     }
 }
 
-impl Into<AozoraError> for std::io::Error {
-    fn into(self) -> AozoraError {
-        AozoraError::IoError(self)
+impl From<std::io::Error> for AozoraError {
+    fn from(val: std::io::Error) -> Self {
+        AozoraError::IoError(val)
     }
 }
 
@@ -75,21 +75,21 @@ pub enum AozoraWarning {
     Epub(EpubWarning),
 }
 
-impl Into<AozoraWarning> for ScopenizeError {
-    fn into(self) -> AozoraWarning {
-        AozoraWarning::Scopenize(self)
+impl From<ScopenizeError> for AozoraWarning {
+    fn from(val: ScopenizeError) -> Self {
+        AozoraWarning::Scopenize(val)
     }
 }
 
-impl Into<AozoraWarning> for RetokenizeError {
-    fn into(self) -> AozoraWarning {
-        AozoraWarning::Retokenize(self)
+impl From<RetokenizeError> for AozoraWarning {
+    fn from(val: RetokenizeError) -> Self {
+        AozoraWarning::Retokenize(val)
     }
 }
 
-impl Into<AozoraWarning> for EpubWarning {
-    fn into(self) -> AozoraWarning {
-        AozoraWarning::Epub(self)
+impl From<EpubWarning> for AozoraWarning {
+    fn from(val: EpubWarning) -> Self {
+        AozoraWarning::Epub(val)
     }
 }
 

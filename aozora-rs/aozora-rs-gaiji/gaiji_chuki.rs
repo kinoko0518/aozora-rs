@@ -24,7 +24,7 @@ struct GaijiChukiLine<'s> {
 impl GaijiChukiLine<'_> {
     fn try_string(self, menkuten: &MenkutenTable) -> String {
         if let Some(uni) = self.value.unicode {
-            return uni;
+            uni
         } else if let Some(sjis) = self.value.sjis.and_then(|code| menkuten.get(&code)) {
             sjis.to_owned()
         } else {
@@ -55,7 +55,7 @@ pub fn satisfy_pdfium(out_dir: &Path) -> Result<Pdfium, Box<dyn std::error::Erro
         "libpdfium.so"
     };
 
-    for entry in archive.entries()?.into_iter() {
+    for entry in archive.entries()? {
         let query = if cfg!(target_os = "windows") {
             "bin/pdfium.dll"
         } else if cfg!(target_os = "macos") {
@@ -86,13 +86,12 @@ fn gaiji_chuki_line<'s>(input: &mut &'s str) -> Result<GaijiChukiLine<'s>, Conte
         .parse_next(input)
 }
 
-fn collect_all_gaiji_chuki_line<'s>(
-    input: &mut &'s str,
+fn collect_all_gaiji_chuki_line(
+    input: &mut &str,
     menkuten: &MenkutenTable,
 ) -> HashMap<String, String> {
     input
         .lines()
-        .into_iter()
         .filter_map(|mut line| {
             (
                 space0,
@@ -109,7 +108,7 @@ fn collect_all_gaiji_chuki_line<'s>(
         .fold(
             HashMap::new(),
             |mut acc: HashMap<String, String>, gcl: GaijiChukiLine| {
-                let key = gcl.value.tag.replace(' ', "").replace('\u{3000}', "");
+                let key = gcl.value.tag.replace([' ', '\u{3000}'], "");
                 let value = gcl.try_string(menkuten);
                 acc.insert(key, value);
                 acc
@@ -158,7 +157,7 @@ pub fn get_latest_gaiji_chuki(
                     .pages()
                     .iter()
                     .try_fold(String::new(), |mut acc: String, page| {
-                        acc.extend(page.text()?.all().chars());
+                        acc.push_str(&page.text()?.all());
                         acc.push('\n');
                         Ok(acc)
                     });

@@ -20,19 +20,19 @@ pub enum WholeLine {
     LowFlying(usize),
 }
 
-impl Into<Deco<'static>> for WholeLine {
-    fn into(self) -> Deco<'static> {
-        match self {
-            Self::Indent(n) => Deco::Indent(n),
-            Self::Grounded => Deco::Grounded,
-            Self::LowFlying(n) => Deco::LowFlying(n),
+impl From<WholeLine> for Deco<'static> {
+    fn from(val: WholeLine) -> Self {
+        match val {
+            WholeLine::Indent(n) => Deco::Indent(n),
+            WholeLine::Grounded => Deco::Grounded,
+            WholeLine::LowFlying(n) => Deco::LowFlying(n),
         }
     }
 }
 
-impl Into<AozoraTokenKind<'static>> for WholeLine {
-    fn into(self) -> AozoraTokenKind<'static> {
-        AozoraTokenKind::Annotation(Annotation::WholeLine(self))
+impl From<WholeLine> for AozoraTokenKind<'static> {
+    fn from(val: WholeLine) -> Self {
+        AozoraTokenKind::Annotation(Annotation::WholeLine(val))
     }
 }
 

@@ -24,11 +24,10 @@ impl GaijiChuki<'_> {
         menkuten: &'s HashMap<Menkuten, String>,
     ) -> Option<Cow<'s, str>> {
         self.unicode
-            .map(|code| Cow::Owned(code))
+            .map(Cow::Owned)
             .or(self
                 .sjis
-                .map(|code| menkuten.get(&code).map(|got| Cow::Borrowed(got.as_str())))
-                .flatten())
+                .and_then(|code| menkuten.get(&code).map(|got| Cow::Borrowed(got.as_str()))))
             .or(gaiji_to_char
                 .get(self.tag)
                 .map(|c| Cow::Borrowed(c.as_str())))
@@ -61,7 +60,7 @@ pub fn shift_jis(input: &mut &str) -> Result<Menkuten, ContextError> {
 fn hex_digit_as_char(input: &mut &str) -> Result<char, ContextError> {
     hex_digit1
         .verify_map(|digit| u32::from_str_radix(digit, 16).ok())
-        .verify_map(|digit| char::from_u32(digit))
+        .verify_map(char::from_u32)
         .parse_next(input)
 }
 
@@ -73,8 +72,8 @@ pub fn unicode(input: &mut &str) -> Result<String, ContextError> {
         .parse_next(input)
 }
 
-fn tag_limiter<'s>(
-    input: &mut &'s str,
+fn tag_limiter(
+    input: &mut &str,
 ) -> Result<(Option<String>, Option<Menkuten>), ContextError> {
     (
         opt(('、', unicode)),

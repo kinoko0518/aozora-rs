@@ -14,15 +14,16 @@ use crate::{
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct HangingIndent {
-    fst_lvl: usize,
-    snd_lvl: usize,
+    pub fst_lvl: usize,
+    pub snd_lvl: usize,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LowFlying {
-    level: usize,
+    pub level: usize,
 }
 
+/// 複数行挟み込み型注記の開始側、［＃ここから……］の形式で表記される側です。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MultiLineBegins {
     /// ここからN字下げに対応
@@ -56,6 +57,7 @@ impl SandwichedBegin<MultiLineEnds> for MultiLineBegins {
 }
 
 impl MultiLineBegins {
+    /// 注記を[`Deco`]に変換します。
     pub fn into_deco<'s>(self) -> Deco<'s> {
         match self {
             Self::BlockIndent(b) => Deco::Indent(b.level),
@@ -69,13 +71,20 @@ impl MultiLineBegins {
     }
 }
 
+/// 複数行挟み込み型注記の終了側、［＃ここで……終わり］の形式で表記される側です。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MultiLineEnds {
+    /// 「ここで字下げ終わり」に対応
     BlockIndentEnd,
+    /// 「ここで地付き終わり」
     GroundedEnd,
+    /// 「ここで字上げ終わり」に対応
     LowFlyingEnd,
+    /// 「ここで小さな文字終わり」に対応
     SmallEnd,
+    /// 「ここで大きな文字終わり」に対応
     BigEnd,
+    /// 「ここで字詰め終わり」に対応
     Kerning,
 }
 
@@ -85,13 +94,13 @@ pub enum MultiLineEnds {
 /// 一行目
 /// 二行目
 /// ……
-/// ［＃ここまで……］
+/// ［＃ここで……終わり］
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MultiLine {
     /// 一部例外と［＃ここから……］のパターンで記述される複数行挟み込み型の開始注記です。
     Begin(MultiLineBegins),
-    /// 一部例外と［＃ここまで……］のパターンで記述される複数行挟み込み型の終了注記です。
+    /// 一部例外と［＃ここで……終わり］のパターンで記述される複数行挟み込み型の終了注記です。
     End(MultiLineEnds),
 }
 

@@ -31,7 +31,7 @@ fn render_xhtml_tags(tags: Vec<XHTMLTag<'_>>) -> String {
         if !is_inline && is_block_end {
             indent = indent.saturating_sub(1);
         }
-        buff.extend(std::iter::repeat('\t').take(indent));
+        buff.extend(std::iter::repeat_n('\t', indent));
 
         if is_inline {
             // 同行のインライン要素を消化しきる
@@ -59,6 +59,12 @@ pub struct XHTMLConverter<'s> {
     xhtmls: Vec<Vec<XHTMLTag<'s>>>,
     dependencies: Vec<String>,
     chapters: Vec<Chapter>,
+}
+
+impl<'s> Default for XHTMLConverter<'s> {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<'s> XHTMLConverter<'s> {
@@ -91,7 +97,7 @@ impl<'s> XHTMLConverter<'s> {
         while let Some(s) = peekable.peek() {
             match s {
                 Retokenized::DecoEnd(d) if d == &end_variant => break,
-                Retokenized::Text(t) => buff.extend(t.chars()),
+                Retokenized::Text(t) => buff.push_str(t),
                 _ => (),
             }
         }
@@ -160,7 +166,7 @@ impl<'s> XHTMLConverter<'s> {
                 "class=\"{}\"",
                 [Some("page"), page.is_centre.then_some("vhcentre")]
                     .into_iter()
-                    .filter_map(|s| s)
+                    .flatten()
                     .join(" ")
             ))],
         });

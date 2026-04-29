@@ -121,7 +121,7 @@ pub fn plot_result(
     );
 
     let radius = 8i32;
-    for (_, ok) in ok_results {
+    for ok in ok_results.values() {
         let x_val = match x_axis {
             XAxis::WordCount => ok.word_count as f32,
             XAxis::DecoCount => ok.deco_count as f32,
@@ -138,11 +138,10 @@ pub fn plot_result(
 
         for y in (cy - radius)..=(cy + radius) {
             for x in (cx - radius)..=(cx + radius) {
-                if (x - cx).pow(2) + (y - cy).pow(2) <= radius.pow(2) {
-                    if let Some(pixel) = image.get_pixel_mut_checked(x as u32, y as u32) {
+                if (x - cx).pow(2) + (y - cy).pow(2) <= radius.pow(2)
+                    && let Some(pixel) = image.get_pixel_mut_checked(x as u32, y as u32) {
                         pixel.blend(&color_points);
                     }
-                }
             }
         }
 

@@ -52,7 +52,7 @@ pub fn analyse_per_work(s: &str) -> Result<WorkAnalyse, AozoraError> {
         let (cow, _, _) = SHIFT_JIS.decode(bytes);
         cow.replace("\r\n", "\n")
     };
-    let original_text = decode(&std::fs::read(s).map_err(|e| e.into())?);
+    let original_text = decode(&std::fs::read(s).map_err(AozoraError::from)?);
     let read_duration = read_instant.elapsed();
 
     let gaiji_instant = Instant::now();
@@ -62,14 +62,14 @@ pub fn analyse_per_work(s: &str) -> Result<WorkAnalyse, AozoraError> {
     let mut s_slice = s.as_ref();
 
     let meta_instant = Instant::now();
-    let meta = parse_meta(&mut s_slice).map_err(|e| e.into())?;
+    let meta = parse_meta(&mut s_slice).map_err(AozoraError::from)?;
     let meta_duration = meta_instant.elapsed();
 
     let title_owned = meta.title.to_string();
     let author_owned = meta.author.to_string();
 
     let tokenize_instant = Instant::now();
-    let tokenized = tokenize(&mut LocatingSlice::new(s_slice)).map_err(|e| e.into())?;
+    let tokenized = tokenize(&mut LocatingSlice::new(s_slice)).map_err(AozoraError::from)?;
     let tokenize_duration = tokenize_instant.elapsed();
 
     let invalid_notes: Vec<String> = tokenized
@@ -106,7 +106,7 @@ pub fn analyse_per_work(s: &str) -> Result<WorkAnalyse, AozoraError> {
     let xhtmlnize_duration = xhtmlnize_instant.elapsed();
 
     let epub_instant = Instant::now();
-    std::fs::create_dir_all(EPUB_OUT_PATH).map_err(|e| e.into())?;
+    std::fs::create_dir_all(EPUB_OUT_PATH).map_err(AozoraError::from)?;
     fn sanitize(original: &str) -> String {
         original
             .replace("\"", "")
@@ -126,7 +126,7 @@ pub fn analyse_per_work(s: &str) -> Result<WorkAnalyse, AozoraError> {
             sanitize(&author_owned),
             sanitize(&title_owned)
         ))
-        .map_err(|e| e.into())?,
+        .map_err(AozoraError::from)?,
         &Dependencies::default(),
         &xhtmlnized,
         &EpubSetting {
@@ -140,7 +140,7 @@ pub fn analyse_per_work(s: &str) -> Result<WorkAnalyse, AozoraError> {
         &meta,
         &aozora_rs::PageInjectors::default(),
     )
-    .map_err(|e| e.into())?;
+    .map_err(AozoraError::from)?;
     let epub_duration = epub_instant.elapsed();
 
     Ok(WorkAnalyse {
@@ -150,7 +150,7 @@ pub fn analyse_per_work(s: &str) -> Result<WorkAnalyse, AozoraError> {
         word_count: s.chars().count(),
         deco_count,
         token_count,
-        byte_count: s.as_bytes().len(),
+        byte_count: s.len(),
 
         scopenize_errors: scopenize_errors
             .iter()

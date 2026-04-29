@@ -118,7 +118,7 @@ pub async fn analyse_all_works(path_map: &MapCache) -> Result<(), Box<dyn std::e
     // サマリーを作成
     println!("サマリーを作成中……");
     let mut summary_file = File::create(concatcp!(RESULT_OUT_PATH, "/summary.json"))?;
-    let mut ok_results: Vec<_> = ok_results.into_iter().map(|(_, a)| a).collect();
+    let mut ok_results: Vec<_> = ok_results.into_values().collect();
 
     let get_ranking_top = |sort_by: Box<dyn FnMut(&WorkAnalyse, &WorkAnalyse) -> Ordering>,
                            ok_results: &mut Vec<_>| {

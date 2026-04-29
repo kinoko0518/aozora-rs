@@ -1,20 +1,15 @@
-use crate::{
-    nihongo::is_kanji,
-    scopenizer::definition::{Element, PageBreak, Scope},
-    tokenizer::*,
-    *,
-};
+use crate::{nihongo::is_kanji, scopenizer::definition::Scope, tokenizer::*, *};
 
-impl<'s> Into<Expression<'s>> for Single<'s> {
-    fn into(self) -> Expression<'s> {
-        match self {
-            Self::ColumnBreak => Expression::PageBreak(PageBreak::ColumnBreak),
-            Self::PageBreak => Expression::PageBreak(PageBreak::PageBreak),
-            Self::RectoBreak => Expression::PageBreak(PageBreak::RectoBreak),
-            Self::SpreadBreak => Expression::PageBreak(PageBreak::SpreadBreak),
-            Self::Kundoku(k) => Expression::Element(Element::Kunten(k)),
-            Self::Okurigana(o) => Expression::Element(Element::Okurigana(o)),
-            Self::Figure(i) => Expression::Element(Element::Figure(i)),
+impl<'s> From<Single<'s>> for Expression<'s> {
+    fn from(val: Single<'s>) -> Self {
+        match val {
+            Single::ColumnBreak => Expression::PageBreak(PageBreak::ColumnBreak),
+            Single::PageBreak => Expression::PageBreak(PageBreak::PageBreak),
+            Single::RectoBreak => Expression::PageBreak(PageBreak::RectoBreak),
+            Single::SpreadBreak => Expression::PageBreak(PageBreak::SpreadBreak),
+            Single::Kundoku(k) => Expression::Element(Element::Kunten(k)),
+            Single::Okurigana(o) => Expression::Element(Element::Okurigana(o)),
+            Single::Figure(i) => Expression::Element(Element::Figure(i)),
         }
     }
 }

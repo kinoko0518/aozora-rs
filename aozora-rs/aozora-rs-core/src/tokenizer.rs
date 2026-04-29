@@ -7,8 +7,8 @@ mod parser;
 mod test;
 
 pub use annotation::{
-    Annotation, SandwichedBegin, backref::BackRefKind, multiline::MultiLine,
-    sandwiched::Sandwiched, single::Single, wholeline::WholeLine,
+    Annotation, SandwichedBegin, backref::BackRefKind, multiline::{MultiLine, MultiLineBegins, MultiLineEnds},
+    sandwiched::{Sandwiched, SandwichedBegins, SandwichedEnds}, single::Single, wholeline::WholeLine,
 };
 pub use definition::{AozoraTokenKind, Tokenized};
 pub use parser::tokenize;

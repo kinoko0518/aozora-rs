@@ -54,9 +54,9 @@ pub struct BackRef<'s> {
     pub range: BackRefSpec<'s>,
 }
 
-impl<'s> Into<AozoraTokenKind<'s>> for BackRef<'s> {
-    fn into(self) -> AozoraTokenKind<'s> {
-        AozoraTokenKind::Annotation(Annotation::BackRef(self))
+impl<'s> From<BackRef<'s>> for AozoraTokenKind<'s> {
+    fn from(val: BackRef<'s>) -> Self {
+        AozoraTokenKind::Annotation(Annotation::BackRef(val))
     }
 }
 

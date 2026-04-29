@@ -69,7 +69,7 @@ pub struct AozoraDocument<'s> {
 impl<'s> TryFrom<&'s AozoraZip> for AozoraDocument<'s> {
     type Error = AozoraError;
     fn try_from(value: &'s AozoraZip) -> Result<Self, Self::Error> {
-        let (meta, text) = str_to_meta_and_str(&value.txt.as_str())?;
+        let (meta, text) = str_to_meta_and_str(value.txt.as_str())?;
         Ok(Self {
             meta,
             text,
@@ -80,7 +80,7 @@ impl<'s> TryFrom<&'s AozoraZip> for AozoraDocument<'s> {
 
 fn str_to_xhtml(text: &str) -> Result<(XHTMLResult, Vec<AozoraWarning>), AozoraError> {
     let mut loc = LocatingSlice::new(text);
-    let tokenized = tokenize(&mut loc).map_err(|e| e.into())?;
+    let tokenized = tokenize(&mut loc).map_err(AozoraError::from)?;
     let ((scopenized, flattoken), scopenized_err) = scopenize(tokenized).into_tuple();
     let (retokenized, retokenized_err) = retokenize(flattoken, scopenized);
     let xhtml_result = retokenized_to_xhtml(retokenized);
@@ -92,8 +92,8 @@ fn str_to_xhtml(text: &str) -> Result<(XHTMLResult, Vec<AozoraWarning>), AozoraE
 }
 
 fn str_to_meta_and_str<'s>(text: &'s str) -> Result<(AozoraMeta<'s>, &'s str), AozoraError> {
-    let mut cursor = &*text;
-    let meta = parse_meta(&mut cursor).map_err(|e| e.into())?;
+    let mut cursor = text;
+    let meta = parse_meta(&mut cursor).map_err(AozoraError::from)?;
     Ok((meta, cursor))
 }
 
@@ -218,7 +218,7 @@ impl<'s> AozoraDocument<'s> {
             &self.meta,
             injectors,
         )
-        .map_err(|e| e.into())?
+        .map_err(AozoraError::from)?
         .into_tuple();
         warn.extend(zip_warn.into_iter().map(|w| w.into()));
         Ok(warn)
