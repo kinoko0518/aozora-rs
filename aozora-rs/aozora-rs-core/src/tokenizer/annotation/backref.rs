@@ -75,12 +75,11 @@ pub fn backref<'s>(input: &mut Input<'s>) -> Result<BackRef<'s>, WinnowError> {
             (japanese_num, "段階小さな文字").map(|(size, _)| BackRefKind::Small(size)),
             (japanese_num, "段階大きな文字").map(|(size, _)| BackRefKind::Big(size)),
             (
-                take_until(1.., "では"),
-                "では「",
-                take_until(0.., "」"),
+                take_until(1.., "では「"),
+                delimited("では「", take_until(0.., "」"), "」"),
                 "」",
             )
-                .map(|(on, _, variation, _)| BackRefKind::Variation((on, variation))),
+                .map(|(on, variation, _)| BackRefKind::Variation((on, variation))),
             alt(("下付き小文字", "行右小書き")).value(BackRefKind::Sub),
             alt(("上付き小文字", "行左小書き")).value(BackRefKind::Sup),
         )),

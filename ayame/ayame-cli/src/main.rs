@@ -158,7 +158,7 @@ fn handle_xhtml(source: &Path, args: &CommonArgs, style: &Style, output_dir: &Pa
 
     let (xhtml, errors) = ayame::to_browser_xhtml(&doc, style).map_err(|e| e.to_string())?;
     for error in &errors {
-        eprintln!("警告 ({}): {}", source.display(), error.display(txt));
+        eprintln!("\n警告 ({}): {}", source.display(), error.display(txt));
     }
 
     let output_path = output_dir.join(format!("{}.xhtml", file_stem));
@@ -192,7 +192,7 @@ fn handle_epub(source: &Path, args: &CommonArgs, style: &Style, output_dir: &Pat
         .epub(&mut file, style, &injectors)
         .map_err(|e| e.to_string())?;
     for w in &warnings {
-        eprintln!("警告 ({}): {}", source.display(), w.display(txt));
+        eprintln!("\n警告 ({}): {}", source.display(), w.display(txt));
     }
 
     println!(

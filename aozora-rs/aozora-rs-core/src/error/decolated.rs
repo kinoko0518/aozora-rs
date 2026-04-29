@@ -44,14 +44,15 @@ pub fn display_error_with_decolation(
     let after_err = &original[error.end..after_err_idx];
 
     let lines = count_newlines(original, 0, before_err_idx);
+    let err_colour = "#900";
 
     format!(
         "{}：{}\n\t{} {} >> {} << {}",
-        error_cathegory.color("#009"),
+        error_cathegory.color(err_colour),
         error_kind,
-        before_err,
         lines.to_string().color("#999"),
-        &original[error].color("#009"),
+        before_err,
+        &original[error].color(err_colour),
         after_err
     )
 }
