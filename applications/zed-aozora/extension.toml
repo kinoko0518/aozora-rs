@@ -1,7 +1,11 @@
-id = "aozora-rs"
-name = "Aozora Bunko"
+id = "aozorabunko-lsp-by-aozora-rs"
+name = "Aozorabunko"
 version = "0.0.1"
 schema_version = 1
-authors = ["kinoko0518"]
-description = "Aozora Bunko support for Zed, powered by aozora-lsp."
+authors = ["Kinokov"]
+description = "An Aozorabunko markup's LSP, powered by aozora.rs"
 repository = "https://github.com/kinoko0518/aozora-rs"
+
+[language_servers.aozora-rs]
+name = "aozora-rs"
+languages = ["aozora"]
