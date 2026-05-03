@@ -3,7 +3,8 @@ use tower_lsp::lsp_types::{
     SemanticTokensLegend,
 };
 
-use crate::document::{DocumentState, OwnedAnnotation, OwnedTokenKind};
+use crate::document::DocumentState;
+use aozora_rs_core::{Annotation, AozoraTokenKind, MultiLine, Sandwiched};
 
 /// LSPに公開するセマンティックトークンタイプ一覧
 pub const TOKEN_TYPES: &[SemanticTokenType] = &[
@@ -37,26 +38,26 @@ pub fn compute_semantic_tokens(doc: &DocumentState) -> SemanticTokens {
     emit_metadata_tokens(doc, &mut tokens);
 
     // 本文のトークン
-    for token in &doc.tokens {
+    for token in &doc.parsed().tokens {
         let (token_type, modifiers) = match &token.kind {
-            OwnedTokenKind::Annotation(a) => {
+            AozoraTokenKind::Annotation(a) => {
                 let modifier = match a {
-                    OwnedAnnotation::SandwichedBegin { .. }
-                    | OwnedAnnotation::MultilineBegin { .. } => 1u32 << 0, // declaration
-                    OwnedAnnotation::SandwichedEnd { .. }
-                    | OwnedAnnotation::MultilineEnd { .. } => 1u32 << 1, // modification
-                    OwnedAnnotation::Unknown(_) => 1u32 << 2,            // deprecated
+                    Annotation::Sandwiched(Sandwiched::Begin(_))
+                    | Annotation::Multiline(MultiLine::Begin(_)) => 1u32 << 0, // declaration
+                    Annotation::Sandwiched(Sandwiched::End(_))
+                    | Annotation::Multiline(MultiLine::End(_)) => 1u32 << 1, // modification
+                    Annotation::Unknown(_) => 1u32 << 2,            // deprecated
                     _ => 0,
                 };
                 (0u32, modifier) // macro
             }
-            OwnedTokenKind::Ruby(_) => (1, 0),          // string
-            OwnedTokenKind::RubyDelimiter => (2, 0),     // operator
-            OwnedTokenKind::Text | OwnedTokenKind::Br => continue,
+            AozoraTokenKind::Ruby(_) => (1, 0),          // string
+            AozoraTokenKind::RubyDelimiter => (2, 0),     // operator
+            AozoraTokenKind::Text(_) | AozoraTokenKind::Br => continue,
         };
 
-        let start = doc.line_index.offset_to_position(&doc.text, token.span.start);
-        let end = doc.line_index.offset_to_position(&doc.text, token.span.end);
+        let start = doc.line_index.offset_to_position(doc.text(), token.span.start);
+        let end = doc.line_index.offset_to_position(doc.text(), token.span.end);
 
         // セマンティックトークンが複数行にまたがる場合、行ごとに分割する
         if start.line == end.line {
@@ -71,11 +72,11 @@ pub fn compute_semantic_tokens(doc: &DocumentState) -> SemanticTokens {
             // 注記が複数行にまたがることは稀だが対応する
             // 先頭行
             let first_line_end = doc
-                .text[token.span.start..]
+                .text()[token.span.start..]
                 .find('\n')
                 .map(|i| token.span.start + i)
                 .unwrap_or(token.span.end);
-            let first_end = doc.line_index.offset_to_position(&doc.text, first_line_end);
+            let first_end = doc.line_index.offset_to_position(doc.text(), first_line_end);
             tokens.push(RawSemanticToken {
                 line: start.line,
                 start_char: start.character,
@@ -87,18 +88,18 @@ pub fn compute_semantic_tokens(doc: &DocumentState) -> SemanticTokens {
             // 中間行と最終行
             let mut current_offset = first_line_end + 1;
             while current_offset < token.span.end {
-                let line_end = doc.text[current_offset..]
+                let line_end = doc.text()[current_offset..]
                     .find('\n')
                     .map(|i| current_offset + i)
                     .unwrap_or(token.span.end);
                 let actual_end = line_end.min(token.span.end);
-                let line_start_pos = doc.line_index.offset_to_position(&doc.text, current_offset);
-                let line_end_pos = doc.line_index.offset_to_position(&doc.text, actual_end);
-                if line_end_pos.character > 0 {
+                let line_start_pos = doc.line_index.offset_to_position(doc.text(), current_offset);
+                let line_end_pos = doc.line_index.offset_to_position(doc.text(), actual_end);
+                if line_end_pos.character > line_start_pos.character {
                     tokens.push(RawSemanticToken {
                         line: line_start_pos.line,
-                        start_char: 0,
-                        length: line_end_pos.character,
+                        start_char: line_start_pos.character,
+                        length: line_end_pos.character - line_start_pos.character,
                         token_type,
                         modifiers,
                     });
@@ -151,11 +152,11 @@ struct RawSemanticToken {
 
 /// メタデータ領域のセマンティックトークンを出力する
 fn emit_metadata_tokens(doc: &DocumentState, tokens: &mut Vec<RawSemanticToken>) {
-    let header = &doc.text[..doc.body_offset];
+    let header = &doc.text()[..doc.parsed().body_offset];
 
     // タイトル行 (1行目)
     if let Some(newline_pos) = header.find('\n') {
-        let title_end = doc.line_index.offset_to_position(&doc.text, newline_pos);
+        let title_end = doc.line_index.offset_to_position(doc.text(), newline_pos);
         tokens.push(RawSemanticToken {
             line: 0,
             start_char: 0,
@@ -168,12 +169,12 @@ fn emit_metadata_tokens(doc: &DocumentState, tokens: &mut Vec<RawSemanticToken>)
         let author_start = newline_pos + 1;
         if let Some(second_newline) = header[author_start..].find('\n') {
             let author_end_offset = author_start + second_newline;
-            let author_start_pos = doc.line_index.offset_to_position(&doc.text, author_start);
-            let author_end_pos = doc.line_index.offset_to_position(&doc.text, author_end_offset);
+            let author_start_pos = doc.line_index.offset_to_position(doc.text(), author_start);
+            let author_end_pos = doc.line_index.offset_to_position(doc.text(), author_end_offset);
             tokens.push(RawSemanticToken {
                 line: author_start_pos.line,
-                start_char: 0,
-                length: author_end_pos.character,
+                start_char: author_start_pos.character,
+                length: author_end_pos.character - author_start_pos.character,
                 token_type: 4, // type
                 modifiers: 0,
             });
@@ -181,17 +182,17 @@ fn emit_metadata_tokens(doc: &DocumentState, tokens: &mut Vec<RawSemanticToken>)
     }
 
     // 記号説明ブロック
-    if let Some(ref block) = doc.symbol_block {
-        let block_text = &doc.text[block.start..block.end];
+    if let Some(ref block) = doc.parsed().symbol_block {
+        let block_text = &doc.text()[block.start..block.end];
         let mut offset = block.start;
         for line in block_text.split('\n') {
             if !line.is_empty() {
-                let pos = doc.line_index.offset_to_position(&doc.text, offset);
+                let pos = doc.line_index.offset_to_position(doc.text(), offset);
                 let line_utf16_len = line.trim_end_matches('\r').encode_utf16().count() as u32;
                 if line_utf16_len > 0 {
                     tokens.push(RawSemanticToken {
                         line: pos.line,
-                        start_char: 0,
+                        start_char: pos.character,
                         length: line_utf16_len,
                         token_type: 5, // comment
                         modifiers: 0,

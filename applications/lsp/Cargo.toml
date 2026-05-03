@@ -7,6 +7,7 @@ edition = "2024"
 aozora-rs.workspace = true
 aozora-rs-core.workspace = true
 dashmap.workspace = true
+ouroboros.workspace = true
 serde_json.workspace = true
 tokio = { workspace = true, features = ["full"] }
 tower-lsp.workspace = true

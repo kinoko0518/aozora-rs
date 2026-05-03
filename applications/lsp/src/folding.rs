@@ -1,15 +1,16 @@
 use tower_lsp::lsp_types::{FoldingRange, FoldingRangeKind};
 
-use crate::document::{DocumentState, OwnedDecoKind};
+use aozora_rs_core::Deco;
+use crate::document::DocumentState;
 
 /// ドキュメントの折り畳み範囲を計算する
 pub fn compute_folding_ranges(doc: &DocumentState) -> Vec<FoldingRange> {
     let mut ranges = Vec::new();
 
     // 記号説明ブロックの折り畳み
-    if let Some(ref block) = doc.symbol_block {
-        let start = doc.line_index.offset_to_position(&doc.text, block.start);
-        let end = doc.line_index.offset_to_position(&doc.text, block.end);
+    if let Some(ref block) = doc.parsed().symbol_block {
+        let start = doc.line_index.offset_to_position(doc.text(), block.start);
+        let end = doc.line_index.offset_to_position(doc.text(), block.end);
         if end.line > start.line {
             ranges.push(FoldingRange {
                 start_line: start.line,
@@ -23,12 +24,21 @@ pub fn compute_folding_ranges(doc: &DocumentState) -> Vec<FoldingRange> {
     }
 
     // 複数行ブロック注記の折り畳み
-    for scope in &doc.scopes {
-        if scope.deco_kind != OwnedDecoKind::Block {
+    for scope in &doc.parsed().scopes {
+        if !matches!(
+            scope.deco,
+            Deco::Indent(_)
+                | Deco::Hanging(_)
+                | Deco::Grounded
+                | Deco::LowFlying(_)
+                | Deco::Smaller(_)
+                | Deco::Bigger(_)
+                | Deco::Kerning(_)
+        ) {
             continue;
         }
-        let start = doc.line_index.offset_to_position(&doc.text, scope.span.start);
-        let end = doc.line_index.offset_to_position(&doc.text, scope.span.end);
+        let start = doc.line_index.offset_to_position(doc.text(), scope.span.start);
+        let end = doc.line_index.offset_to_position(doc.text(), scope.span.end);
         if end.line > start.line {
             ranges.push(FoldingRange {
                 start_line: start.line,
@@ -36,7 +46,7 @@ pub fn compute_folding_ranges(doc: &DocumentState) -> Vec<FoldingRange> {
                 end_line: end.line,
                 end_character: None,
                 kind: Some(FoldingRangeKind::Region),
-                collapsed_text: Some(scope.deco_description.clone()),
+                collapsed_text: Some(scope.deco.to_string()),
             });
         }
     }
@@ -50,13 +60,18 @@ pub fn compute_folding_ranges(doc: &DocumentState) -> Vec<FoldingRange> {
 /// 見出しの階層構造に基づいてセクション折り畳みを生成する
 fn compute_heading_folds(doc: &DocumentState, ranges: &mut Vec<FoldingRange>) {
     // 見出しスコープを位置順に収集
-    let mut headings: Vec<(u32, OwnedDecoKind)> = doc
+    let mut headings: Vec<(u32, u8)> = doc.parsed()
         .scopes
         .iter()
-        .filter(|s| matches!(s.deco_kind, OwnedDecoKind::HeadA | OwnedDecoKind::HeadB | OwnedDecoKind::HeadC))
-        .map(|s| {
-            let line = doc.line_index.offset_to_position(&doc.text, s.span.start).line;
-            (line, s.deco_kind)
+        .filter_map(|s| {
+            let level = match s.deco {
+                Deco::AHead => 1,
+                Deco::BHead => 2,
+                Deco::CHead => 3,
+                _ => return None,
+            };
+            let line = doc.line_index.offset_to_position(doc.text(), s.span.start).line;
+            Some((line, level))
         })
         .collect();
 
@@ -66,24 +81,13 @@ fn compute_heading_folds(doc: &DocumentState, ranges: &mut Vec<FoldingRange>) {
         return;
     }
 
-    fn heading_level(kind: OwnedDecoKind) -> u8 {
-        match kind {
-            OwnedDecoKind::HeadA => 1,
-            OwnedDecoKind::HeadB => 2,
-            OwnedDecoKind::HeadC => 3,
-            _ => unreachable!(),
-        }
-    }
+    let total_lines = doc.line_index.offset_to_position(doc.text(), doc.text().len()).line;
 
-    let total_lines = doc.line_index.offset_to_position(&doc.text, doc.text.len()).line;
-
-    for (i, (line, kind)) in headings.iter().enumerate() {
-        let level = heading_level(*kind);
-
+    for (i, (line, level)) in headings.iter().enumerate() {
         // 次の同レベル以上の見出し、またはドキュメント末を探す
         let end_line = headings[i + 1..]
             .iter()
-            .find(|(_, k)| heading_level(*k) <= level)
+            .find(|(_, k)| k <= level)
             .map(|(l, _)| l.saturating_sub(1))
             .unwrap_or(total_lines);
 

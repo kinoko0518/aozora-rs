@@ -99,7 +99,7 @@ impl LanguageServer for AozoraLsp {
 
         // カーソル位置から後方スキャンして直近の `［＃` を探す
         let offset = doc.offset_at_position(pos);
-        let text_before = &doc.text[..offset];
+        let text_before = &doc.text()[..offset];
 
         let trigger = "［＃";
         let Some(trigger_pos) = text_before.rfind(trigger) else {
@@ -109,13 +109,13 @@ impl LanguageServer for AozoraLsp {
         // `［＃`の直後から現在位置までがプレフィックス
         let after_trigger = trigger_pos + trigger.len();
         // `］`が間にあれば既に閉じた注記なのでスキップ
-        let between = &doc.text[after_trigger..offset];
+        let between = &doc.text()[after_trigger..offset];
         if between.contains('］') {
             return Ok(None);
         }
 
         let prefix = between;
-        let replace_start = doc.line_index.offset_to_position(&doc.text, after_trigger);
+        let replace_start = doc.line_index.offset_to_position(doc.text(), after_trigger);
         let replace_end = pos;
         let replace_range = Range {
             start: replace_start,
@@ -147,14 +147,41 @@ impl LanguageServer for AozoraLsp {
 
 impl AozoraLsp {
     async fn reparse(&self, uri: Url, text: String) {
-        match DocumentState::parse(text) {
-            Some(state) => {
-                self.documents.insert(uri, state);
-            }
-            None => {
-                // メタデータ解析失敗 → 青空文庫書式ではないので無視
-                self.documents.remove(&uri);
-            }
-        }
+        let state = DocumentState::parse(text);
+
+        let diagnostics: Vec<Diagnostic> = state
+            .parsed()
+            .errors
+            .iter()
+            .map(|e| {
+                let span = match e {
+                    aozora_rs_core::ScopenizeError::UnclosedInlineNote(s) => s,
+                    aozora_rs_core::ScopenizeError::BackRefFailed(s) => s,
+                    aozora_rs_core::ScopenizeError::InvalidRubyDelimiterUsage(s) => s,
+                    aozora_rs_core::ScopenizeError::CrossingNote(s) => s,
+                    aozora_rs_core::ScopenizeError::IsolatedEndNote(s) => s,
+                };
+                let start = state
+                    .line_index
+                    .offset_to_position(state.text(), span.start);
+                let end = state.line_index.offset_to_position(state.text(), span.end);
+                Diagnostic {
+                    range: Range { start, end },
+                    severity: Some(DiagnosticSeverity::ERROR),
+                    code: None,
+                    code_description: None,
+                    source: Some("aozora-lsp".to_string()),
+                    message: e.display(state.text()),
+                    related_information: None,
+                    tags: None,
+                    data: None,
+                }
+            })
+            .collect();
+
+        self.client
+            .publish_diagnostics(uri.clone(), diagnostics, None)
+            .await;
+        self.documents.insert(uri, state);
     }
 }
