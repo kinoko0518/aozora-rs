@@ -4,15 +4,25 @@ use tower_lsp::lsp_types::{
 
 use crate::document::DocumentState;
 
-/// `［＃`の直後に提示する補完候補を生成する。
-/// `prefix`は`［＃`の後にすでに入力されている文字列。
-/// `replace_range`は補完テキストで置き換える範囲。
 pub fn compute_completions(
-    _doc: &DocumentState,
+    doc: &DocumentState,
     prefix: &str,
     replace_range: tower_lsp::lsp_types::Range,
 ) -> Vec<CompletionItem> {
-    let all_items = all_completion_items(replace_range);
+    let mut all_items = all_completion_items(replace_range);
+
+    let has_closing_bracket = doc.get_char_at(replace_range.end) == Some('］');
+
+    if has_closing_bracket {
+        for item in &mut all_items {
+            if let Some(CompletionTextEdit::Edit(edit)) = &mut item.text_edit {
+                if let Some(stripped) = edit.new_text.strip_suffix("］") {
+                    edit.new_text = stripped.to_string();
+                }
+            }
+        }
+    }
+
     if prefix.is_empty() {
         all_items
     } else {
@@ -62,7 +72,14 @@ fn all_completion_items(r: tower_lsp::lsp_types::Range) -> Vec<CompletionItem> {
         // 行頭型
         item("字下げ", "${1:３}字下げ］", "行をN字下げ", snip, true, r),
         item("地付き", "地付き］", "行を右端揃え", kw, false, r),
-        item("地から字上げ", "地から${1:３}字上げ］", "行を右端からN字戻す", snip, true, r),
+        item(
+            "地から字上げ",
+            "地から${1:３}字上げ］",
+            "行を右端からN字戻す",
+            snip,
+            true,
+            r,
+        ),
         // 装飾開始（Sandwiched Begin）
         item("太字", "太字］", "太字開始", kw, false, r),
         item("斜体", "斜体］", "斜体開始", kw, false, r),
@@ -89,19 +106,68 @@ fn all_completion_items(r: tower_lsp::lsp_types::Range) -> Vec<CompletionItem> {
         item("斜体終わり", "斜体終わり］", "斜体終了", kw, false, r),
         item("傍点終わり", "傍点終わり］", "傍点終了", kw, false, r),
         item("傍線終わり", "傍線終わり］", "傍線終了", kw, false, r),
-        item("二重傍線終わり", "二重傍線終わり］", "二重傍線終了", kw, false, r),
+        item(
+            "二重傍線終わり",
+            "二重傍線終わり］",
+            "二重傍線終了",
+            kw,
+            false,
+            r,
+        ),
         item("鎖線終わり", "鎖線終わり］", "鎖線終了", kw, false, r),
         item("破線終わり", "破線終わり］", "破線終了", kw, false, r),
         item("波線終わり", "波線終わり］", "波線終了", kw, false, r),
-        item("大見出し終わり", "大見出し終わり］", "大見出し終了", kw, false, r),
-        item("中見出し終わり", "中見出し終わり］", "中見出し終了", kw, false, r),
-        item("小見出し終わり", "小見出し終わり］", "小見出し終了", kw, false, r),
+        item(
+            "大見出し終わり",
+            "大見出し終わり］",
+            "大見出し終了",
+            kw,
+            false,
+            r,
+        ),
+        item(
+            "中見出し終わり",
+            "中見出し終わり］",
+            "中見出し終了",
+            kw,
+            false,
+            r,
+        ),
+        item(
+            "小見出し終わり",
+            "小見出し終わり］",
+            "小見出し終了",
+            kw,
+            false,
+            r,
+        ),
         item("割り注終わり", "割り注終わり］", "割り注終了", kw, false, r),
         item("横組み終わり", "横組み終わり］", "横組み終了", kw, false, r),
-        item("小さな文字終わり", "小さな文字終わり］", "小さな文字終了", kw, false, r),
-        item("大きな文字終わり", "大きな文字終わり］", "大きな文字終了", kw, false, r),
+        item(
+            "小さな文字終わり",
+            "小さな文字終わり］",
+            "小さな文字終了",
+            kw,
+            false,
+            r,
+        ),
+        item(
+            "大きな文字終わり",
+            "大きな文字終わり］",
+            "大きな文字終了",
+            kw,
+            false,
+            r,
+        ),
         // 複数行ブロック開始（Multiline Begin）
-        item("ここから字下げ", "ここから${1:３}字下げ］", "ブロック字下げ開始", snip, true, r),
+        item(
+            "ここから字下げ",
+            "ここから${1:３}字下げ］",
+            "ブロック字下げ開始",
+            snip,
+            true,
+            r,
+        ),
         item(
             "ここから字下げ（折り返し）",
             "ここから${1:３}字下げ、折り返して${2:２}字下げ］",
@@ -110,8 +176,22 @@ fn all_completion_items(r: tower_lsp::lsp_types::Range) -> Vec<CompletionItem> {
             true,
             r,
         ),
-        item("ここから地付き", "ここから地付き］", "ブロック地付き開始", kw, false, r),
-        item("ここから字上げ", "ここから地から${1:３}字上げ］", "ブロック地上げ開始", snip, true, r),
+        item(
+            "ここから地付き",
+            "ここから地付き］",
+            "ブロック地付き開始",
+            kw,
+            false,
+            r,
+        ),
+        item(
+            "ここから字上げ",
+            "ここから地から${1:３}字上げ］",
+            "ブロック地上げ開始",
+            snip,
+            true,
+            r,
+        ),
         item(
             "ここから小さな文字",
             "ここから${1:２}段階小さな文字］",
@@ -128,15 +208,71 @@ fn all_completion_items(r: tower_lsp::lsp_types::Range) -> Vec<CompletionItem> {
             true,
             r,
         ),
-        item("ここから字詰め", "ここから${1:２}字詰め］", "ブロック字詰め開始", snip, true, r),
+        item(
+            "ここから字詰め",
+            "ここから${1:２}字詰め］",
+            "ブロック字詰め開始",
+            snip,
+            true,
+            r,
+        ),
         // 複数行ブロック終了（Multiline End）
-        item("ここで字下げ終わり", "ここで字下げ終わり］", "ブロック字下げ終了", kw, false, r),
-        item("ここで地付き終わり", "ここで地付き終わり］", "ブロック地付き終了", kw, false, r),
-        item("ここで字上げ終わり", "ここで字上げ終わり］", "ブロック地上げ終了", kw, false, r),
-        item("ここで小さな文字終わり", "ここで小さな文字終わり］", "ブロック小文字終了", kw, false, r),
-        item("ここで大きな文字終わり", "ここで大きな文字終わり］", "ブロック大文字終了", kw, false, r),
-        item("ここで字詰め終わり", "ここで字詰め終わり］", "ブロック字詰め終了", kw, false, r),
+        item(
+            "ここで字下げ終わり",
+            "ここで字下げ終わり］",
+            "ブロック字下げ終了",
+            kw,
+            false,
+            r,
+        ),
+        item(
+            "ここで地付き終わり",
+            "ここで地付き終わり］",
+            "ブロック地付き終了",
+            kw,
+            false,
+            r,
+        ),
+        item(
+            "ここで字上げ終わり",
+            "ここで字上げ終わり］",
+            "ブロック地上げ終了",
+            kw,
+            false,
+            r,
+        ),
+        item(
+            "ここで小さな文字終わり",
+            "ここで小さな文字終わり］",
+            "ブロック小文字終了",
+            kw,
+            false,
+            r,
+        ),
+        item(
+            "ここで大きな文字終わり",
+            "ここで大きな文字終わり］",
+            "ブロック大文字終了",
+            kw,
+            false,
+            r,
+        ),
+        item(
+            "ここで字詰め終わり",
+            "ここで字詰め終わり］",
+            "ブロック字詰め終了",
+            kw,
+            false,
+            r,
+        ),
         // ページ定義
-        item("ページの左右中央", "ページの左右中央］", "ページ中央寄せ", kw, false, r),
+        item(
+            "ページの左右中央",
+            "ページの左右中央］",
+            "ページ中央寄せ",
+            kw,
+            false,
+            r,
+        ),
     ]
 }

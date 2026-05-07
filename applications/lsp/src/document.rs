@@ -1,7 +1,7 @@
 use std::ops::Range;
 
 use aozora_rs_core::{
-    parse_meta, scopenize, tokenize, AozoraMeta, Scope, ScopenizeError, Tokenized,
+    AozoraMeta, Scope, ScopenizeError, Tokenized, parse_meta, scopenize, tokenize,
 };
 use ouroboros::self_referencing;
 use tower_lsp::lsp_types::Position;
@@ -126,5 +126,9 @@ impl DocumentState {
     pub fn offset_at_position(&self, pos: Position) -> usize {
         self.line_index.position_to_offset(self.text(), pos)
     }
-}
 
+    pub fn get_char_at(&self, pos: Position) -> Option<char> {
+        let offset = self.offset_at_position(pos);
+        self.text().get(offset..).and_then(|s| s.chars().next())
+    }
+}

@@ -62,15 +62,8 @@ impl LanguageServer for AozoraLsp {
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         let uri = params.text_document.uri;
-        // TextDocumentSyncKind::FULLなので全文が1つ目のイベントに入る
         if let Some(change) = params.content_changes.into_iter().next() {
-            // 登録済みのドキュメントの場合のみリパース
-            if self.documents.contains_key(&uri) {
-                self.reparse(uri, change.text).await;
-            } else {
-                // 未登録なら新規判定を試みる
-                self.reparse(uri, change.text).await;
-            }
+            self.reparse(uri, change.text).await;
         }
     }
 
@@ -179,9 +172,10 @@ impl AozoraLsp {
             })
             .collect();
 
+        self.documents.insert(uri.clone(), state);
+
         self.client
-            .publish_diagnostics(uri.clone(), diagnostics, None)
+            .publish_diagnostics(uri, diagnostics, None)
             .await;
-        self.documents.insert(uri, state);
     }
 }

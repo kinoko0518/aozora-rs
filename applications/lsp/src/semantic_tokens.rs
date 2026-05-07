@@ -1,6 +1,5 @@
 use tower_lsp::lsp_types::{
-    SemanticToken, SemanticTokenModifier, SemanticTokenType, SemanticTokens,
-    SemanticTokensLegend,
+    SemanticToken, SemanticTokenModifier, SemanticTokenType, SemanticTokens, SemanticTokensLegend,
 };
 
 use crate::document::DocumentState;
@@ -8,19 +7,19 @@ use aozora_rs_core::{Annotation, AozoraTokenKind, MultiLine, Sandwiched};
 
 /// LSPに公開するセマンティックトークンタイプ一覧
 pub const TOKEN_TYPES: &[SemanticTokenType] = &[
-    SemanticTokenType::MACRO,     // 0: 注記
-    SemanticTokenType::STRING,    // 1: ルビ
-    SemanticTokenType::OPERATOR,  // 2: ルビ区切り
-    SemanticTokenType::NAMESPACE, // 3: タイトル
-    SemanticTokenType::TYPE,      // 4: 著者
-    SemanticTokenType::COMMENT,   // 5: 記号説明ブロック
+    SemanticTokenType::MACRO,
+    SemanticTokenType::STRING,
+    SemanticTokenType::OPERATOR,
+    SemanticTokenType::NAMESPACE,
+    SemanticTokenType::TYPE,
+    SemanticTokenType::COMMENT,
 ];
 
 /// LSPに公開するセマンティックトークン修飾子一覧
 pub const TOKEN_MODIFIERS: &[SemanticTokenModifier] = &[
-    SemanticTokenModifier::DECLARATION,  // 0: 開始注記
-    SemanticTokenModifier::MODIFICATION, // 1: 終了注記
-    SemanticTokenModifier::DEPRECATED,   // 2: 未知の注記
+    SemanticTokenModifier::DECLARATION,
+    SemanticTokenModifier::MODIFICATION,
+    SemanticTokenModifier::DEPRECATED,
 ];
 
 pub fn legend() -> SemanticTokensLegend {
@@ -46,18 +45,22 @@ pub fn compute_semantic_tokens(doc: &DocumentState) -> SemanticTokens {
                     | Annotation::Multiline(MultiLine::Begin(_)) => 1u32 << 0, // declaration
                     Annotation::Sandwiched(Sandwiched::End(_))
                     | Annotation::Multiline(MultiLine::End(_)) => 1u32 << 1, // modification
-                    Annotation::Unknown(_) => 1u32 << 2,            // deprecated
+                    Annotation::Unknown(_) => 1u32 << 2, // deprecated
                     _ => 0,
                 };
                 (0u32, modifier) // macro
             }
-            AozoraTokenKind::Ruby(_) => (1, 0),          // string
-            AozoraTokenKind::RubyDelimiter => (2, 0),     // operator
+            AozoraTokenKind::Ruby(_) => (1, 0),       // string
+            AozoraTokenKind::RubyDelimiter => (2, 0), // operator
             AozoraTokenKind::Text(_) | AozoraTokenKind::Br => continue,
         };
 
-        let start = doc.line_index.offset_to_position(doc.text(), token.span.start);
-        let end = doc.line_index.offset_to_position(doc.text(), token.span.end);
+        let start = doc
+            .line_index
+            .offset_to_position(doc.text(), token.span.start);
+        let end = doc
+            .line_index
+            .offset_to_position(doc.text(), token.span.end);
 
         // セマンティックトークンが複数行にまたがる場合、行ごとに分割する
         if start.line == end.line {
@@ -71,12 +74,13 @@ pub fn compute_semantic_tokens(doc: &DocumentState) -> SemanticTokens {
         } else {
             // 注記が複数行にまたがることは稀だが対応する
             // 先頭行
-            let first_line_end = doc
-                .text()[token.span.start..]
+            let first_line_end = doc.text()[token.span.start..]
                 .find('\n')
                 .map(|i| token.span.start + i)
                 .unwrap_or(token.span.end);
-            let first_end = doc.line_index.offset_to_position(doc.text(), first_line_end);
+            let first_end = doc
+                .line_index
+                .offset_to_position(doc.text(), first_line_end);
             tokens.push(RawSemanticToken {
                 line: start.line,
                 start_char: start.character,
@@ -93,7 +97,9 @@ pub fn compute_semantic_tokens(doc: &DocumentState) -> SemanticTokens {
                     .map(|i| current_offset + i)
                     .unwrap_or(token.span.end);
                 let actual_end = line_end.min(token.span.end);
-                let line_start_pos = doc.line_index.offset_to_position(doc.text(), current_offset);
+                let line_start_pos = doc
+                    .line_index
+                    .offset_to_position(doc.text(), current_offset);
                 let line_end_pos = doc.line_index.offset_to_position(doc.text(), actual_end);
                 if line_end_pos.character > line_start_pos.character {
                     tokens.push(RawSemanticToken {
@@ -170,7 +176,9 @@ fn emit_metadata_tokens(doc: &DocumentState, tokens: &mut Vec<RawSemanticToken>)
         if let Some(second_newline) = header[author_start..].find('\n') {
             let author_end_offset = author_start + second_newline;
             let author_start_pos = doc.line_index.offset_to_position(doc.text(), author_start);
-            let author_end_pos = doc.line_index.offset_to_position(doc.text(), author_end_offset);
+            let author_end_pos = doc
+                .line_index
+                .offset_to_position(doc.text(), author_end_offset);
             tokens.push(RawSemanticToken {
                 line: author_start_pos.line,
                 start_char: author_start_pos.character,

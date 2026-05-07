@@ -1,0 +1,42 @@
+[
+  {
+    "token_type": "namespace",
+    "style": ["title"]
+  },
+  {
+    "token_type": "type",
+    "style": ["type"]
+  },
+  {
+    "token_type": "string",
+    "style": ["string"]
+  },
+  {
+    "token_type": "operator",
+    "style": ["punctuation.delimiter"]
+  },
+  {
+    "token_type": "comment",
+    "style": ["comment"]
+  },
+  {
+    "token_type": "function",
+    "token_modifiers": ["deprecated"],
+    "style": ["invalid"],
+    "underline": true
+  },
+  {
+    "token_type": "function",
+    "token_modifiers": ["declaration"],
+    "style": ["keyword"]
+  },
+  {
+    "token_type": "function",
+    "token_modifiers": ["modification"],
+    "style": ["keyword"]
+  },
+  {
+    "token_type": "function",
+    "style": ["function"]
+  }
+]
