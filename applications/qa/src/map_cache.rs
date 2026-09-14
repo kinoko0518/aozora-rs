@@ -2,6 +2,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::Write,
+    path::Path,
     process::Command,
 };
 use walkdir::WalkDir;
@@ -14,20 +15,48 @@ pub struct MapCache {
 }
 
 impl MapCache {
-    /// 指定されたリポジトリルートで git rev-parse HEAD を実行してコミットIDを取得
-    fn get_head_commit_id(repo_root: &str) -> Result<String, Box<dyn std::error::Error>> {
-        let mut git = Command::new("git");
-        git.current_dir(repo_root); // コマンド実行ディレクトリを指定
-        Ok(String::from_utf8(
-            git.arg("rev-parse").arg("HEAD").output()?.stdout,
-        )?)
+    /// 指定されたパスの識別子を取得（GitコミットID、または更新時刻のフォールバック）
+    fn get_path_id(target_path: &Path) -> String {
+        if target_path.is_dir() {
+            let mut git = Command::new("git");
+            git.current_dir(target_path);
+            if let Ok(output) = git.arg("rev-parse").arg("HEAD").output()
+                && output.status.success()
+                && let Ok(s) = String::from_utf8(output.stdout)
+            {
+                return s.trim().to_string();
+            }
+        }
+
+        // Gitリポジトリでない場合、または単一ファイルの場合は更新時刻から識別子を生成
+        target_path
+            .metadata()
+            .and_then(|m| m.modified())
+            .map(|t| format!("{:?}", t))
+            .unwrap_or_else(|_| "unknown".to_string())
     }
 
-    /// 指定されたリポジトリルートをスキャンしてマップを生成
-    pub fn generate_map(repo_path: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        let id = Self::get_head_commit_id(repo_path)?;
-        let result = WalkDir::new(repo_path) // 指定されたルートから探索
-            .min_depth(2)
+    /// 指定されたパスを走査してマップを生成（単一ファイル、非Gitディレクトリにも対応）
+    pub fn generate_map(target_path: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        let path = Path::new(target_path);
+
+        if path.is_file() {
+            if path.extension().is_some_and(|ext| ext == "txt") {
+                return Ok(MapCache {
+                    id: Self::get_path_id(path),
+                    paths: vec![path.to_string_lossy().to_string()],
+                });
+            } else {
+                return Ok(MapCache {
+                    id: Self::get_path_id(path),
+                    paths: Vec::new(),
+                });
+            }
+        }
+
+        let id = Self::get_path_id(path);
+        let mut result: Vec<String> = WalkDir::new(path)
+            .min_depth(1)
             .into_iter()
             .filter_map(|e| e.ok())
             .filter(|entry| {
@@ -36,44 +65,45 @@ impl MapCache {
             })
             .map(|entry| entry.into_path().to_string_lossy().to_string())
             .collect();
+
+        result.sort();
+
         Ok(MapCache { id, paths: result })
     }
 
-    /// 現在のキャッシュが指定されたリポジトリの最新コミットと一致するか確認
-    pub fn is_latest(&self, repo_root: &str) -> Result<bool, Box<dyn std::error::Error>> {
-        Ok(self.id == Self::get_head_commit_id(repo_root)?)
+    /// 現在のキャッシュが指定されたパスの状態と一致するか確認
+    pub fn is_latest(&self, target_path: &str) -> bool {
+        let path = Path::new(target_path);
+        self.id == Self::get_path_id(path)
     }
 }
 
-/// キャッシュの保存先とリポジトリのルートを別々に指定してマップを更新
+/// キャッシュの保存先と対象パスを指定してマップを更新
 pub fn update_map(
     cache_bin: &str,
-    repo_path: &str,
+    target_path: &str,
 ) -> Result<MapCache, Box<dyn std::error::Error>> {
-    // キャッシュファイルの存在確認と読み込み
-    let cache_raw: Option<Vec<u8>> = fs::read(&cache_bin).ok();
+    let cache_raw: Option<Vec<u8>> = fs::read(cache_bin).ok();
 
-    // キャッシュの検証または新規生成
-    // (mapデータ, 保存が必要かどうかのフラグ) を返す
     let (map, needs_save) = if let Some(data) = cache_raw {
-        let archive = rkyv::from_bytes::<MapCache, rkyv::rancor::Error>(&data)?;
-
-        // 最新かどうかチェック
-        if !archive.is_latest(repo_path)? {
-            // 古い場合は再生成し、保存フラグをtrueに
-            (MapCache::generate_map(repo_path)?, true)
+        if let Ok(archive) = rkyv::from_bytes::<MapCache, rkyv::rancor::Error>(&data) {
+            if !archive.is_latest(target_path) {
+                (MapCache::generate_map(target_path)?, true)
+            } else {
+                (archive, false)
+            }
         } else {
-            // 最新の場合はそのまま使用し、保存フラグはfalse
-            (archive, false)
+            (MapCache::generate_map(target_path)?, true)
         }
     } else {
-        // キャッシュがない場合は新規生成し、保存フラグをtrueに
-        (MapCache::generate_map(repo_path)?, true)
+        (MapCache::generate_map(target_path)?, true)
     };
 
-    // 変更があった場合のみディスクに書き込む
     if needs_save {
-        let mut file = File::create(&cache_bin)?;
+        if let Some(parent) = Path::new(cache_bin).parent() {
+            fs::create_dir_all(parent)?;
+        }
+        let mut file = File::create(cache_bin)?;
         let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&map)?;
         file.write_all(&bytes)?;
     }

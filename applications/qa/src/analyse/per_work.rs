@@ -35,6 +35,8 @@ pub struct WorkAnalyse {
     pub invalid_notes: Vec<String>,
     // 各段階の所要時間
     pub read: Duration,
+    pub read_io: Duration,
+    pub read_decode: Duration,
     pub gaiji_convert: Duration,
     pub get_meta: Duration,
     pub tokenize: Duration,
@@ -47,13 +49,15 @@ pub struct WorkAnalyse {
 }
 
 pub fn analyse_per_work(s: &str) -> Result<WorkAnalyse, AozoraError> {
-    let read_instant = Instant::now();
-    let decode = |bytes: &[u8]| -> String {
-        let (cow, _, _) = SHIFT_JIS.decode(bytes);
-        cow.replace("\r\n", "\n")
-    };
-    let original_text = decode(&std::fs::read(s).map_err(|e| e.into())?);
-    let read_duration = read_instant.elapsed();
+    let read_io_instant = Instant::now();
+    let raw_bytes = std::fs::read(s).map_err(|e| e.into())?;
+    let read_io_duration = read_io_instant.elapsed();
+
+    let decode_instant = Instant::now();
+    let (cow, _, _) = SHIFT_JIS.decode(&raw_bytes);
+    let original_text = cow.replace("\r\n", "\n");
+    let decode_duration = decode_instant.elapsed();
+    let read_duration = read_io_duration + decode_duration;
 
     let gaiji_instant = Instant::now();
     let gaiji_converted = utf8tify_all_gaiji(original_text.as_str());
@@ -75,10 +79,7 @@ pub fn analyse_per_work(s: &str) -> Result<WorkAnalyse, AozoraError> {
     let invalid_notes: Vec<String> = tokenized
         .iter()
         .filter_map(|t| match &t.kind {
-            AozoraTokenKind::Annotation(n) => match n {
-                Annotation::Unknown(unknown) => Some(unknown),
-                _ => None,
-            },
+            AozoraTokenKind::Annotation(Annotation::Unknown(unknown)) => Some(unknown),
             _ => None,
         })
         .map(|s| s.to_string())
@@ -150,7 +151,7 @@ pub fn analyse_per_work(s: &str) -> Result<WorkAnalyse, AozoraError> {
         word_count: s.chars().count(),
         deco_count,
         token_count,
-        byte_count: s.as_bytes().len(),
+        byte_count: s.len(),
 
         scopenize_errors: scopenize_errors
             .iter()
@@ -161,6 +162,8 @@ pub fn analyse_per_work(s: &str) -> Result<WorkAnalyse, AozoraError> {
         invalid_notes,
 
         read: read_duration,
+        read_io: read_io_duration,
+        read_decode: decode_duration,
         gaiji_convert: gaiji_duration,
         get_meta: meta_duration,
         tokenize: tokenize_duration,
