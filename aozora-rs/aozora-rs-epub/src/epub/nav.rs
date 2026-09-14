@@ -31,6 +31,11 @@ impl EpubWriter<'_> {
                 "\t\t\t<li><a epub:type=\"bodymatter\" href=\"{}#{}\">本文</a></li>",
                 filename, id
             )?;
+        } else if !self.nresult.xhtmls.is_empty() {
+            writeln!(
+                writer,
+                "\t\t\t<li><a epub:type=\"bodymatter\" href=\"xhtml/sec0000.xhtml\">本文</a></li>"
+            )?;
         }
 
         writer.write_all(b"\t\t</ol>\n")?;
@@ -43,15 +48,28 @@ impl EpubWriter<'_> {
         writer.write_all("\t\t<h1>目　次</h1>\n".as_bytes())?;
         writer.write_all(b"\t\t<ol>\n")?;
 
-        for chapter in &self.nresult.chapters {
-            let filename = format!("xhtml/sec{:>04}.xhtml", chapter.xhtml_id);
-            let id = chapter.get_id();
-            let name = &chapter.name;
+        if self.nresult.chapters.is_empty() {
+            let filename = if self.has_title_page() {
+                "xhtml/title.xhtml"
+            } else {
+                "xhtml/sec0000.xhtml"
+            };
             writeln!(
                 writer,
-                "\t\t\t<li><a href=\"{}#{}\">{}</a></li>",
-                filename, id, name
+                "\t\t\t<li><a href=\"{}\">{}</a></li>",
+                filename, self.meta.title
             )?;
+        } else {
+            for chapter in &self.nresult.chapters {
+                let filename = format!("xhtml/sec{:>04}.xhtml", chapter.xhtml_id);
+                let id = chapter.get_id();
+                let name = &chapter.name;
+                writeln!(
+                    writer,
+                    "\t\t\t<li><a href=\"{}#{}\">{}</a></li>",
+                    filename, id, name
+                )?;
+            }
         }
 
         writer.write_all(b"\t\t</ol>\n")?;

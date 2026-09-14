@@ -92,7 +92,7 @@ impl EpubWriter<'_> {
     }
 
     pub(crate) fn has_toc_page(&self) -> bool {
-        self.injectors.toc_page.is_some()
+        self.injectors.toc_page.is_some() && !self.nresult.chapters.is_empty()
     }
 
     pub(crate) fn xhtmls(&self) -> impl Iterator<Item = String> {
@@ -268,16 +268,18 @@ pub fn from_aozora_zip(
             .map_err(|e| e.into())?;
     }
 
-    if let Some(ref toc_writer) = injectors.toc_page {
-        writer
-            .start_file("item/xhtml/toc.xhtml", options)
-            .map_err(|e| e.into())?;
-        let hyle = TocPageHyle {
-            chapters: &xhtml.chapters,
-        };
-        epub_writer
-            .write_injected_page(&mut writer, &hyle, toc_writer.as_ref())
-            .map_err(|e| e.into())?;
+    if epub_writer.has_toc_page() {
+        if let Some(ref toc_writer) = injectors.toc_page {
+            writer
+                .start_file("item/xhtml/toc.xhtml", options)
+                .map_err(|e| e.into())?;
+            let hyle = TocPageHyle {
+                chapters: &xhtml.chapters,
+            };
+            epub_writer
+                .write_injected_page(&mut writer, &hyle, toc_writer.as_ref())
+                .map_err(|e| e.into())?;
+        }
     }
 
     for (i, x) in epub_writer.nresult.xhtmls.iter().enumerate() {
