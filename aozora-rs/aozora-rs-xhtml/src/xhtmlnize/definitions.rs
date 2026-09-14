@@ -106,7 +106,7 @@ impl<'s> XHTMLTag<'s> {
         let mut buff = String::from("<");
         buff.push_str(match self.kind {
             XHTMLKind::Text(t) => {
-                return Cow::Borrowed(t);
+                return quick_xml::escape::escape(t);
             }
             XHTMLKind::Br => "br",
             XHTMLKind::DivBegin => "div",
