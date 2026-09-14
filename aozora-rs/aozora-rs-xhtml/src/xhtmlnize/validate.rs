@@ -7,6 +7,7 @@ pub fn validate_xhtml<'s>(buff: Vec<XHTMLTag<'s>>) -> Vec<XHTMLTag<'s>> {
     #[derive(PartialEq)]
     enum ContainerKind {
         Block,
+        Heading,
         P,
     }
     let mut stack: Vec<ContainerKind> = Vec::new();
@@ -19,7 +20,23 @@ pub fn validate_xhtml<'s>(buff: Vec<XHTMLTag<'s>>) -> Vec<XHTMLTag<'s>> {
                 stack.pop();
             }
 
-            stack.push(ContainerKind::Block);
+            match current.kind {
+                XHTMLKind::PBegin => stack.push(ContainerKind::P),
+                XHTMLKind::H1Begin | XHTMLKind::H2Begin | XHTMLKind::H3Begin => {
+                    stack.push(ContainerKind::Heading)
+                }
+                _ => {
+                    if let Some(ContainerKind::Heading) = stack.last() {
+                        buff.push(XHTMLTag {
+                            kind: XHTMLKind::SpanBegin,
+                            attributes: current.attributes,
+                        });
+                        continue;
+                    }
+                    stack.push(ContainerKind::Block);
+                }
+            }
+
             buff.push(current);
             // 次がBrなら消費する
             if peekable
@@ -32,24 +49,21 @@ pub fn validate_xhtml<'s>(buff: Vec<XHTMLTag<'s>>) -> Vec<XHTMLTag<'s>> {
         }
 
         if current.kind.is_block_end() {
-            // ブロックを終了する際、スタックのトップが<p>であれば先に閉じる
-            if let Some(ContainerKind::P) = stack.last() {
+            // ブロックを終了する際、スタックのトップが<p>で自身がPEndでなければ先に閉じる
+            if let Some(ContainerKind::P) = stack.last()
+                && !matches!(current.kind, XHTMLKind::PEnd)
+            {
                 buff.push(XHTMLTag::from_kind(XHTMLKind::PEnd));
                 stack.pop();
             }
 
-            stack.pop(); // Blockをポップ
-            buff.push(current);
-            continue;
-        }
+            if matches!(current.kind, XHTMLKind::DivEnd)
+                && let Some(ContainerKind::Heading) = stack.last()
+            {
+                buff.push(XHTMLTag::from_kind(XHTMLKind::SpanEnd));
+                continue;
+            }
 
-        if let XHTMLKind::PBegin = current.kind {
-            stack.push(ContainerKind::P);
-            buff.push(current);
-            continue;
-        }
-
-        if let XHTMLKind::PEnd = current.kind {
             stack.pop();
             buff.push(current);
             continue;
