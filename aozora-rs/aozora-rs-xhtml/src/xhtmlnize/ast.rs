@@ -24,6 +24,9 @@ impl HeadingLevel {
 pub enum InlineNode<'s> {
     Text(Cow<'s, str>),
     Br,
+    Img {
+        attributes: Vec<Cow<'s, str>>,
+    },
     Span {
         attributes: Vec<Cow<'s, str>>,
         children: Vec<InlineNode<'s>>,
@@ -50,6 +53,15 @@ impl<'s> InlineNode<'s> {
             }
             InlineNode::Br => {
                 buff.push_str("<br />");
+            }
+            InlineNode::Img { attributes } => {
+                buff.push_str("<img");
+                for attr in attributes {
+                    if !attr.is_empty() {
+                        write!(buff, " {attr}").unwrap();
+                    }
+                }
+                buff.push_str(" />");
             }
             InlineNode::Span { attributes, children } => {
                 buff.push_str("<span");

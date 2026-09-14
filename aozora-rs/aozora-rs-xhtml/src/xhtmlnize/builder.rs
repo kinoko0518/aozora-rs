@@ -69,67 +69,82 @@ impl<'s> TreeBuilder<'s> {
         }
     }
 
+    pub(crate) fn push_block(&mut self, block: BlockNode<'s>) {
+        for frame in self.stack.iter_mut().rev() {
+            if let ContainerFrame::Div { children, .. } = frame {
+                children.push(crate::xhtmlnize::ast::ContentNode::Block(block));
+                return;
+            }
+        }
+    }
+
     pub(crate) fn close_frame_and_attach(&mut self) {
         if let Some(popped) = self.pop_frame() {
-            if let Some(parent) = self.stack.last_mut() {
-                match popped {
-                    ContainerFrame::Div {
+            match popped {
+                ContainerFrame::Div {
+                    attributes,
+                    children,
+                } => {
+                    self.push_block(BlockNode::Div {
                         attributes,
                         children,
-                    } => {
-                        parent.push_block(BlockNode::Div {
-                            attributes,
-                            children,
-                        });
-                    }
-                    ContainerFrame::Paragraph {
+                    });
+                }
+                ContainerFrame::Paragraph {
+                    attributes,
+                    children,
+                } => {
+                    self.push_block(BlockNode::Paragraph {
                         attributes,
                         children,
-                    } => {
-                        parent.push_block(BlockNode::Paragraph {
-                            attributes,
-                            children,
-                        });
-                    }
-                    ContainerFrame::Heading {
+                    });
+                }
+                ContainerFrame::Heading {
+                    level,
+                    attributes,
+                    children,
+                } => {
+                    self.push_block(BlockNode::Heading {
                         level,
                         attributes,
                         children,
-                    } => {
-                        parent.push_block(BlockNode::Heading {
-                            level,
-                            attributes,
-                            children,
-                        });
-                    }
-                    ContainerFrame::Span {
-                        attributes,
-                        children,
-                    } => {
+                    });
+                }
+                ContainerFrame::Span {
+                    attributes,
+                    children,
+                } => {
+                    if let Some(parent) = self.stack.last_mut() {
                         parent.push_inline(InlineNode::Span {
                             attributes,
                             children,
                         });
                     }
-                    ContainerFrame::Sup {
-                        attributes,
-                        children,
-                    } => {
+                }
+                ContainerFrame::Sup {
+                    attributes,
+                    children,
+                } => {
+                    if let Some(parent) = self.stack.last_mut() {
                         parent.push_inline(InlineNode::Sup {
                             attributes,
                             children,
                         });
                     }
-                    ContainerFrame::Sub {
-                        attributes,
-                        children,
-                    } => {
+                }
+                ContainerFrame::Sub {
+                    attributes,
+                    children,
+                } => {
+                    if let Some(parent) = self.stack.last_mut() {
                         parent.push_inline(InlineNode::Sub {
                             attributes,
                             children,
                         });
                     }
-                    ContainerFrame::Ruby { children } => {
+                }
+                ContainerFrame::Ruby { children } => {
+                    if let Some(parent) = self.stack.last_mut() {
                         parent.push_inline(InlineNode::Span {
                             attributes: Vec::new(),
                             children,
@@ -185,15 +200,13 @@ impl<'s> TreeBuilder<'s> {
                     .size
                     .map(|size| format!("width=\"{}\" height=\"{}\"", size.0, size.1))
                     .unwrap_or_else(|| "".to_string());
-                let img = BlockNode::Img {
+                let img = InlineNode::Img {
                     attributes: vec![
                         Cow::Owned(format!("src=\"{}\"", f.path)),
                         Cow::Owned(size),
                     ],
                 };
-                if let Some(top) = self.stack.last_mut() {
-                    top.push_block(img);
-                }
+                self.push_inline(img);
                 self.dependencies.push(f.path.to_string());
             }
             Retokenized::DecoBegin(d) => self.handle_deco_begin(peekable, d),

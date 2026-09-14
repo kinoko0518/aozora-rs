@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use crate::xhtmlnize::ast::{BlockNode, ContentNode, HeadingLevel, InlineNode};
+use crate::xhtmlnize::ast::{ContentNode, HeadingLevel, InlineNode};
 
 pub(crate) enum ContainerFrame<'s> {
     Div {
@@ -55,14 +55,6 @@ impl<'s> ContainerFrame<'s> {
             Self::Ruby { children } => children.push(inline),
             Self::Sup { children, .. } => children.push(inline),
             Self::Sub { children, .. } => children.push(inline),
-        }
-    }
-
-    pub(crate) fn push_block(&mut self, block: BlockNode<'s>) {
-        match self {
-            Self::Div { children, .. } => children.push(ContentNode::Block(block)),
-            // インラインコンテキストにはブロックは入れられない（型が保証）
-            _ => unreachable!("Block elements cannot be pushed into inline context"),
         }
     }
 }
