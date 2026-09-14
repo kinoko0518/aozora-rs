@@ -56,3 +56,6 @@ web-sys = { version = "0.3", features = ["console"] }
 console_error_panic_hook = "0.1.7"
 ureq = "3.3.0"
 const_format = "0.2.36"
+roxmltree = "0.20"
+quick-xml = { version = "0.37", default-features = false }
+

@@ -9,3 +9,8 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 aozora-rs-core.workspace = true
 itertools.workspace = true
+quick-xml.workspace = true
+
+[dev-dependencies]
+roxmltree.workspace = true
+
