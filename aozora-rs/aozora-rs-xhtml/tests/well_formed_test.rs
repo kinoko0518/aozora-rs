@@ -165,3 +165,56 @@ fn test_grounded_paragraph_well_formed() {
     assert_eq!(p_node.attribute("class"), Some("grounded"));
 }
 
+#[test]
+fn test_unclosed_tags_auto_recovered() {
+    // 終了タグが欠落している（閉じ忘れ）不正な注記列
+    let page = Page {
+        content: vec![
+            Retokenized::DecoBegin(Deco::Indent(3)),
+            Retokenized::DecoBegin(Deco::Bold),
+            Retokenized::Text("閉じられていない太字と字下げ"),
+            // DecoEnd(Deco::Bold) と DecoEnd(Deco::Indent) が抜けている
+        ],
+        ..Default::default()
+    };
+
+    let result = retokenized_to_xhtml(vec![page]);
+    assert_eq!(result.xhtmls.len(), 1);
+
+    let xhtml = &result.xhtmls[0];
+    println!("Generated Auto-Recovered XHTML:\n{}", xhtml);
+
+    // TreeBuilderにより、未終了のタグが自動的にすべて閉じられ、整形式XMLとして成立することを検証
+    let doc = roxmltree::Document::parse(xhtml)
+        .expect("TreeBuilder must automatically close all unclosed tags");
+
+    assert!(doc.descendants().any(|n| n.tag_name().name() == "span"));
+    assert!(doc.descendants().any(|n| n.tag_name().name() == "div"));
+}
+
+#[test]
+fn test_ast_type_guarantee() {
+    use aozora_rs_xhtml::ast::{BlockNode, HeadingLevel, InlineNode};
+
+    // HeadingはchildrenにInlineNodeしか受け付けない（型システム上の強制）
+    let heading = BlockNode::Heading {
+        level: HeadingLevel::H2,
+        attributes: vec!["class=\"b_head\"".into()],
+        children: vec![
+            InlineNode::Text("見出しテキスト".into()),
+            InlineNode::Span {
+                attributes: vec!["class=\"sub\"".into()],
+                children: vec![InlineNode::Text("（副題）".into())],
+            },
+        ],
+    };
+
+    let mut output = String::new();
+    heading.render(&mut output, 0);
+
+    let doc = roxmltree::Document::parse(&output)
+        .expect("Directly rendered AST must be valid XML");
+    assert_eq!(doc.root_element().tag_name().name(), "h2");
+}
+
+
