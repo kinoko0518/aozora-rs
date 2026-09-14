@@ -15,4 +15,7 @@ aozora-rs.workspace = true
 aozora-rs-zip.workspace = true
 ayame.workspace = true
 wasm-bindgen.workspace = true
+encoding_rs.workspace = true
+serde.workspace = true
+serde-wasm-bindgen.workspace = true
 console_error_panic_hook.workspace = true

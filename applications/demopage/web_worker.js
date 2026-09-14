@@ -1,4 +1,4 @@
-import init, { generate_embedding_xhtml } from "./pkg/aozora_rs_wasm.js";
+import init, { render_preview } from "./pkg/aozora_rs_wasm.js";
 
 let wasmReady = false;
 
@@ -14,27 +14,16 @@ onmessage = async (e) => {
     const decoder = new TextDecoder();
     const text = decoder.decode(new Uint8Array(e.data.buffer));
 
-    const result = generate_embedding_xhtml(text, "");
-
-    if (!result.result && result.occured_error) {
+    try {
+      const html = render_preview(text);
+      postMessage({ type: "RESULT", html });
+    } catch (err) {
       postMessage({
         type: "RESULT",
-        html: `<p style="color:#e06060;font-family:Inter,sans-serif;font-size:0.9rem;padding:1em;">${escapeHtml(result.occured_error)}</p>`,
+        html: `<p style="color:#e06060;font-family:Inter,sans-serif;font-size:0.9rem;padding:1em;">${err.message || String(err)}</p>`,
       });
-    } else {
-      postMessage({ type: "RESULT", html: result.result });
     }
-
-    result.free();
   }
 };
-
-function escapeHtml(str) {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
 
 loadWasm();

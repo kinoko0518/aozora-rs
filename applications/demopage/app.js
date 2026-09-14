@@ -1,7 +1,6 @@
 import init, {
-  generate_embedding_xhtml,
-  parse_to_book_data,
-  build_epub_bytes,
+  build_epub,
+  render_standalone_html_from_bytes,
 } from "./pkg/aozora_rs_wasm.js";
 
 // web worker 準備
@@ -51,36 +50,6 @@ const spinnerDownload = $("spinner-download");
 const spinnerXhtml = $("spinner-xhtml");
 const statusBar = $("status-bar");
 
-// === miyabi CSS（HTMLビュー用） ===
-let miyabiCssText = null;
-
-async function loadMiyabiCss() {
-  const url = new URL("../ayame/assets/miyabi.css", import.meta.url).href;
-  const resp = await fetch(url);
-  miyabiCssText = await resp.text();
-}
-
-// === prelude CSS（HTMLビュー用） ===
-let preludeCssText = null;
-
-async function loadPreludeCss() {
-  const url = new URL(
-    "../../aozora-rs/aozora-rs/css/prelude.css",
-    import.meta.url,
-  ).href;
-  const resp = await fetch(url);
-  preludeCssText = await resp.text();
-}
-
-// === Preview CSS（インライン化用） ===
-let previewCssText = null;
-
-async function loadPreviewCss() {
-  const url = new URL("./preview.css", import.meta.url).href;
-  const resp = await fetch(url);
-  previewCssText = await resp.text();
-}
-
 // === ユーティリティ ===
 function debounce(fn, ms) {
   let timer;
@@ -91,7 +60,7 @@ function debounce(fn, ms) {
 }
 
 function getEncoding() {
-  return encodingSwitch.checked ? "sjis" : "utf8";
+  return encodingSwitch.checked ? "shift_jis" : "utf-8";
 }
 
 function setStatus(msg, type = "info") {
@@ -104,55 +73,11 @@ function clearStatus() {
   statusBar.className = "status-bar";
 }
 
-// === XHTMLビューア用の完全なHTML ===
-function buildFullXhtml(xhtmlBodies) {
-  const cssParts = [];
-
-  if (state.usePrelude && preludeCssText) {
-    cssParts.push(preludeCssText);
-  }
-  if (state.useMiyabi && miyabiCssText) {
-    cssParts.push(miyabiCssText);
-  }
-
-  const writingMode = state.isVertical ? "vertical-rl" : "horizontal-tb";
-  cssParts.push(`body {
-    writing-mode: ${writingMode};
-    -webkit-writing-mode: ${writingMode};
-    margin: 0;
-    padding: 0;
-    color: #1a1a1a;
-    background: #faf8f0;
-  }`);
-
-  const combinedCss = cssParts.join("\n");
-  const separator = state.isVertical
-    ? ""
-    : '<hr style="margin:2em 0;border:none;border-top:1px solid #ccc;">';
-
-  return `<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>XHTML プレビュー</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-${combinedCss}
-</style>
-</head>
-<body>${xhtmlBodies.join(separator)}</body>
-</html>`;
-}
-
 // === リアルタイムプレビュー ===
 function updatePreview() {
-  if (!state.wasmReady || !previewCssText) return;
+  if (!state.wasmReady) return;
 
   const text = textarea.value;
-
   const encoder = new TextEncoder();
   const buffer = encoder.encode(text).buffer;
   worker.postMessage({ type: "PARSE", buffer: buffer }, [buffer]);
@@ -173,13 +98,6 @@ function updateDirectionLabels() {
   labelHorizontal.classList.toggle("toggle-group__label--active", !isVertical);
   labelVertical.classList.toggle("toggle-group__label--active", isVertical);
   state.isVertical = isVertical;
-}
-
-// === .txtを.zipにラップ ===
-async function wrapTxtAsZip(txtBytes) {
-  const zip = new JSZip();
-  zip.file("input.txt", txtBytes);
-  return await zip.generateAsync({ type: "uint8array" });
 }
 
 // === ファイル読み込み ===
@@ -210,24 +128,17 @@ async function handleDownload() {
   setStatus("EPUB を生成中…", "info");
 
   try {
-    let zipBytes;
-    if (state.fileType === "txt") {
-      zipBytes = await wrapTxtAsZip(state.fileBytes);
-    } else {
-      zipBytes = state.fileBytes;
-    }
+    const options = {
+      encoding: getEncoding(),
+      isVertical: state.isVertical,
+      useMiyabi: state.useMiyabi,
+      usePrelude: state.usePrelude,
+      considerGaiji: state.considerGaiji,
+    };
 
-    const encoding = getEncoding();
-    const epubBytes = build_epub_bytes(
-      zipBytes,
-      encoding,
-      state.isVertical,
-      state.useMiyabi,
-      state.usePrelude,
-      state.considerGaiji,
-    );
+    const epubBytes = build_epub(state.fileBytes, options);
 
-    if (epubBytes.length === 0) {
+    if (!epubBytes || epubBytes.length === 0) {
       throw new Error("EPUBファイルの生成に失敗しました。");
     }
 
@@ -244,7 +155,7 @@ async function handleDownload() {
 
     setStatus("EPUB のダウンロードを開始しました。", "success");
   } catch (e) {
-    setStatus(`エラー: ${e.message}`, "error");
+    setStatus(`エラー: ${e.message || String(e)}`, "error");
   } finally {
     spinnerDownload.classList.remove("spinner--active");
     btnDownload.disabled = false;
@@ -260,50 +171,15 @@ async function handleXhtmlView() {
   setStatus("XHTML を生成中…", "info");
 
   try {
-    let textContent;
+    const options = {
+      encoding: getEncoding(),
+      isVertical: state.isVertical,
+      useMiyabi: state.useMiyabi,
+      usePrelude: state.usePrelude,
+      considerGaiji: state.considerGaiji,
+    };
 
-    if (state.fileType === "txt") {
-      const encoding = getEncoding();
-      if (encoding === "sjis") {
-        const decoder = new TextDecoder("shift_jis");
-        textContent = decoder.decode(state.fileBytes);
-      } else {
-        const decoder = new TextDecoder("utf-8");
-        textContent = decoder.decode(state.fileBytes);
-      }
-    } else {
-      const zip = await JSZip.loadAsync(state.fileBytes);
-      let txtFile = null;
-      zip.forEach((path, entry) => {
-        if (!entry.dir && path.endsWith(".txt")) {
-          txtFile = entry;
-        }
-      });
-
-      if (!txtFile) {
-        throw new Error("zip内にtxtファイルが見つかりませんでした。");
-      }
-
-      const encoding = getEncoding();
-      if (encoding === "sjis") {
-        const bytes = await txtFile.async("uint8array");
-        const decoder = new TextDecoder("shift_jis");
-        textContent = decoder.decode(bytes);
-      } else {
-        textContent = await txtFile.async("string");
-      }
-    }
-
-    const bookData = parse_to_book_data(textContent);
-
-    if (!bookData.xhtmls || bookData.xhtmls.length === 0) {
-      const err = bookData.errors;
-      bookData.free();
-      throw new Error(`XHTMLの生成に失敗しました: ${err}`);
-    }
-
-    const html = buildFullXhtml(bookData.xhtmls);
-    bookData.free();
+    const html = render_standalone_html_from_bytes(state.fileBytes, options);
 
     const blob = new Blob([html], { type: "text/html; charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -311,7 +187,7 @@ async function handleXhtmlView() {
 
     setStatus("XHTML を新しいタブで開きました。", "success");
   } catch (e) {
-    setStatus(`エラー: ${e.message}`, "error");
+    setStatus(`エラー: ${e.message || String(e)}`, "error");
   } finally {
     spinnerXhtml.classList.remove("spinner--active");
     btnXhtml.disabled = false;
@@ -321,12 +197,7 @@ async function handleXhtmlView() {
 // === 初期化 ===
 async function main() {
   try {
-    await Promise.all([
-      init(),
-      loadPreviewCss(),
-      loadMiyabiCss(),
-      loadPreludeCss(),
-    ]);
+    await init();
     state.wasmReady = true;
 
     textarea.addEventListener("input", debouncedPreview);
@@ -352,7 +223,7 @@ async function main() {
     updatePreview();
   } catch (e) {
     console.error("初期化に失敗しました:", e);
-    setStatus(`初期化エラー: ${e.message}`, "error");
+    setStatus(`初期化エラー: ${e.message || String(e)}`, "error");
   }
 }
 
