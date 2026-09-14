@@ -2,6 +2,7 @@
 
 # 🦀 aozora.rs
 
+[![CI](https://github.com/kinoko0518/aozora-rs/actions/workflows/on_push.yaml/badge.svg)](https://github.com/kinoko0518/aozora-rs/actions/workflows/on_push.yaml)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/kinoko0518/aozora-rs)](https://github.com/kinoko0518/aozora-rs/releases/latest)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
