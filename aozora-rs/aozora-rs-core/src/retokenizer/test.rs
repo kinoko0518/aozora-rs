@@ -15,11 +15,11 @@ fn kyusoku() {
     assert_eq!(
         pages.first().unwrap().content,
         vec![
-            Retokenized::DecoBegin(Deco::BHead),
             Retokenized::DecoBegin(Deco::Indent(2)),
+            Retokenized::DecoBegin(Deco::BHead),
             Retokenized::Text("休息"),
-            Retokenized::DecoEnd(Deco::Indent(2)),
             Retokenized::DecoEnd(Deco::BHead),
+            Retokenized::DecoEnd(Deco::Indent(2)),
         ]
     )
 }

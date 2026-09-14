@@ -18,42 +18,105 @@ pub enum RetokenizeEvent<'s> {
 
 type Events<'s> = Vec<(usize, RetokenizeEvent<'s>)>;
 
+fn container_rank(deco: &Deco) -> u8 {
+    match deco {
+        Deco::Indent(_)
+        | Deco::Hanging(_)
+        | Deco::VHCentre
+        | Deco::HorizontalLayout
+        | Deco::Kerning(_) => 0,
+        Deco::Grounded | Deco::LowFlying(_) => 1,
+        Deco::AHead | Deco::BHead | Deco::CHead => 2,
+        _ => 3,
+    }
+}
+
+struct EventItem<'s> {
+    pos: usize,
+    event: RetokenizeEvent<'s>,
+    span_start: usize,
+    span_end: usize,
+    rank: u8,
+}
+
 pub fn extract_events<'s>(expressions: ExpAcc<'s>, scopenized: ScopeAcc<'s>) -> Events<'s> {
-    let mut events = Vec::new();
+    let mut items = Vec::new();
     for s in scopenized.into_iter() {
-        events.push((s.span.start, RetokenizeEvent::DecoBegin(s.deco)));
-        events.push((s.span.end, RetokenizeEvent::DecoEnd));
+        let rank = container_rank(&s.deco);
+        items.push(EventItem {
+            pos: s.span.start,
+            event: RetokenizeEvent::DecoBegin(s.deco),
+            span_start: s.span.start,
+            span_end: s.span.end,
+            rank,
+        });
+        items.push(EventItem {
+            pos: s.span.end,
+            event: RetokenizeEvent::DecoEnd,
+            span_start: s.span.start,
+            span_end: s.span.end,
+            rank,
+        });
     }
     for (expression, scope) in expressions {
         match expression {
             Expression::Element(e) => {
-                events.push((scope.start, RetokenizeEvent::FlatTBegin(e)));
-                events.push((scope.end, RetokenizeEvent::FlatTEnd));
+                items.push(EventItem {
+                    pos: scope.start,
+                    event: RetokenizeEvent::FlatTBegin(e),
+                    span_start: scope.start,
+                    span_end: scope.end,
+                    rank: 255,
+                });
+                items.push(EventItem {
+                    pos: scope.end,
+                    event: RetokenizeEvent::FlatTEnd,
+                    span_start: scope.start,
+                    span_end: scope.end,
+                    rank: 255,
+                });
             }
             Expression::PageBreak(b) => {
-                events.push((scope.start, RetokenizeEvent::PageBreak));
+                items.push(EventItem {
+                    pos: scope.start,
+                    event: RetokenizeEvent::PageBreak,
+                    span_start: scope.start,
+                    span_end: scope.end,
+                    rank: 255,
+                });
                 match b {
-                    PageBreak::RectoBreak => {
-                        events.push((scope.start, RetokenizeEvent::PageDef(PageDef::FromLeft)))
-                    }
-                    PageBreak::SpreadBreak => {
-                        events.push((scope.start, RetokenizeEvent::PageDef(PageDef::FromRight)))
-                    }
+                    PageBreak::RectoBreak => items.push(EventItem {
+                        pos: scope.start,
+                        event: RetokenizeEvent::PageDef(PageDef::FromLeft),
+                        span_start: scope.start,
+                        span_end: scope.end,
+                        rank: 255,
+                    }),
+                    PageBreak::SpreadBreak => items.push(EventItem {
+                        pos: scope.start,
+                        event: RetokenizeEvent::PageDef(PageDef::FromRight),
+                        span_start: scope.start,
+                        span_end: scope.end,
+                        rank: 255,
+                    }),
                     _ => (),
                 }
             }
             Expression::PageDef(d) => {
-                events.push((scope.start, RetokenizeEvent::PageDef(d)));
+                items.push(EventItem {
+                    pos: scope.start,
+                    event: RetokenizeEvent::PageDef(d),
+                    span_start: scope.start,
+                    span_end: scope.end,
+                    rank: 255,
+                });
             }
         }
     }
-    let mut vec = events
-        .into_iter()
-        .collect::<Vec<(usize, RetokenizeEvent)>>();
 
-    vec.sort_by(|a, b| {
+    items.sort_by(|a, b| {
         // まず位置で比較
-        let cmp = a.0.cmp(&b.0);
+        let cmp = a.pos.cmp(&b.pos);
         if cmp != Ordering::Equal {
             return cmp;
         }
@@ -68,10 +131,35 @@ pub fn extract_events<'s>(expressions: ExpAcc<'s>, scopenized: ScopeAcc<'s>) -> 
                 RetokenizeEvent::PageBreak => 5,
             }
         }
-        priority(&a.1).cmp(&priority(&b.1))
+        let p_cmp = priority(&a.event).cmp(&priority(&b.event));
+        if p_cmp != Ordering::Equal {
+            return p_cmp;
+        }
+
+        match (&a.event, &b.event) {
+            (RetokenizeEvent::DecoBegin(_), RetokenizeEvent::DecoBegin(_)) => {
+                // スコープが外側（span_end が後ろにある）ものを先に開始
+                let end_cmp = b.span_end.cmp(&a.span_end);
+                if end_cmp != Ordering::Equal {
+                    return end_cmp;
+                }
+                // span_end も同じなら外側コンテナ（rankが小さいもの）を先に開始
+                a.rank.cmp(&b.rank)
+            }
+            (RetokenizeEvent::DecoEnd, RetokenizeEvent::DecoEnd) => {
+                // スコープが内側（span_start が後ろにある）ものを先に終了
+                let start_cmp = b.span_start.cmp(&a.span_start);
+                if start_cmp != Ordering::Equal {
+                    return start_cmp;
+                }
+                // span_start も同じなら内側（rankが大きいもの）を先に終了
+                b.rank.cmp(&a.rank)
+            }
+            _ => Ordering::Equal,
+        }
     });
 
-    vec
+    items.into_iter().map(|item| (item.pos, item.event)).collect()
 }
 
 #[doc = include_str!("../../docs/retokenize.md")]
