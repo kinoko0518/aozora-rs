@@ -4,24 +4,25 @@ pub fn validate_xhtml<'s>(buff: Vec<XHTMLTag<'s>>) -> Vec<XHTMLTag<'s>> {
     let mut peekable = buff.into_iter().peekable();
     let mut buff = Vec::new();
 
-    #[derive(PartialEq)]
+    #[derive(PartialEq, Debug)]
     enum ContainerKind {
         Block,
         Heading,
-        P,
+        ExplicitP,
+        ImplicitP,
     }
     let mut stack: Vec<ContainerKind> = Vec::new();
 
     while let Some(current) = peekable.next() {
         if current.kind.is_block_begin() {
-            // 新しいブロックを開始する際、スタックのトップが<p>であれば先に閉じる
-            if let Some(ContainerKind::P) = stack.last() {
+            // 新しいブロックを開始する際、スタックのトップが暗黙の<p>であれば先に閉じる
+            if let Some(ContainerKind::ImplicitP) = stack.last() {
                 buff.push(XHTMLTag::from_kind(XHTMLKind::PEnd));
                 stack.pop();
             }
 
             match current.kind {
-                XHTMLKind::PBegin => stack.push(ContainerKind::P),
+                XHTMLKind::PBegin => stack.push(ContainerKind::ExplicitP),
                 XHTMLKind::H1Begin | XHTMLKind::H2Begin | XHTMLKind::H3Begin => {
                     stack.push(ContainerKind::Heading)
                 }
@@ -49,8 +50,8 @@ pub fn validate_xhtml<'s>(buff: Vec<XHTMLTag<'s>>) -> Vec<XHTMLTag<'s>> {
         }
 
         if current.kind.is_block_end() {
-            // ブロックを終了する際、スタックのトップが<p>で自身がPEndでなければ先に閉じる
-            if let Some(ContainerKind::P) = stack.last()
+            // ブロックを終了する際、スタックのトップが暗黙の<p>で自身がPEndでなければ先に閉じる
+            if let Some(ContainerKind::ImplicitP) = stack.last()
                 && !matches!(current.kind, XHTMLKind::PEnd)
             {
                 buff.push(XHTMLTag::from_kind(XHTMLKind::PEnd));
@@ -64,7 +65,9 @@ pub fn validate_xhtml<'s>(buff: Vec<XHTMLTag<'s>>) -> Vec<XHTMLTag<'s>> {
                 continue;
             }
 
-            stack.pop();
+            if !stack.is_empty() {
+                stack.pop();
+            }
             buff.push(current);
             continue;
         }
@@ -84,7 +87,7 @@ pub fn validate_xhtml<'s>(buff: Vec<XHTMLTag<'s>>) -> Vec<XHTMLTag<'s>> {
                 } else {
                     // 自身を<p>開始タグに変化させる
                     buff.push(XHTMLTag::from_kind(XHTMLKind::PBegin));
-                    stack.push(ContainerKind::P);
+                    stack.push(ContainerKind::ImplicitP);
                     buff.push(current);
                 }
             } else {
@@ -98,17 +101,17 @@ pub fn validate_xhtml<'s>(buff: Vec<XHTMLTag<'s>>) -> Vec<XHTMLTag<'s>> {
             // いずれのコンテナの中にもいなければ直前に<p>を追加
             if stack.is_empty() {
                 buff.push(XHTMLTag::from_kind(XHTMLKind::PBegin));
-                stack.push(ContainerKind::P);
+                stack.push(ContainerKind::ImplicitP);
             }
 
             buff.push(current);
 
-            // 次の要素がインライン要素でも Br でもない場合、直近の親が<p>なら閉じる
+            // 次の要素がインライン要素でも Br でもない場合、直近の親が暗黙の<p>なら閉じる
             let next_is_inline_or_br = peekable
                 .peek()
                 .is_some_and(|s| s.kind.is_inline() || matches!(s.kind, XHTMLKind::Br));
 
-            if !next_is_inline_or_br && let Some(ContainerKind::P) = stack.last() {
+            if !next_is_inline_or_br && let Some(ContainerKind::ImplicitP) = stack.last() {
                 buff.push(XHTMLTag::from_kind(XHTMLKind::PEnd));
                 stack.pop();
             }
@@ -119,8 +122,8 @@ pub fn validate_xhtml<'s>(buff: Vec<XHTMLTag<'s>>) -> Vec<XHTMLTag<'s>> {
         buff.push(current);
     }
 
-    // 処理の最後に<p>が閉じられていなければ閉じる
-    if let Some(ContainerKind::P) = stack.last() {
+    // 処理の最後に閉じられていない<p>があれば閉じる
+    if let Some(ContainerKind::ImplicitP | ContainerKind::ExplicitP) = stack.last() {
         buff.push(XHTMLTag::from_kind(XHTMLKind::PEnd));
         stack.pop();
     }
