@@ -108,38 +108,11 @@ jobs:
           name: demo-site
           path: ./applications/demopage/
 
-  # QAジョブ完了後、TypstからPDFを生成しアップロード
-  build-typst:
-    name: Build Typst Document
-    runs-on: ubuntu-latest
-    needs: qa
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download QA result
-        uses: actions/download-artifact@v4
-        with:
-          name: qa-result
-          path: applications/qa/out/result
-
-      - name: Setup Typst
-        uses: typst-community/setup-typst@v3
-
-      - name: Compile Typst presentation
-        run: typst compile --input commit=${{ github.sha }} docs/typst/presentation.typ --root . ./presentation.pdf --font-path docs/typst/haranoaji
-
-      - name: Upload PDF artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: typst-pdf
-          path: ./presentation.pdf
-
-  # ayame-demoとTypstの結果を合成してデプロイ
+  # ayame-demoをデプロイ
   deploy-pages:
     name: Deploy to GitHub Pages
     runs-on: ubuntu-latest
-    needs: [build-demo, build-typst, test-and-epubcheck]
+    needs: [build-demo, test-and-epubcheck]
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -148,12 +121,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: demo-site
-          path: ./pages-deploy
-
-      - name: Download Typst PDF
-        uses: actions/download-artifact@v4
-        with:
-          name: typst-pdf
           path: ./pages-deploy
 
       - name: Setup Pages
