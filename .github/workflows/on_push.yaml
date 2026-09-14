@@ -8,6 +8,52 @@ permissions:
   id-token: write
 
 jobs:
+  # テストおよびEPUBCheckの実行
+  test-and-epubcheck:
+    name: Test and EPUBCheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run workspace tests
+        run: cargo test --workspace
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup EPUBCheck
+        run: |
+          curl -sL https://github.com/w3c/epubcheck/releases/download/v5.3.0/epubcheck-5.3.0.zip -o /tmp/epubcheck.zip
+          unzip -q /tmp/epubcheck.zip -d $HOME/.epubcheck
+          echo "$HOME/.epubcheck/epubcheck-5.3.0" >> $GITHUB_PATH
+
+      - name: Build ayame CLI
+        run: cargo build -p ayame-cli --release
+
+      - name: Generate and Validate EPUBs
+        run: |
+          mkdir -p /tmp/works /tmp/epubs
+          curl -sL -o /tmp/works/rashomon.zip https://www.aozora.gr.jp/cards/000879/files/127_ruby_150.zip
+          curl -sL -o /tmp/works/melos.zip https://www.aozora.gr.jp/cards/000035/files/1567_ruby_4948.zip
+          curl -sL -o /tmp/works/botchan.zip https://www.aozora.gr.jp/cards/000148/files/752_ruby_2438.zip
+          curl -sL -o /tmp/works/kokoro.zip https://www.aozora.gr.jp/cards/000148/files/773_ruby_5968.zip
+          curl -sL -o /tmp/works/tokyo_fuzoku.zip https://www.aozora.gr.jp/cards/001312/files/47728_ruby_33978.zip
+          ./target/release/ayame epub --output /tmp/epubs /tmp/works/*.zip
+          for epub in /tmp/epubs/*.epub; do
+            echo "Checking: $(basename "$epub")"
+            epubcheck "$epub"
+          done
+
   # QAを実行
   qa:
     name: Run QA
@@ -93,7 +139,7 @@ jobs:
   deploy-pages:
     name: Deploy to GitHub Pages
     runs-on: ubuntu-latest
-    needs: [build-demo, build-typst]
+    needs: [build-demo, build-typst, test-and-epubcheck]
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
