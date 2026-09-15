@@ -13,16 +13,17 @@ use crate::ignore_rest_of_line;
 
 pub type MenkutenTable = HashMap<Menkuten, String>;
 
-/// 1E-F0C5のような文字列にマッチし、面句点として数字を分解する
+/// JIS X 0213のGLエンコーディング（3-XXXX, 4-XXXX）から面区点番号（1-based）にデコードする
 fn parse_single_menkuten(input: &mut &str) -> Result<Menkuten, ContextError> {
     (hex_digit1, '-', hex_digit1)
         .map(|(plane, _, row_and_cell): (&str, _, &str)| {
-            let plane = u8::from_str_radix(plane, 16).unwrap();
+            let raw_plane = u8::from_str_radix(plane, 16).unwrap();
+            let plane = if raw_plane >= 3 { raw_plane - 2 } else { raw_plane };
             let row_and_cell = u32::from_str_radix(row_and_cell, 16).unwrap();
             (
                 plane,
-                (row_and_cell >> 8) as u8,
-                (row_and_cell & 0xFF) as u8,
+                (((row_and_cell >> 8) as u8)).saturating_sub(0x20),
+                (((row_and_cell & 0xFF) as u8)).saturating_sub(0x20),
             )
         })
         .parse_next(input)

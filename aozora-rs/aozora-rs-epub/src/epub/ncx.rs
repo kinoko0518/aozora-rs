@@ -22,23 +22,36 @@ impl EpubWriter<'_> {
     fn write_ncx_navmaps(&self, writer: &mut impl Write) -> Result<(), std::io::Error> {
         writer.write_all("<navMap>\n".as_bytes())?;
 
-        for (i, chapter) in self.nresult.chapters.iter().enumerate() {
-            let order = i + 1;
+        if self.nresult.chapters.is_empty() {
+            let filename = if self.has_title_page() {
+                "xhtml/title.xhtml"
+            } else {
+                "xhtml/sec0000.xhtml"
+            };
             writeln!(
                 writer,
-                "\t<navPoint id=\"toc{}\" playOrder=\"{}\">",
-                order, order
+                "\t<navPoint id=\"toc1\" playOrder=\"1\">\n\t\t<navLabel>\n\t\t\t<text>{}</text>\n\t\t</navLabel>\n\t\t<content src=\"{}\"/>\n\t</navPoint>",
+                self.meta.title, filename
             )?;
-            writer.write_all("\t\t<navLabel>\n".as_bytes())?;
-            writeln!(writer, "\t\t\t<text>{}</text>", chapter.name)?;
-            writer.write_all("\t\t</navLabel>\n".as_bytes())?;
-            writeln!(
-                writer,
-                "\t\t<content src=\"xhtml/sec{:>04}.xhtml#{}\"/>",
-                chapter.xhtml_id,
-                chapter.get_id()
-            )?;
-            writer.write_all("\t</navPoint>\n".as_bytes())?;
+        } else {
+            for (i, chapter) in self.nresult.chapters.iter().enumerate() {
+                let order = i + 1;
+                writeln!(
+                    writer,
+                    "\t<navPoint id=\"toc{}\" playOrder=\"{}\">",
+                    order, order
+                )?;
+                writer.write_all("\t\t<navLabel>\n".as_bytes())?;
+                writeln!(writer, "\t\t\t<text>{}</text>", chapter.name)?;
+                writer.write_all("\t\t</navLabel>\n".as_bytes())?;
+                writeln!(
+                    writer,
+                    "\t\t<content src=\"xhtml/sec{:>04}.xhtml#{}\"/>",
+                    chapter.xhtml_id,
+                    chapter.get_id()
+                )?;
+                writer.write_all("\t</navPoint>\n".as_bytes())?;
+            }
         }
 
         writer.write_all("</navMap>".as_bytes())?;

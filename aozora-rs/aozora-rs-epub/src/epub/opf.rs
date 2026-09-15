@@ -1,6 +1,5 @@
 use std::io::Write;
 
-use time::format_description::well_known::Rfc3339;
 
 use crate::epub::EpubWriter;
 
@@ -30,8 +29,13 @@ impl EpubWriter<'_> {
         )?;
         write!(
             writer,
-            "\t\t<!-- 更新日 -->\n\t\t<meta property=\"dcterms:modified\">{}</meta>\n",
-            self.lud.format(&Rfc3339).unwrap()
+            "\t\t<!-- 更新日 -->\n\t\t<meta property=\"dcterms:modified\">{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z</meta>\n",
+            self.lud.year(),
+            self.lud.month() as u8,
+            self.lud.day(),
+            self.lud.hour(),
+            self.lud.minute(),
+            self.lud.second()
         )?;
         writer.write_all("\t\t<!-- etc. -->\n".as_bytes())?;
         writer.write_all("\t\t<meta property=\"ebpaj:guide-version\">1.1.3</meta>\n".as_bytes())?;

@@ -32,7 +32,6 @@ pub fn scopenize<'s>(
         match token.kind {
             AozoraTokenKind::Text(t) => {
                 while let Some(n) = peekable.peek() {
-                    let scope = token.span.clone();
                     match backref_to_scope(&n.kind, (&t, token.span.clone())) {
                         BackRefResult::ScopeConfirmed(s) => {
                             scopes.push(s);
@@ -40,8 +39,9 @@ pub fn scopenize<'s>(
                         }
                         // 前方参照に失敗した場合一個peekableを消費して無視
                         BackRefResult::BackRefFailed => {
+                            let err_span = n.span.clone();
                             peekable.next();
-                            azc.acc_err(ScopenizeError::BackRefFailed(scope).into())
+                            azc.acc_err(ScopenizeError::BackRefFailed(err_span).into())
                         }
                         BackRefResult::ItWontBackRef => break,
                     }
