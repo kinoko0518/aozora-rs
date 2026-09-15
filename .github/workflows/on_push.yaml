@@ -8,7 +8,7 @@ permissions:
   id-token: write
 
 jobs:
-  # テストおよびEPUBCheckの実行 (Nix駆動)
+  # テストおよびEPUBCheckの実行
   test-and-epubcheck:
     name: Test and EPUBCheck
     runs-on: ubuntu-latest
@@ -46,7 +46,7 @@ jobs:
             done
           '
 
-  # QAを実行 (Nix駆動)
+  # QAを実行
   qa:
     name: Run QA
     runs-on: ubuntu-latest
@@ -71,7 +71,7 @@ jobs:
           name: qa-result
           path: applications/qa/out/result/
 
-  # ayame-demo用のWASMビルド (Nix駆動)
+  # ayame-demo用のWASMビルド
   build-demo:
     name: Build ayame-demo
     runs-on: ubuntu-latest
