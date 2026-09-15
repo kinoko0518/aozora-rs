@@ -63,6 +63,7 @@
           nodejs
           unzip
           curl
+          git
         ];
 
         # ayame CLI パッケージ
