@@ -1,0 +1,50 @@
+name: QA and Profiling
+
+on:
+  push:
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+
+jobs:
+  qa:
+    name: Run QA
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v30
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Setup Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@v9
+        with:
+          use-flake-hub: false
+
+      - name: Prepare sample works for QA
+        run: |
+          mkdir -p /tmp/qa_works /tmp/qa_txts
+          curl -sL -o /tmp/qa_works/rashomon.zip https://www.aozora.gr.jp/cards/000879/files/127_ruby_150.zip
+          curl -sL -o /tmp/qa_works/melos.zip https://www.aozora.gr.jp/cards/000035/files/1567_ruby_4948.zip
+          curl -sL -o /tmp/qa_works/kokoro.zip https://www.aozora.gr.jp/cards/000148/files/773_ruby_5968.zip
+          nix develop --command bash -c '
+            for z in /tmp/qa_works/*.zip; do
+              unzip -o -q "$z" "*.txt" -d /tmp/qa_txts
+            done
+          '
+
+      - name: Run QA Profiling
+        run: nix develop --command cargo run --bin qa --release -- /tmp/qa_txts
+
+      - name: Upload QA result
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-result
+          path: applications/qa/out/result/
