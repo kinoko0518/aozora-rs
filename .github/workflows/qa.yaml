@@ -28,20 +28,13 @@ jobs:
         with:
           use-flake-hub: false
 
-      - name: Prepare sample works for QA
+      - name: Clone Aozora Bunko Text Repository
         run: |
-          mkdir -p /tmp/qa_works /tmp/qa_txts
-          curl -sL -o /tmp/qa_works/rashomon.zip https://www.aozora.gr.jp/cards/000879/files/127_ruby_150.zip
-          curl -sL -o /tmp/qa_works/melos.zip https://www.aozora.gr.jp/cards/000035/files/1567_ruby_4948.zip
-          curl -sL -o /tmp/qa_works/kokoro.zip https://www.aozora.gr.jp/cards/000148/files/773_ruby_5968.zip
-          nix develop --command bash -c '
-            for z in /tmp/qa_works/*.zip; do
-              unzip -o -q "$z" "*.txt" -d /tmp/qa_txts
-            done
-          '
+          mkdir -p applications/qa/assets
+          git clone --depth 1 https://github.com/aozorahack/aozorabunko_text.git applications/qa/assets/aozorabunko_text
 
-      - name: Run QA Profiling
-        run: nix develop --command cargo run --bin qa --release -- /tmp/qa_txts
+      - name: Run Full QA Analysis
+        run: nix develop --command cargo run --bin qa --release
 
       - name: Upload QA result
         uses: actions/upload-artifact@v4
